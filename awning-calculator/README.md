@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Universal Awning Cost Sheet Calculator
 
-## Getting Started
+A self-learning cost estimation app for Universal Awning Company. Track cost sheets, analyze pricing trends, and get real-time feedback with weighted averages based on won/lost jobs.
 
-First, run the development server:
+## Features
+
+- 📊 **Cost Sheet Creation** - Digital version of your Excel cost sheet with real-time calculations
+- 📈 **Weighted Analytics** - Won jobs are weighted 3x more to show winning pricing
+- 🔍 **Search & Filter** - Find past cost sheets instantly
+- 💰 **Pre-Delivery Pricing** - Separates fabrication costs from site-specific delivery costs
+- ✅ **Job Outcome Tracking** - Mark jobs as Won/Lost/Unknown to improve estimates over time
+- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
+
+## Quick Start
+
+### Local Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Set up database
+npx prisma generate
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Deploy to Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**See [DEPLOY.md](./DEPLOY.md) for complete step-by-step deployment guide.**
 
-## Learn More
+Quick steps:
+1. Go to [vercel.com](https://vercel.com) and sign in with GitHub
+2. Click "Add New Project" → Import your repository
+3. Set **Root Directory** to `awning-calculator`
+4. Click **Deploy**
+5. Get your live URL!
 
-To learn more about Next.js, take a look at the following resources:
+## Documentation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Full developer guide, features, and next steps
+- **[DEPLOY.md](./DEPLOY.md)** - Step-by-step Vercel deployment instructions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Database:** Prisma + SQLite (upgrade to PostgreSQL for production)
+- **Deployment:** Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## What's Included
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+✅ Dashboard with cost sheet history
+✅ Simplified cost sheet form
+✅ Real-time calculation engine
+✅ Weighted average analytics
+✅ Search and filter
+✅ Job outcome tracking
+
+## What Needs to Be Added
+
+🚧 Full cost sheet form (all line items from Excel)
+🚧 Real-time pricing guardrails (green/red/blue zones)
+🚧 Edit existing cost sheets
+🚧 Google OAuth authentication
+🚧 Quick calculator for salespeople
+🚧 Advanced analytics dashboard
+
+## Project Structure
+
+```
+awning-calculator/
+├── app/
+│   ├── api/              # API routes (CRUD, analytics)
+│   ├── costsheet/        # Cost sheet pages
+│   └── page.tsx          # Dashboard
+├── lib/
+│   ├── prisma.ts         # Database client
+│   ├── constants.ts      # Product categories, rates
+│   └── calculations.ts   # Pricing formulas
+├── prisma/
+│   └── schema.prisma     # Database schema
+└── DEVELOPMENT.md        # Developer documentation
+```
+
+## Database
+
+Currently using SQLite for development. For production deployment, switch to PostgreSQL:
+
+```bash
+# Vercel Postgres (recommended)
+# Or use Supabase, PlanetScale, etc.
+```
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for database upgrade instructions.
+
+## Support
+
+For questions about the prototype or development, contact: jacob@universalawning.com
