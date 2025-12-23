@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  costSheets CostSheet[]
+}
+
+model CostSheet {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Header Information
+  inquiryDate  DateTime
+  dueDate      DateTime
+  category     String   // Product type (Fabric Awning, Metal Awning, etc.)
+  customer     String?
+  salesRep     String?
+  project      String?
+  jobSite      String?
+
+  // Dimensions
+  width        Float?
+  projection   Float?
+  height       Float?
+  valance      Float?
+  canopySqFt   Float?
+  awningLinFt  Float?
+
+  // Materials
+  materials    MaterialLine[]
+  miscQty      Float?
+  miscPrice    Float?
+  salesTax     Float    @default(0.0975) // 9.75%
+
+  // Fabric
+  fabricLines  FabricLine[]
+
+  // Labor
+  laborLines   LaborLine[]
+  laborRate    Float    @default(95.00) // Regular rate
+
+  // Calculations
+  totalMaterials         Float   @default(0)
+  totalFabric            Float   @default(0)
+  totalFabricationLabor  Float   @default(0)
+  totalInstallationLabor Float   @default(0)
+  totalLabor             Float   @default(0)
+
+  subtotalBeforeMarkup   Float   @default(0)
+  markup                 Float   @default(0.8) // 80%
+  totalWithMarkup        Float   @default(0)
+
+  // Other Requirements (Site-specific costs)
+  permitCost       Float?
+  engineeringCost  Float?
+  equipmentCost    Float?
+  driveTimeTrips   Int?
+  driveTimeHours   Float?
+  driveTimePeople  Int?
+  driveTimeRate    Float   @default(75.00)
+  driveTimeTotal   Float   @default(0)
+
+  roundtripMiles   Float?
+  roundtripTrips   Int?
+  mileageRate      Float   @default(0.75)
+  mileageTotal     Float   @default(0)
+
+  hotelNights      Int?
+  hotelPeople      Int?
+  hotelRate        Float?
+  hotelTotal       Float   @default(0)
+
+  foodCost         Float?
+
+  totalOtherRequirements Float @default(0)
+  totalWithOtherReqs     Float @default(0)
+
+  grandTotal             Float @default(0)
+  discountIncrease       Float @default(0)
+  totalPriceToClient     Float @default(0)
+
+  // Pricing metrics (for analytics)
+  pricePerSqFt           Float?
+  pricePerLinFt          Float?
+  pricePerSqFtPreDelivery    Float? // Excludes "Other Requirements"
+  pricePerLinFtPreDelivery   Float? // Excludes "Other Requirements"
+
+  // Job outcome for weighted averages
+  outcome        String   @default("Unknown") // Won, Lost, Unknown
+
+  // Recap
+  recapLines     RecapLine[]
+
+  // Relations
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model MaterialLine {
+  id          String    @id @default(cuid())
+  costSheetId String
+  costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
+
+  description String
+  qty         Float
+  unitPrice   Float
+  salesTax    Float    @default(0.0975)
+  freight     Float?
+  total       Float
+
+  createdAt   DateTime @default(now())
+}
+
+model FabricLine {
+  id          String    @id @default(cuid())
+  costSheetId String
+  costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
+
+  name        String    // Fabric 1, Fabric 2, Graphics
+  yards       Float
+  pricePerYard Float
+  salesTax    Float    @default(0.0975)
+  freight     Float?
+  total       Float
+
+  createdAt   DateTime @default(now())
+}
+
+model LaborLine {
+  id          String    @id @default(cuid())
+  costSheetId String
+  costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
+
+  type        String    // Survey, Shop Drawings, Sewing, Graphics, Assembly, Welding, Paint, Installation 1, Installation 2
+  hours       Float
+  people      Int       @default(1)
+  rate        Float
+  total       Float
+
+  isFabrication Boolean @default(true) // false for Installation
+
+  createdAt   DateTime @default(now())
+}
+
+model RecapLine {
+  id          String    @id @default(cuid())
+  costSheetId String
+  costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
+
+  name        String    // Awning/Canopy 1, 2, 3, etc.
+  width       Float?
+  length      Float?
+  fabricYard  Float?
+  linearFt    Float?
+  sqFt        Float?
+
+  createdAt   DateTime @default(now())
+}
