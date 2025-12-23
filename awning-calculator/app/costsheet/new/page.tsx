@@ -45,6 +45,16 @@ interface RecapLine {
   sqFt: number;
 }
 
+interface FormData {
+  inquiryDate: string;
+  dueDate: string;
+  category: string;
+  customer: string;
+  salesRep: string;
+  project: string;
+  jobSite: string;
+}
+
 interface Analytics {
   byCategory: Array<{
     category: string;
@@ -73,10 +83,10 @@ export default function NewCostSheet() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   // Header Information
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     inquiryDate: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
-    category: PRODUCT_CATEGORIES[0] as string,
+    category: PRODUCT_CATEGORIES[0],
     customer: '',
     salesRep: '',
     project: '',
