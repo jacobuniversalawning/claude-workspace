@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma';
 // GET /api/costsheets/[id] - Get a single cost sheet
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const costSheet = await prisma.costSheet.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         materials: true,
         fabricLines: true,
@@ -43,28 +44,29 @@ export async function GET(
 // PUT /api/costsheets/[id] - Update a cost sheet
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
 
     // Delete existing related records
     await prisma.materialLine.deleteMany({
-      where: { costSheetId: params.id },
+      where: { costSheetId: id },
     });
     await prisma.fabricLine.deleteMany({
-      where: { costSheetId: params.id },
+      where: { costSheetId: id },
     });
     await prisma.laborLine.deleteMany({
-      where: { costSheetId: params.id },
+      where: { costSheetId: id },
     });
     await prisma.recapLine.deleteMany({
-      where: { costSheetId: params.id },
+      where: { costSheetId: id },
     });
 
     // Update cost sheet with new data
     const costSheet = await prisma.costSheet.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         inquiryDate: body.inquiryDate ? new Date(body.inquiryDate) : undefined,
         dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
@@ -152,11 +154,12 @@ export async function PUT(
 // DELETE /api/costsheets/[id] - Delete a cost sheet
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.costSheet.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
