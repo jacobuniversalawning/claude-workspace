@@ -2,6 +2,7 @@
 export const PRODUCT_CATEGORIES = [
   'Fabric Awning',
   'Metal Awning',
+  'Cantilevered Canopy',
   'IN-N-OUT',
   'Hip Roof Canopy',
   'Roof Balcony Cover',
