@@ -498,7 +498,7 @@ export default function NewCostSheet() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                     <select
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                       className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                       required
                     >
