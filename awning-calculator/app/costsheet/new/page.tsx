@@ -377,6 +377,7 @@ export default function NewCostSheet() {
       pricePerLinFt: totalLinFt > 0 ? totalPriceToClient / totalLinFt : null,
       pricePerSqFtPreDelivery,
       pricePerLinFtPreDelivery,
+      outcome: 'Unknown',
       products: products.map((p) => ({
         name: p.name,
         width: p.width,
@@ -412,34 +413,17 @@ export default function NewCostSheet() {
       })),
     };
 
-    try {
-      // Try to save to database first
-      const response = await fetch('/api/costsheets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        alert('Cost sheet saved to database!');
-        router.push('/');
-        return;
-      }
-    } catch (error) {
-      console.error('Database save failed:', error);
-    }
-
-    // Fallback: Save to localStorage
+    // Save to localStorage (primary storage until database is configured)
     try {
       const existingData = localStorage.getItem('costSheets');
       const costSheets = existingData ? JSON.parse(existingData) : [];
       costSheets.unshift(payload);
       localStorage.setItem('costSheets', JSON.stringify(costSheets));
-      alert('Cost sheet saved locally! (Database unavailable - data stored in browser)');
+      alert('Cost sheet saved successfully!');
       router.push('/');
     } catch (error) {
-      console.error('LocalStorage save failed:', error);
-      alert('Error saving cost sheet. Please try again.');
+      console.error('Save failed:', error);
+      alert('Error saving cost sheet: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setSaving(false);
     }
