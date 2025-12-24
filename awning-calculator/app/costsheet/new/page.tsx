@@ -9,7 +9,6 @@ import { DarkModeToggle } from '@/components/DarkModeToggle';
 // Interfaces
 interface ProductLine {
   id: string;
-  category: string;
   name: string;
   width: number;
   projection: number;
@@ -71,6 +70,7 @@ interface HotelLine {
 interface FormData {
   inquiryDate: string;
   dueDate: string;
+  category: string;
   customer: string;
   salesRep: string;
   project: string;
@@ -106,15 +106,16 @@ export default function NewCostSheet() {
   const [formData, setFormData] = useState<FormData>({
     inquiryDate: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
+    category: PRODUCT_CATEGORIES[0],
     customer: '',
     salesRep: '',
     project: '',
     jobSite: '',
   });
 
-  // Products (with category per product)
+  // Products (dimensions only, category is at top level)
   const [products, setProducts] = useState<ProductLine[]>([
-    { id: generateId(), category: PRODUCT_CATEGORIES[0], name: 'Product 1', width: 0, projection: 0, height: 0, valance: 0, sqFt: 0, linFt: 0 },
+    { id: generateId(), name: 'Product 1', width: 0, projection: 0, height: 0, valance: 0, sqFt: 0, linFt: 0 },
   ]);
 
   // Materials
@@ -188,7 +189,7 @@ export default function NewCostSheet() {
   // === PRODUCT FUNCTIONS ===
   const addProduct = () => {
     const num = products.length + 1;
-    setProducts([...products, { id: generateId(), category: PRODUCT_CATEGORIES[0], name: `Product ${num}`, width: 0, projection: 0, height: 0, valance: 0, sqFt: 0, linFt: 0 }]);
+    setProducts([...products, { id: generateId(), name: `Product ${num}`, width: 0, projection: 0, height: 0, valance: 0, sqFt: 0, linFt: 0 }]);
   };
 
   const removeProduct = (id: string) => {
@@ -304,8 +305,7 @@ export default function NewCostSheet() {
   const pricePerSqFtPreDelivery = totalSqFt > 0 ? totalWithMarkup / totalSqFt : null;
   const pricePerLinFtPreDelivery = totalLinFt > 0 ? totalWithMarkup / totalLinFt : null;
 
-  const primaryCategory = products[0]?.category || '';
-  const categoryAnalytics = analytics?.byCategory.find((c) => c.category === primaryCategory);
+  const categoryAnalytics = analytics?.byCategory.find((c) => c.category === formData.category);
   const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || 0;
   const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || 0;
 
@@ -330,87 +330,90 @@ export default function NewCostSheet() {
     e.preventDefault();
     setSaving(true);
 
-    try {
-      const payload = {
-        ...formData,
-        category: primaryCategory,
-        width: products[0]?.width || 0,
-        projection: products[0]?.projection || 0,
-        height: products[0]?.height || 0,
-        valance: products[0]?.valance || 0,
-        canopySqFt: totalSqFt,
-        awningLinFt: totalLinFt,
-        miscQty,
-        miscPrice,
-        laborRate,
-        totalMaterials,
-        totalFabric,
-        totalFabricationLabor,
-        totalInstallationLabor,
-        totalLabor,
-        subtotalBeforeMarkup,
-        markup,
-        totalWithMarkup,
-        permitCost,
-        engineeringCost,
-        equipmentCost,
-        driveTimeTrips: driveTimeLines[0]?.trips || 0,
-        driveTimeHours: driveTimeLines[0]?.hoursPerTrip || 0,
-        driveTimePeople: driveTimeLines[0]?.people || 0,
-        driveTimeRate: driveTimeLines[0]?.rate || DEFAULTS.DRIVE_TIME_RATE,
-        driveTimeTotal: totalDriveTime,
-        roundtripMiles: mileageLines[0]?.roundtripMiles || 0,
-        roundtripTrips: mileageLines[0]?.trips || 0,
-        mileageRate: mileageLines[0]?.rate || DEFAULTS.MILEAGE_RATE,
-        mileageTotal: totalMileage,
-        hotelNights: hotelLines[0]?.nights || 0,
-        hotelPeople: hotelLines[0]?.people || 0,
-        hotelRate: hotelLines[0]?.rate || 150,
-        hotelTotal: totalHotel,
-        foodCost,
-        totalOtherRequirements,
-        totalWithOtherReqs: grandTotal,
-        grandTotal,
-        discountIncrease,
-        totalPriceToClient,
-        pricePerSqFt: totalSqFt > 0 ? totalPriceToClient / totalSqFt : null,
-        pricePerLinFt: totalLinFt > 0 ? totalPriceToClient / totalLinFt : null,
-        pricePerSqFtPreDelivery,
-        pricePerLinFtPreDelivery,
-        materials: materials.filter((m) => m.qty > 0 || m.description).map((m) => ({
-          description: m.description,
-          qty: m.qty,
-          unitPrice: m.unitPrice,
-          salesTax: DEFAULTS.SALES_TAX,
-          freight: m.freight,
-          total: calcMaterialTotal(m),
-        })),
-        fabricLines: fabricLines.filter((f) => f.yards > 0 || f.name).map((f) => ({
-          name: f.name,
-          yards: f.yards,
-          pricePerYard: f.pricePerYard,
-          salesTax: DEFAULTS.SALES_TAX,
-          freight: f.freight,
-          total: calcFabricTotal(f),
-        })),
-        laborLines: [...laborLines, ...installLines].filter((l) => l.hours > 0).map((l) => ({
-          type: l.type,
-          hours: l.hours,
-          people: l.people,
-          rate: l.rate,
-          total: calcLaborTotal(l),
-          isFabrication: l.isFabrication,
-        })),
-        recapLines: products.map((p) => ({
-          name: p.name,
-          width: p.width,
-          length: p.projection,
-          fabricYard: 0,
-          linearFt: p.linFt,
-          sqFt: p.sqFt,
-        })),
-      };
+    const payload = {
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      ...formData,
+      width: products[0]?.width || 0,
+      projection: products[0]?.projection || 0,
+      height: products[0]?.height || 0,
+      valance: products[0]?.valance || 0,
+      canopySqFt: totalSqFt,
+      awningLinFt: totalLinFt,
+      miscQty,
+      miscPrice,
+      laborRate,
+      totalMaterials,
+      totalFabric,
+      totalFabricationLabor,
+      totalInstallationLabor,
+      totalLabor,
+      subtotalBeforeMarkup,
+      markup,
+      totalWithMarkup,
+      permitCost,
+      engineeringCost,
+      equipmentCost,
+      driveTimeTrips: driveTimeLines[0]?.trips || 0,
+      driveTimeHours: driveTimeLines[0]?.hoursPerTrip || 0,
+      driveTimePeople: driveTimeLines[0]?.people || 0,
+      driveTimeRate: driveTimeLines[0]?.rate || DEFAULTS.DRIVE_TIME_RATE,
+      driveTimeTotal: totalDriveTime,
+      roundtripMiles: mileageLines[0]?.roundtripMiles || 0,
+      roundtripTrips: mileageLines[0]?.trips || 0,
+      mileageRate: mileageLines[0]?.rate || DEFAULTS.MILEAGE_RATE,
+      mileageTotal: totalMileage,
+      hotelNights: hotelLines[0]?.nights || 0,
+      hotelPeople: hotelLines[0]?.people || 0,
+      hotelRate: hotelLines[0]?.rate || 150,
+      hotelTotal: totalHotel,
+      foodCost,
+      totalOtherRequirements,
+      totalWithOtherReqs: grandTotal,
+      grandTotal,
+      discountIncrease,
+      totalPriceToClient,
+      pricePerSqFt: totalSqFt > 0 ? totalPriceToClient / totalSqFt : null,
+      pricePerLinFt: totalLinFt > 0 ? totalPriceToClient / totalLinFt : null,
+      pricePerSqFtPreDelivery,
+      pricePerLinFtPreDelivery,
+      products: products.map((p) => ({
+        name: p.name,
+        width: p.width,
+        projection: p.projection,
+        height: p.height,
+        valance: p.valance,
+        sqFt: p.sqFt,
+        linFt: p.linFt,
+      })),
+      materials: materials.filter((m) => m.qty > 0 || m.description).map((m) => ({
+        description: m.description,
+        qty: m.qty,
+        unitPrice: m.unitPrice,
+        salesTax: DEFAULTS.SALES_TAX,
+        freight: m.freight,
+        total: calcMaterialTotal(m),
+      })),
+      fabricLines: fabricLines.filter((f) => f.yards > 0 || f.name).map((f) => ({
+        name: f.name,
+        yards: f.yards,
+        pricePerYard: f.pricePerYard,
+        salesTax: DEFAULTS.SALES_TAX,
+        freight: f.freight,
+        total: calcFabricTotal(f),
+      })),
+      laborLines: [...laborLines, ...installLines].filter((l) => l.hours > 0).map((l) => ({
+        type: l.type,
+        hours: l.hours,
+        people: l.people,
+        rate: l.rate,
+        total: calcLaborTotal(l),
+        isFabrication: l.isFabrication,
+      })),
+    };
 
+    try {
+      // Try to save to database first
       const response = await fetch('/api/costsheets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -418,15 +421,25 @@ export default function NewCostSheet() {
       });
 
       if (response.ok) {
-        alert('Cost sheet saved successfully!');
+        alert('Cost sheet saved to database!');
         router.push('/');
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to save'}`);
+        return;
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error saving cost sheet. Check console for details.');
+      console.error('Database save failed:', error);
+    }
+
+    // Fallback: Save to localStorage
+    try {
+      const existingData = localStorage.getItem('costSheets');
+      const costSheets = existingData ? JSON.parse(existingData) : [];
+      costSheets.unshift(payload);
+      localStorage.setItem('costSheets', JSON.stringify(costSheets));
+      alert('Cost sheet saved locally! (Database unavailable - data stored in browser)');
+      router.push('/');
+    } catch (error) {
+      console.error('LocalStorage save failed:', error);
+      alert('Error saving cost sheet. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -461,7 +474,7 @@ export default function NewCostSheet() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div>
                     <label className={labelClass}>Inquiry Date</label>
                     <input type="date" value={formData.inquiryDate} onChange={(e) => setFormData({ ...formData, inquiryDate: e.target.value })} className={inputClass} required />
@@ -469,6 +482,12 @@ export default function NewCostSheet() {
                   <div>
                     <label className={labelClass}>Due Date</label>
                     <input type="date" value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} className={inputClass} required />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Category</label>
+                    <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass}>
+                      {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                    </select>
                   </div>
                   <div>
                     <label className={labelClass}>Customer</label>
@@ -487,7 +506,7 @@ export default function NewCostSheet() {
                   </div>
                   <div>
                     <label className={labelClass}>Job Site Address</label>
-                    <textarea value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass + " h-20"} placeholder="Full job site address" />
+                    <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
                   </div>
                 </div>
               </div>
@@ -500,16 +519,11 @@ export default function NewCostSheet() {
                 </div>
 
                 <div className="space-y-4">
-                  {products.map((product, idx) => (
+                  {products.map((product) => (
                     <div key={product.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50">
                       <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center gap-4 flex-1">
-                          <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-40"} placeholder="Product name" />
-                          <select value={product.category} onChange={(e) => updateProduct(product.id, 'category', e.target.value)} className={inputClass + " w-64"}>
-                            {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
-                          </select>
-                        </div>
-                        {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn}>Remove</button>}
+                        <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-48"} placeholder="Product name" />
+                        {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn}>×</button>}
                       </div>
 
                       <div className="grid grid-cols-6 gap-3">
@@ -737,14 +751,22 @@ export default function NewCostSheet() {
               {/* Markup */}
               <div className={cardClass}>
                 <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Subtotal & Markup</h2>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">Subtotal (Materials + Fabric + Labor)</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-400">Subtotal</label>
                     <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Materials + Fabric + Labor</div>
                   </div>
-                  <div>
-                    <label className={labelClass}>Markup (0.8 = 80%)</label>
-                    <input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)} className={inputClass} />
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700">
+                    <label className={labelClass}>Markup %</label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)} className={inputClass + " w-24"} />
+                      <span className="text-gray-600 dark:text-gray-400 text-sm">= {(markup * 100).toFixed(0)}%</span>
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded border border-yellow-300 dark:border-yellow-700">
+                    <label className="text-sm text-yellow-700 dark:text-yellow-300">Markup Value</label>
+                    <div className="text-xl font-bold text-yellow-700 dark:text-yellow-300">{formatCurrency(markupAmount)}</div>
                   </div>
                   <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded border-2 border-blue-300 dark:border-blue-600">
                     <label className="text-sm text-blue-700 dark:text-blue-300">Total with Markup</label>
