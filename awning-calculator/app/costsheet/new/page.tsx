@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PRODUCT_CATEGORIES, LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
+import { NumberInput } from '@/components/NumberInput';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 interface MaterialLine {
   id: string;
@@ -451,26 +453,29 @@ export default function NewCostSheet() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors">
       <div className="max-w-7xl mx-auto px-4">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Form - Left Side (3 columns) */}
             <div className="lg:col-span-3 space-y-6">
               {/* Header */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Universal Awning & Canopy</h1>
-                    <p className="text-gray-600">Cost Sheet</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Universal Awning & Canopy</h1>
+                    <p className="text-gray-600 dark:text-gray-400">Cost Sheet</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/')}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ← Back to Dashboard
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <DarkModeToggle />
+                    <button
+                      type="button"
+                      onClick={() => router.push('/')}
+                      className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      ← Back to Dashboard
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
