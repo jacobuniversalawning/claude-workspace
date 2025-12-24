@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/calculations';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 
@@ -32,6 +33,7 @@ interface Analytics {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [costSheets, setCostSheets] = useState<CostSheet[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -299,18 +301,18 @@ export default function Home() {
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {storageType === 'local' ? (
-                      <button
-                        onClick={() => deleteSheet(sheet.id)}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                      >
-                        Delete
-                      </button>
-                    ) : (
-                      <Link href={`/costsheet/${sheet.id}`} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
-                        View/Edit
-                      </Link>
-                    )}
+                    <button
+                      onClick={() => router.push(`/costsheet/view?id=${sheet.id}`)}
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mr-3"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => deleteSheet(sheet.id)}
+                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

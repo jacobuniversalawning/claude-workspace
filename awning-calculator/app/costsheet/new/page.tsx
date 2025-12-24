@@ -50,6 +50,7 @@ interface DriveTimeLine {
   hoursPerTrip: number;
   people: number;
   rate: number;
+  description: string;
 }
 
 interface MileageLine {
@@ -57,6 +58,7 @@ interface MileageLine {
   roundtripMiles: number;
   trips: number;
   rate: number;
+  description: string;
 }
 
 interface HotelLine {
@@ -124,11 +126,13 @@ export default function NewCostSheet() {
   ]);
   const [miscQty, setMiscQty] = useState(1);
   const [miscPrice, setMiscPrice] = useState(200);
+  const [materialsTaxRate, setMaterialsTaxRate] = useState<number>(DEFAULTS.SALES_TAX);
 
   // Fabric
   const [fabricLines, setFabricLines] = useState<FabricLine[]>([
     { id: generateId(), name: '', yards: 0, pricePerYard: 0, freight: 0 },
   ]);
+  const [fabricTaxRate, setFabricTaxRate] = useState<number>(DEFAULTS.SALES_TAX);
 
   // Labor
   const [laborRate, setLaborRate] = useState<number>(LABOR_RATES.REGULAR);
@@ -159,11 +163,11 @@ export default function NewCostSheet() {
   const [foodCost, setFoodCost] = useState(0);
 
   const [driveTimeLines, setDriveTimeLines] = useState<DriveTimeLine[]>([
-    { id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE },
+    { id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE, description: '' },
   ]);
 
   const [mileageLines, setMileageLines] = useState<MileageLine[]>([
-    { id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE },
+    { id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE, description: '' },
   ]);
 
   const [hotelLines, setHotelLines] = useState<HotelLine[]>([
@@ -200,8 +204,10 @@ export default function NewCostSheet() {
     setProducts(products.map((p) => {
       if (p.id === id) {
         const updated = { ...p, [field]: value };
-        if (field === 'width' || field === 'projection') {
-          updated.sqFt = Number((updated.width * updated.projection).toFixed(2));
+        // Recalculate sqFt and linFt when dimensions change
+        if (field === 'width' || field === 'projection' || field === 'height') {
+          // Sq Ft = (width × projection) + (width × height) for canopy + drop
+          updated.sqFt = Number(((updated.width * updated.projection) + (updated.width * updated.height)).toFixed(2));
           updated.linFt = Number((updated.width + updated.projection * 2).toFixed(2));
         }
         return updated;
@@ -242,16 +248,16 @@ export default function NewCostSheet() {
   };
 
   // === DRIVE TIME FUNCTIONS ===
-  const addDriveTime = () => setDriveTimeLines([...driveTimeLines, { id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE }]);
+  const addDriveTime = () => setDriveTimeLines([...driveTimeLines, { id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE, description: '' }]);
   const removeDriveTime = (id: string) => { if (driveTimeLines.length > 1) setDriveTimeLines(driveTimeLines.filter((d) => d.id !== id)); };
-  const updateDriveTime = (id: string, field: keyof DriveTimeLine, value: number) => {
+  const updateDriveTime = (id: string, field: keyof DriveTimeLine, value: string | number) => {
     setDriveTimeLines(driveTimeLines.map((d) => (d.id === id ? { ...d, [field]: value } : d)));
   };
 
   // === MILEAGE FUNCTIONS ===
-  const addMileage = () => setMileageLines([...mileageLines, { id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE }]);
+  const addMileage = () => setMileageLines([...mileageLines, { id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE, description: '' }]);
   const removeMileage = (id: string) => { if (mileageLines.length > 1) setMileageLines(mileageLines.filter((m) => m.id !== id)); };
-  const updateMileage = (id: string, field: keyof MileageLine, value: number) => {
+  const updateMileage = (id: string, field: keyof MileageLine, value: string | number) => {
     setMileageLines(mileageLines.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
   };
 
@@ -268,15 +274,15 @@ export default function NewCostSheet() {
 
   const calcMaterialTotal = (m: MaterialLine) => {
     const subtotal = m.qty * m.unitPrice;
-    return subtotal + subtotal * DEFAULTS.SALES_TAX + m.freight;
+    return subtotal + subtotal * materialsTaxRate + m.freight;
   };
   const materialsSubtotal = materials.reduce((sum, m) => sum + calcMaterialTotal(m), 0);
-  const miscTotal = miscQty * miscPrice * (1 + DEFAULTS.SALES_TAX);
+  const miscTotal = miscQty * miscPrice * (1 + materialsTaxRate);
   const totalMaterials = materialsSubtotal + miscTotal;
 
   const calcFabricTotal = (f: FabricLine) => {
     const subtotal = f.yards * f.pricePerYard;
-    return subtotal + subtotal * DEFAULTS.SALES_TAX + f.freight;
+    return subtotal + subtotal * fabricTaxRate + f.freight;
   };
   const totalFabric = fabricLines.reduce((sum, f) => sum + calcFabricTotal(f), 0);
 
@@ -458,7 +464,8 @@ export default function NewCostSheet() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {/* Row 1: Dates and Category */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className={labelClass}>Inquiry Date</label>
                     <input type="date" value={formData.inquiryDate} onChange={(e) => setFormData({ ...formData, inquiryDate: e.target.value })} className={inputClass} required />
@@ -473,6 +480,10 @@ export default function NewCostSheet() {
                       {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
                     </select>
                   </div>
+                </div>
+
+                {/* Row 2: Customer, Sales Rep, Project */}
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Customer</label>
                     <input type="text" value={formData.customer} onChange={(e) => setFormData({ ...formData, customer: e.target.value })} className={inputClass} placeholder="Customer name" />
@@ -481,17 +492,16 @@ export default function NewCostSheet() {
                     <label className={labelClass}>Sales Rep</label>
                     <input type="text" value={formData.salesRep} onChange={(e) => setFormData({ ...formData, salesRep: e.target.value })} className={inputClass} placeholder="Sales rep" />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Project</label>
                     <input type="text" value={formData.project} onChange={(e) => setFormData({ ...formData, project: e.target.value })} className={inputClass} placeholder="Project name" />
                   </div>
-                  <div>
-                    <label className={labelClass}>Job Site Address</label>
-                    <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
-                  </div>
+                </div>
+
+                {/* Row 3: Job Site Address (full width) */}
+                <div className="mt-4">
+                  <label className={labelClass}>Job Site Address</label>
+                  <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
                 </div>
               </div>
 
@@ -549,7 +559,14 @@ export default function NewCostSheet() {
               {/* Materials */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Materials</h2>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Materials</h2>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
+                      <input type="number" step="0.0025" value={materialsTaxRate} onChange={(e) => setMaterialsTaxRate(parseFloat(e.target.value) || 0)} className={inputClass + " w-20 text-right"} />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">({(materialsTaxRate * 100).toFixed(2)}%)</span>
+                    </div>
+                  </div>
                   <button type="button" onClick={addMaterial} className={addBtn}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
@@ -570,7 +587,7 @@ export default function NewCostSheet() {
                         <td className="px-2 py-1"><input type="text" value={m.description} onChange={(e) => updateMaterial(m.id, 'description', e.target.value)} className={inputClass} placeholder="Material" /></td>
                         <td className="px-2 py-1"><input type="number" value={m.qty || ''} onChange={(e) => updateMaterial(m.id, 'qty', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={m.unitPrice || ''} onChange={(e) => updateMaterial(m.id, 'unitPrice', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
-                        <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(m.qty * m.unitPrice * DEFAULTS.SALES_TAX)}</td>
+                        <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(m.qty * m.unitPrice * materialsTaxRate)}</td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={m.freight || ''} onChange={(e) => updateMaterial(m.id, 'freight', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcMaterialTotal(m))}</td>
                         <td className="px-2 py-1 text-center">{materials.length > 1 && <button type="button" onClick={() => removeMaterial(m.id)} className={deleteBtn}>×</button>}</td>
@@ -580,7 +597,7 @@ export default function NewCostSheet() {
                       <td className="px-2 py-1 font-medium text-gray-900 dark:text-white">Misc</td>
                       <td className="px-2 py-1"><input type="number" value={miscQty} onChange={(e) => setMiscQty(parseInt(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                       <td className="px-2 py-1"><input type="number" step="0.01" value={miscPrice} onChange={(e) => setMiscPrice(parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
-                      <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(miscQty * miscPrice * DEFAULTS.SALES_TAX)}</td>
+                      <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(miscQty * miscPrice * materialsTaxRate)}</td>
                       <td className="px-2 py-1">-</td>
                       <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(miscTotal)}</td>
                       <td></td>
@@ -599,7 +616,14 @@ export default function NewCostSheet() {
               {/* Fabric */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric</h2>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric</h2>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
+                      <input type="number" step="0.0025" value={fabricTaxRate} onChange={(e) => setFabricTaxRate(parseFloat(e.target.value) || 0)} className={inputClass + " w-20 text-right"} />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">({(fabricTaxRate * 100).toFixed(2)}%)</span>
+                    </div>
+                  </div>
                   <button type="button" onClick={addFabric} className={addBtn}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
@@ -620,7 +644,7 @@ export default function NewCostSheet() {
                         <td className="px-2 py-1"><input type="text" value={f.name} onChange={(e) => updateFabric(f.id, 'name', e.target.value)} className={inputClass} placeholder="Fabric name" /></td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={f.yards || ''} onChange={(e) => updateFabric(f.id, 'yards', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={f.pricePerYard || ''} onChange={(e) => updateFabric(f.id, 'pricePerYard', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
-                        <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(f.yards * f.pricePerYard * DEFAULTS.SALES_TAX)}</td>
+                        <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(f.yards * f.pricePerYard * fabricTaxRate)}</td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={f.freight || ''} onChange={(e) => updateFabric(f.id, 'freight', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcFabricTotal(f))}</td>
                         <td className="px-2 py-1 text-center">{fabricLines.length > 1 && <button type="button" onClick={() => removeFabric(f.id)} className={deleteBtn}>×</button>}</td>
@@ -778,15 +802,18 @@ export default function NewCostSheet() {
                     <button type="button" onClick={addDriveTime} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">+ Add</button>
                   </div>
                   {driveTimeLines.map((d) => (
-                    <div key={d.id} className="grid grid-cols-5 gap-2 mb-2">
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Trips</label><input type="number" value={d.trips || ''} onChange={(e) => updateDriveTime(d.id, 'trips', parseInt(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Hrs/Trip</label><input type="number" step="0.5" value={d.hoursPerTrip || ''} onChange={(e) => updateDriveTime(d.id, 'hoursPerTrip', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">People</label><input type="number" value={d.people || ''} onChange={(e) => updateDriveTime(d.id, 'people', parseInt(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Rate</label><input type="number" step="0.01" value={d.rate} onChange={(e) => updateDriveTime(d.id, 'rate', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1"><label className="text-xs text-gray-600 dark:text-gray-400">Total</label><div className="px-2 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">{formatCurrency(calcDriveTimeTotal(d))}</div></div>
-                        {driveTimeLines.length > 1 && <button type="button" onClick={() => removeDriveTime(d.id)} className={deleteBtn + " mb-2"}>×</button>}
+                    <div key={d.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
+                      <div className="grid grid-cols-5 gap-2 mb-2">
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Trips</label><input type="number" value={d.trips || ''} onChange={(e) => updateDriveTime(d.id, 'trips', parseInt(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Hrs/Trip</label><input type="number" step="0.5" value={d.hoursPerTrip || ''} onChange={(e) => updateDriveTime(d.id, 'hoursPerTrip', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">People</label><input type="number" value={d.people || ''} onChange={(e) => updateDriveTime(d.id, 'people', parseInt(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Rate</label><input type="number" step="0.01" value={d.rate} onChange={(e) => updateDriveTime(d.id, 'rate', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1"><label className="text-xs text-gray-600 dark:text-gray-400">Total</label><div className="px-2 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">{formatCurrency(calcDriveTimeTotal(d))}</div></div>
+                          {driveTimeLines.length > 1 && <button type="button" onClick={() => removeDriveTime(d.id)} className={deleteBtn + " mb-2"}>×</button>}
+                        </div>
                       </div>
+                      <div><input type="text" value={d.description} onChange={(e) => updateDriveTime(d.id, 'description', e.target.value)} className={inputClass} placeholder="Notes (e.g., purpose of trip, location)" /></div>
                     </div>
                   ))}
                 </div>
@@ -798,14 +825,17 @@ export default function NewCostSheet() {
                     <button type="button" onClick={addMileage} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">+ Add</button>
                   </div>
                   {mileageLines.map((m) => (
-                    <div key={m.id} className="grid grid-cols-4 gap-2 mb-2">
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Roundtrip Miles</label><input type="number" step="0.1" value={m.roundtripMiles || ''} onChange={(e) => updateMileage(m.id, 'roundtripMiles', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Trips</label><input type="number" value={m.trips || ''} onChange={(e) => updateMileage(m.id, 'trips', parseInt(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Rate/Mile</label><input type="number" step="0.01" value={m.rate} onChange={(e) => updateMileage(m.id, 'rate', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1"><label className="text-xs text-gray-600 dark:text-gray-400">Total</label><div className="px-2 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">{formatCurrency(calcMileageTotal(m))}</div></div>
-                        {mileageLines.length > 1 && <button type="button" onClick={() => removeMileage(m.id)} className={deleteBtn + " mb-2"}>×</button>}
+                    <div key={m.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
+                      <div className="grid grid-cols-4 gap-2 mb-2">
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Roundtrip Miles</label><input type="number" step="0.1" value={m.roundtripMiles || ''} onChange={(e) => updateMileage(m.id, 'roundtripMiles', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Trips</label><input type="number" value={m.trips || ''} onChange={(e) => updateMileage(m.id, 'trips', parseInt(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Rate/Mile</label><input type="number" step="0.01" value={m.rate} onChange={(e) => updateMileage(m.id, 'rate', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1"><label className="text-xs text-gray-600 dark:text-gray-400">Total</label><div className="px-2 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">{formatCurrency(calcMileageTotal(m))}</div></div>
+                          {mileageLines.length > 1 && <button type="button" onClick={() => removeMileage(m.id)} className={deleteBtn + " mb-2"}>×</button>}
+                        </div>
                       </div>
+                      <div><input type="text" value={m.description} onChange={(e) => updateMileage(m.id, 'description', e.target.value)} className={inputClass} placeholder="Notes (e.g., destination, purpose)" /></div>
                     </div>
                   ))}
                 </div>
@@ -817,15 +847,17 @@ export default function NewCostSheet() {
                     <button type="button" onClick={addHotel} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">+ Add</button>
                   </div>
                   {hotelLines.map((h) => (
-                    <div key={h.id} className="grid grid-cols-5 gap-2 mb-2">
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Nights</label><input type="number" value={h.nights || ''} onChange={(e) => updateHotel(h.id, 'nights', parseInt(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">People</label><input type="number" value={h.people || ''} onChange={(e) => updateHotel(h.id, 'people', parseInt(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Rate/Night</label><input type="number" step="0.01" value={h.rate || ''} onChange={(e) => updateHotel(h.id, 'rate', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
-                      <div><label className="text-xs text-gray-600 dark:text-gray-400">Description</label><input type="text" value={h.description} onChange={(e) => updateHotel(h.id, 'description', e.target.value)} className={inputClass} placeholder="Notes" /></div>
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1"><label className="text-xs text-gray-600 dark:text-gray-400">Total</label><div className="px-2 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">{formatCurrency(calcHotelTotal(h))}</div></div>
-                        {hotelLines.length > 1 && <button type="button" onClick={() => removeHotel(h.id)} className={deleteBtn + " mb-2"}>×</button>}
+                    <div key={h.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
+                      <div className="grid grid-cols-4 gap-2 mb-2">
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Nights</label><input type="number" value={h.nights || ''} onChange={(e) => updateHotel(h.id, 'nights', parseInt(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">People</label><input type="number" value={h.people || ''} onChange={(e) => updateHotel(h.id, 'people', parseInt(e.target.value) || 0)} className={inputClass} /></div>
+                        <div><label className="text-xs text-gray-600 dark:text-gray-400">Rate/Night</label><input type="number" step="0.01" value={h.rate || ''} onChange={(e) => updateHotel(h.id, 'rate', parseFloat(e.target.value) || 0)} className={inputClass} /></div>
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1"><label className="text-xs text-gray-600 dark:text-gray-400">Total</label><div className="px-2 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-sm text-gray-900 dark:text-white">{formatCurrency(calcHotelTotal(h))}</div></div>
+                          {hotelLines.length > 1 && <button type="button" onClick={() => removeHotel(h.id)} className={deleteBtn + " mb-2"}>×</button>}
+                        </div>
                       </div>
+                      <div><input type="text" value={h.description} onChange={(e) => updateHotel(h.id, 'description', e.target.value)} className={inputClass} placeholder="Notes (e.g., hotel name, location)" /></div>
                     </div>
                   ))}
                 </div>
