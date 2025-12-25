@@ -1133,12 +1133,12 @@ function CostSheetForm() {
                 <div className={cardClass}>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Pre-Delivery Pricing</h3>
                   <div className="space-y-3">
-                    <div className={`p-3 rounded border-2 ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice)}`}>
+                    <div className={`p-3 rounded-input border-2 ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice)}`}>
                       <div className="text-xs text-gray-600 dark:text-gray-400">Price per Sq Ft</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{pricePerSqFtPreDelivery ? formatCurrency(pricePerSqFtPreDelivery) : '-'}</div>
                       {avgSqFtPrice > 0 && <div className="text-xs text-gray-600 dark:text-gray-400">Avg: {formatCurrency(avgSqFtPrice)} | {getGuardrailText(pricePerSqFtPreDelivery, avgSqFtPrice)}</div>}
                     </div>
-                    <div className={`p-3 rounded border-2 ${getGuardrailColor(pricePerLinFtPreDelivery, avgLinFtPrice)}`}>
+                    <div className={`p-3 rounded-input border-2 ${getGuardrailColor(pricePerLinFtPreDelivery, avgLinFtPrice)}`}>
                       <div className="text-xs text-gray-600 dark:text-gray-400">Price per Lin Ft</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{pricePerLinFtPreDelivery ? formatCurrency(pricePerLinFtPreDelivery) : '-'}</div>
                       {avgLinFtPrice > 0 && <div className="text-xs text-gray-600 dark:text-gray-400">Avg: {formatCurrency(avgLinFtPrice)} | {getGuardrailText(pricePerLinFtPreDelivery, avgLinFtPrice)}</div>}
@@ -1155,7 +1155,7 @@ function CostSheetForm() {
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Labor:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalLabor)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Markup ({(markup * 100).toFixed(0)}%):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
-                    <div className="flex justify-between bg-blue-100 dark:bg-blue-900/50 p-2 rounded -mx-2"><span className="font-semibold text-blue-700 dark:text-blue-300">Pre-Delivery:</span><span className="font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalWithMarkup)}</span></div>
+                    <div className={`flex justify-between p-2 rounded-input -mx-2 border ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice).replace('border-2', 'border')}`}><span className="font-semibold text-gray-900 dark:text-white">Pre-Delivery:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalWithMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Other Reqs:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalOtherRequirements)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="font-semibold text-gray-900 dark:text-white">Grand Total:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(grandTotal)}</span></div>
                   </div>
@@ -1170,9 +1170,14 @@ function CostSheetForm() {
                     )}
                   </div>
 
-                  <div className="mt-4 bg-green-100 dark:bg-green-900/50 p-3 rounded border-2 border-green-400 dark:border-green-600">
-                    <div className="text-xs text-green-700 dark:text-green-300">Total Price to Client</div>
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(totalPriceToClient)}</div>
+                  <div className={`mt-4 p-3 rounded-input border-2 ${getGuardrailColor(pricePerSqFtFinal, avgSqFtPrice)}`}>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Total Price to Client</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPriceToClient)}</div>
+                    {avgSqFtPrice > 0 && (
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {getGuardrailText(pricePerSqFtFinal, avgSqFtPrice)} • {pricePerSqFtFinal ? formatCurrency(pricePerSqFtFinal) : '-'}/sqft
+                      </div>
+                    )}
                   </div>
                 </div>
 
