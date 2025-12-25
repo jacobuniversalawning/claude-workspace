@@ -25,15 +25,19 @@ module.exports = {
         sans: ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       borderRadius: {
-        'card': '6px',
-        'input': '6px',
-        'button': '6px',
-        'modal': '8px',
+        'card': '3px',
+        'input': '3px',
+        'button': '3px',
+        'modal': '4px',
       },
       fontSize: {
         'h1': ['25px', { letterSpacing: '0em', fontWeight: '500', lineHeight: '1.2' }],
         'h2': ['18px', { letterSpacing: '0.0075em', fontWeight: '400', lineHeight: '1.334' }],
         'label': ['12px', { letterSpacing: '0.08333em', fontWeight: '500', textTransform: 'uppercase', lineHeight: '1.66' }],
+      },
+      spacing: {
+        '4.5': '1.125rem',
+        '5.5': '1.375rem',
       },
       transitionDuration: {
         '400': '400ms',
