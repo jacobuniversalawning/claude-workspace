@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/calculations';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
+import { PRODUCT_CATEGORIES } from '@/lib/constants';
 
 interface CostSheet {
   id: string;
@@ -47,7 +47,8 @@ export default function Home() {
   const [costSheets, setCostSheets] = useState<CostSheet[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [storageType, setStorageType] = useState<'database' | 'local' | null>(null);
 
@@ -111,10 +112,22 @@ export default function Home() {
       sheet.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sheet.category?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory = !filterCategory || sheet.category === filterCategory;
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(sheet.category);
 
     return matchesSearch && matchesCategory;
   });
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const clearCategoryFilter = () => {
+    setSelectedCategories([]);
+  };
 
   const updateOutcome = async (id: string, outcome: string) => {
     // Update in localStorage if using local storage
@@ -155,8 +168,6 @@ export default function Home() {
     }
   };
 
-  // Get unique categories from local data for filter
-  const localCategories = [...new Set(costSheets.map((s) => s.category).filter(Boolean))];
 
   if (loading) {
     return (
@@ -178,7 +189,6 @@ export default function Home() {
               <p className="text-gray-600 dark:text-gray-400 mt-1">Cost Sheet Calculator</p>
             </div>
             <div className="flex items-center gap-4">
-              <DarkModeToggle />
               <Link
                 href="/costsheet/new"
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
@@ -241,27 +251,84 @@ export default function Home() {
         <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Cost Sheet History</h2>
 
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
             <input
               type="text"
               placeholder="Search customer, project, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="flex-1 min-w-[200px] border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="">All Categories</option>
-              {(analytics?.byCategory || localCategories.map(c => ({ category: c }))).map((cat) => (
-                <option key={typeof cat === 'string' ? cat : cat.category} value={typeof cat === 'string' ? cat : cat.category}>
-                  {typeof cat === 'string' ? cat : cat.category}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <button
+                onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+                  selectedCategories.length > 0
+                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                Filter
+                {selectedCategories.length > 0 && (
+                  <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                    {selectedCategories.length}
+                  </span>
+                )}
+              </button>
+              {showCategoryFilter && (
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                  <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Categories</span>
+                    {selectedCategories.length > 0 && (
+                      <button
+                        onClick={clearCategoryFilter}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-2">
+                    {PRODUCT_CATEGORIES.map((category) => (
+                      <label
+                        key={category}
+                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => toggleCategory(category)}
+                          className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+          {selectedCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {selectedCategories.map(cat => (
+                <span
+                  key={cat}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-sm rounded"
+                >
+                  {cat}
+                  <button
+                    onClick={() => toggleCategory(cat)}
+                    className="hover:text-blue-900 dark:hover:text-blue-100"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -291,10 +358,18 @@ export default function Home() {
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {new Date(sheet.inquiryDate).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.category || '-'}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.customer || '-'}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.project || '-'}</td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.estimator || '-'}</td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                      <span className="block max-w-[120px] truncate" title={sheet.category || '-'}>{sheet.category || '-'}</span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                      <span className="block max-w-[100px] truncate" title={sheet.customer || '-'}>{sheet.customer || '-'}</span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                      <span className="block max-w-[100px] truncate" title={sheet.project || '-'}>{sheet.project || '-'}</span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                      <span className="block max-w-[80px] truncate" title={sheet.estimator || '-'}>{sheet.estimator || '-'}</span>
+                    </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {formatCurrency(sheet.totalPriceToClient)}
                     </td>
@@ -324,13 +399,7 @@ export default function Home() {
                     <td className="px-4 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => router.push(`/costsheet/new?edit=${sheet.id}`)}
-                        className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 font-medium mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => router.push(`/costsheet/view?id=${sheet.id}`)}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mr-2"
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mr-3"
                       >
                         View
                       </button>
