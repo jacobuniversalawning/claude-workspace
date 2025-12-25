@@ -17,7 +17,17 @@ interface CostSheet {
   pricePerLinFtPreDelivery?: number;
   outcome: string;
   createdAt: string;
+  estimator?: string;
 }
+
+// Helper function to get price guardrail color
+const getPriceColor = (currentPrice: number | undefined, avgPrice: number): string => {
+  if (!currentPrice || avgPrice === 0) return 'text-gray-500 dark:text-gray-400';
+  const diff = (currentPrice - avgPrice) / avgPrice;
+  if (diff > 0.15) return 'text-red-600 dark:text-red-400 font-semibold';
+  if (diff < -0.15) return 'text-blue-600 dark:text-blue-400 font-semibold';
+  return 'text-green-600 dark:text-green-400 font-semibold';
+};
 
 interface Analytics {
   byCategory: Array<{
@@ -258,64 +268,82 @@ export default function Home() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/sq ft</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Outcome</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Project</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Estimator</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/sq ft</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/lin ft</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Outcome</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredCostSheets.map((sheet) => (
-                <tr key={sheet.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {new Date(sheet.inquiryDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.category || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.customer || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.project || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {formatCurrency(sheet.totalPriceToClient)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {sheet.pricePerSqFtPreDelivery ? formatCurrency(sheet.pricePerSqFtPreDelivery) : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <select
-                      value={sheet.outcome || 'Unknown'}
-                      onChange={(e) => updateOutcome(sheet.id, e.target.value)}
-                      className={`rounded px-2 py-1 text-xs font-medium ${
-                        sheet.outcome === 'Won'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : sheet.outcome === 'Lost'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                      }`}
-                    >
-                      <option value="Unknown">Unknown</option>
-                      <option value="Won">Won</option>
-                      <option value="Lost">Lost</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => router.push(`/costsheet/view?id=${sheet.id}`)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mr-3"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => deleteSheet(sheet.id)}
-                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredCostSheets.map((sheet) => {
+                const categoryStats = analytics?.byCategory.find(c => c.category === sheet.category);
+                const avgSqFt = categoryStats?.wonAvgPricePerSqFt || 0;
+                const avgLinFt = categoryStats?.wonAvgPricePerLinFt || 0;
+
+                return (
+                  <tr key={sheet.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {new Date(sheet.inquiryDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.category || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.customer || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.project || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{sheet.estimator || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {formatCurrency(sheet.totalPriceToClient)}
+                    </td>
+                    <td className={`px-4 py-4 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerSqFtPreDelivery, avgSqFt)}`}>
+                      {sheet.pricePerSqFtPreDelivery ? formatCurrency(sheet.pricePerSqFtPreDelivery) : '-'}
+                    </td>
+                    <td className={`px-4 py-4 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerLinFtPreDelivery, avgLinFt)}`}>
+                      {sheet.pricePerLinFtPreDelivery ? formatCurrency(sheet.pricePerLinFtPreDelivery) : '-'}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                      <select
+                        value={sheet.outcome || 'Unknown'}
+                        onChange={(e) => updateOutcome(sheet.id, e.target.value)}
+                        className={`rounded px-2 py-1 text-xs font-medium ${
+                          sheet.outcome === 'Won'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : sheet.outcome === 'Lost'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                        }`}
+                      >
+                        <option value="Unknown">Unknown</option>
+                        <option value="Won">Won</option>
+                        <option value="Lost">Lost</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => router.push(`/costsheet/new?edit=${sheet.id}`)}
+                        className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 font-medium mr-2"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => router.push(`/costsheet/view?id=${sheet.id}`)}
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mr-2"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => deleteSheet(sheet.id)}
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {filteredCostSheets.length === 0 && (

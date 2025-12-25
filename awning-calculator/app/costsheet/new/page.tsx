@@ -77,6 +77,7 @@ interface FormData {
   salesRep: string;
   project: string;
   jobSite: string;
+  estimator: string;
 }
 
 interface Analytics {
@@ -88,6 +89,16 @@ interface Analytics {
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
+
+// Helper to calculate days from hours (8 hours per day)
+const calculateDays = (hours: number): string => {
+  if (!hours) return '';
+  const days = hours / 8;
+  if (days === Math.floor(days)) {
+    return `${days} day${days !== 1 ? 's' : ''}`;
+  }
+  return `${days.toFixed(1)} days`;
+};
 
 const DEFAULT_LABOR_TYPES = [
   { type: 'Survey', isFabrication: true },
@@ -113,6 +124,7 @@ export default function NewCostSheet() {
     salesRep: '',
     project: '',
     jobSite: '',
+    estimator: '',
   });
 
   // Products (dimensions only, category is at top level)
@@ -464,8 +476,8 @@ export default function NewCostSheet() {
                   </div>
                 </div>
 
-                {/* Row 1: Dates and Category */}
-                <div className="grid grid-cols-3 gap-4">
+                {/* Row 1: Dates */}
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Inquiry Date</label>
                     <input type="date" value={formData.inquiryDate} onChange={(e) => setFormData({ ...formData, inquiryDate: e.target.value })} className={inputClass} required />
@@ -474,16 +486,10 @@ export default function NewCostSheet() {
                     <label className={labelClass}>Due Date</label>
                     <input type="date" value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} className={inputClass} required />
                   </div>
-                  <div>
-                    <label className={labelClass}>Category</label>
-                    <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass}>
-                      {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
-                    </select>
-                  </div>
                 </div>
 
-                {/* Row 2: Customer, Sales Rep, Project */}
-                <div className="grid grid-cols-3 gap-4 mt-4">
+                {/* Row 2: Customer, Sales Rep, Estimator, Project */}
+                <div className="grid grid-cols-4 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Customer</label>
                     <input type="text" value={formData.customer} onChange={(e) => setFormData({ ...formData, customer: e.target.value })} className={inputClass} placeholder="Customer name" />
@@ -491,6 +497,10 @@ export default function NewCostSheet() {
                   <div>
                     <label className={labelClass}>Sales Rep</label>
                     <input type="text" value={formData.salesRep} onChange={(e) => setFormData({ ...formData, salesRep: e.target.value })} className={inputClass} placeholder="Sales rep" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Estimator</label>
+                    <input type="text" value={formData.estimator} onChange={(e) => setFormData({ ...formData, estimator: e.target.value })} className={inputClass} placeholder="Estimator name" />
                   </div>
                   <div>
                     <label className={labelClass}>Project</label>
@@ -510,6 +520,15 @@ export default function NewCostSheet() {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Products & Dimensions</h2>
                   <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
+                </div>
+
+                {/* Category Selection */}
+                <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <label className={labelClass}>Product Category</label>
+                  <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass + " max-w-md"}>
+                    {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This category applies to all products on this cost sheet</p>
                 </div>
 
                 <div className="space-y-4">
@@ -563,8 +582,8 @@ export default function NewCostSheet() {
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Materials</h2>
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
-                      <input type="number" step="0.0025" value={materialsTaxRate} onChange={(e) => setMaterialsTaxRate(parseFloat(e.target.value) || 0)} className={inputClass + " w-20 text-right"} />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">({(materialsTaxRate * 100).toFixed(2)}%)</span>
+                      <input type="number" step="0.25" value={materialsTaxRate * 100} onChange={(e) => setMaterialsTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
                   </div>
                   <button type="button" onClick={addMaterial} className={addBtn}>+ Add Row</button>
@@ -620,8 +639,8 @@ export default function NewCostSheet() {
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric</h2>
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
-                      <input type="number" step="0.0025" value={fabricTaxRate} onChange={(e) => setFabricTaxRate(parseFloat(e.target.value) || 0)} className={inputClass + " w-20 text-right"} />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">({(fabricTaxRate * 100).toFixed(2)}%)</span>
+                      <input type="number" step="0.25" value={fabricTaxRate * 100} onChange={(e) => setFabricTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
                   </div>
                   <button type="button" onClick={addFabric} className={addBtn}>+ Add Row</button>
@@ -667,11 +686,31 @@ export default function NewCostSheet() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabrication Labor</h2>
                   <div className="flex items-center gap-4">
                     <label className="text-sm text-gray-700 dark:text-gray-300">Rate:</label>
-                    <select value={laborRate} onChange={(e) => setLaborRate(parseFloat(e.target.value))} className={inputClass + " w-48"}>
+                    <select
+                      value={laborRate === LABOR_RATES.AGGRESSIVE || laborRate === LABOR_RATES.REGULAR || laborRate === LABOR_RATES.PREVAILING_WAGE ? laborRate : 'custom'}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom') return;
+                        setLaborRate(parseFloat(e.target.value));
+                      }}
+                      className={inputClass + " w-40"}
+                    >
                       <option value={LABOR_RATES.AGGRESSIVE}>Aggressive (${LABOR_RATES.AGGRESSIVE}/hr)</option>
                       <option value={LABOR_RATES.REGULAR}>Regular (${LABOR_RATES.REGULAR}/hr)</option>
                       <option value={LABOR_RATES.PREVAILING_WAGE}>Prevailing (${LABOR_RATES.PREVAILING_WAGE}/hr)</option>
+                      <option value="custom">Custom Rate</option>
                     </select>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">$</span>
+                      <input
+                        type="number"
+                        step="1"
+                        value={laborRate}
+                        onChange={(e) => setLaborRate(parseFloat(e.target.value) || 0)}
+                        className={inputClass + " w-20 text-right"}
+                        placeholder="$/hr"
+                      />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">/hr</span>
+                    </div>
                     <button type="button" onClick={addLabor} className={addBtn}>+ Add Row</button>
                   </div>
                 </div>
@@ -681,6 +720,7 @@ export default function NewCostSheet() {
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 w-32">Type</th>
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300">Description / Notes</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Hours</th>
+                      <th className="px-2 py-2 text-center text-gray-700 dark:text-gray-300 w-20">Days</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">People</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Rate</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-24">Total</th>
@@ -693,6 +733,7 @@ export default function NewCostSheet() {
                         <td className="px-2 py-1"><input type="text" value={l.type} onChange={(e) => updateLabor(l.id, 'type', e.target.value)} className={inputClass} /></td>
                         <td className="px-2 py-1"><input type="text" value={l.description} onChange={(e) => updateLabor(l.id, 'description', e.target.value)} className={inputClass} placeholder="Notes..." /></td>
                         <td className="px-2 py-1"><input type="number" step="0.5" value={l.hours || ''} onChange={(e) => updateLabor(l.id, 'hours', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
+                        <td className="px-2 py-1 text-center text-xs text-blue-600 dark:text-blue-400 font-medium">{calculateDays(l.hours)}</td>
                         <td className="px-2 py-1"><input type="number" value={l.people || ''} onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 1)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcLaborTotal(l))}</td>
@@ -702,7 +743,7 @@ export default function NewCostSheet() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700">
-                      <td colSpan={5} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Fabrication Total:</td>
+                      <td colSpan={6} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Fabrication Total:</td>
                       <td className="px-2 py-2 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(totalFabricationLabor)}</td>
                       <td></td>
                     </tr>
@@ -722,6 +763,7 @@ export default function NewCostSheet() {
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 w-32">Type</th>
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300">Description / Notes</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Hours</th>
+                      <th className="px-2 py-2 text-center text-gray-700 dark:text-gray-300 w-20">Days</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">People</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Rate</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-24">Total</th>
@@ -734,6 +776,7 @@ export default function NewCostSheet() {
                         <td className="px-2 py-1"><input type="text" value={l.type} onChange={(e) => updateInstall(l.id, 'type', e.target.value)} className={inputClass} /></td>
                         <td className="px-2 py-1"><input type="text" value={l.description} onChange={(e) => updateInstall(l.id, 'description', e.target.value)} className={inputClass} placeholder="Notes..." /></td>
                         <td className="px-2 py-1"><input type="number" step="0.5" value={l.hours || ''} onChange={(e) => updateInstall(l.id, 'hours', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
+                        <td className="px-2 py-1 text-center text-xs text-orange-600 dark:text-orange-400 font-medium">{calculateDays(l.hours)}</td>
                         <td className="px-2 py-1"><input type="number" value={l.people || ''} onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 1)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcLaborTotal(l))}</td>
@@ -743,12 +786,12 @@ export default function NewCostSheet() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-orange-300 dark:border-orange-600 bg-orange-100 dark:bg-orange-900/30">
-                      <td colSpan={5} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Installation Total:</td>
+                      <td colSpan={6} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Installation Total:</td>
                       <td className="px-2 py-2 text-right font-bold text-orange-700 dark:text-orange-300">{formatCurrency(totalInstallationLabor)}</td>
                       <td></td>
                     </tr>
                     <tr className="bg-blue-50 dark:bg-blue-900/30">
-                      <td colSpan={5} className="px-2 py-2 text-right font-bold text-gray-900 dark:text-white">Total All Labor:</td>
+                      <td colSpan={6} className="px-2 py-2 text-right font-bold text-gray-900 dark:text-white">Total All Labor:</td>
                       <td className="px-2 py-2 text-right font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalLabor)}</td>
                       <td></td>
                     </tr>
