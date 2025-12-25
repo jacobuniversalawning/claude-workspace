@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCT_CATEGORIES, LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 // Interfaces
 interface ProductLine {
@@ -190,6 +191,10 @@ function CostSheetForm() {
 
   const [discountIncrease, setDiscountIncrease] = useState(0);
 
+  // Track if drive time has been manually edited
+  const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
+  const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
+
   // Fetch analytics
   useEffect(() => {
     fetch('/api/analytics')
@@ -356,32 +361,24 @@ function CostSheetForm() {
     const installDays = Math.ceil(totalInstallHours / 8); // Round up for trips
     const maxPeople = Math.max(...installLines.map(l => l.people), 0);
 
-    // Only auto-populate if there's install labor data
+    // Only auto-populate if there's install labor data and fields haven't been manually edited
     if (installDays > 0 && maxPeople > 0) {
-      setDriveTimeLines(prev => {
-        // Only update if values are currently 0 (to not override manual edits)
-        if (prev[0]?.trips === 0 && prev[0]?.people === 0) {
-          return [{
-            ...prev[0],
-            trips: installDays,
-            people: maxPeople,
-          }];
-        }
-        return prev;
-      });
+      if (!driveTimeManuallyEdited) {
+        setDriveTimeLines(prev => [{
+          ...prev[0],
+          trips: installDays,
+          people: maxPeople,
+        }]);
+      }
 
-      setMileageLines(prev => {
-        // Only update trips if currently 0
-        if (prev[0]?.trips === 0) {
-          return [{
-            ...prev[0],
-            trips: installDays,
-          }];
-        }
-        return prev;
-      });
+      if (!mileageManuallyEdited) {
+        setMileageLines(prev => [{
+          ...prev[0],
+          trips: installDays,
+        }]);
+      }
     }
-  }, [installLines]);
+  }, [installLines, driveTimeManuallyEdited, mileageManuallyEdited]);
 
   // === PRODUCT FUNCTIONS ===
   const addProduct = () => {
@@ -444,6 +441,10 @@ function CostSheetForm() {
   const addDriveTime = () => setDriveTimeLines([...driveTimeLines, { id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE, description: '' }]);
   const removeDriveTime = (id: string) => { if (driveTimeLines.length > 1) setDriveTimeLines(driveTimeLines.filter((d) => d.id !== id)); };
   const updateDriveTime = (id: string, field: keyof DriveTimeLine, value: string | number) => {
+    // Mark as manually edited when user changes trips or people
+    if (field === 'trips' || field === 'people') {
+      setDriveTimeManuallyEdited(true);
+    }
     setDriveTimeLines(driveTimeLines.map((d) => (d.id === id ? { ...d, [field]: value } : d)));
   };
 
@@ -451,6 +452,10 @@ function CostSheetForm() {
   const addMileage = () => setMileageLines([...mileageLines, { id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE, description: '' }]);
   const removeMileage = (id: string) => { if (mileageLines.length > 1) setMileageLines(mileageLines.filter((m) => m.id !== id)); };
   const updateMileage = (id: string, field: keyof MileageLine, value: string | number) => {
+    // Mark as manually edited when user changes trips
+    if (field === 'trips') {
+      setMileageManuallyEdited(true);
+    }
     setMileageLines(mileageLines.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
   };
 
@@ -660,9 +665,12 @@ function CostSheetForm() {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Universal Awning & Canopy</h1>
                     <p className="text-gray-600 dark:text-gray-400">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
                   </div>
-                  <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    ← Dashboard
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <DarkModeToggle />
+                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                      ← Dashboard
+                    </button>
+                  </div>
                 </div>
 
                 {/* Row 1: Dates */}
