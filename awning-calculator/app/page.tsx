@@ -216,20 +216,20 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Delete Confirmation Modal */}
       {deleteModalId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-brand-surface-black rounded-modal p-6 max-w-sm mx-4 shadow-xl border border-gray-200 dark:border-brand-border-subtle">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white dark:bg-brand-surface-black rounded-modal p-6 max-w-sm mx-4 shadow-xl border border-gray-200 dark:border-brand-border-subtle animate-scale-in">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-4">Delete Cost Sheet?</h3>
             <p className="text-gray-600 dark:text-brand-text-secondary mb-6">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteModalId(null)}
-                className="px-6 py-2 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:opacity-90 rounded-full font-medium transition-all"
+                className="px-6 py-2.5 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:brightness-110 rounded-button font-medium transition-all duration-200 hover:shadow-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={() => confirmDelete(deleteModalId)}
-                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 font-medium transition-all"
+                className="px-6 py-2.5 bg-red-600 text-white rounded-button hover:bg-red-700 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-red-500/20"
               >
                 Delete
               </button>
@@ -251,7 +251,7 @@ export default function Home() {
               <DarkModeToggle />
               <Link
                 href="/costsheet/new"
-                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-6 py-2 rounded-full hover:bg-blue-700 dark:hover:opacity-90 font-medium transition-all"
+                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-6 py-2.5 rounded-button hover:bg-blue-700 dark:hover:brightness-110 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30"
               >
                 + New Cost Sheet
               </Link>
@@ -273,7 +273,7 @@ export default function Home() {
           <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Average Pricing by Product</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {analytics.byCategory.slice(0, 6).map((cat) => (
-              <div key={cat.category} className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle">
+              <div key={cat.category} className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle hover-lift hover:border-brand-border-subtle dark:hover:border-brand-text-muted transition-all duration-300">
                 <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">{cat.category}</h3>
                 <div className="mt-2 text-sm text-gray-600 dark:text-brand-text-secondary">
                   <div className="flex justify-between">
@@ -310,22 +310,22 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Cost Sheet History</h2>
 
-        <div className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-4">
+        <div className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-4 transition-all duration-300">
           <div className="flex flex-wrap gap-4 items-center">
             <input
               type="text"
               placeholder="Search customer, project, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-[200px] border border-gray-300 dark:border-transparent rounded-input px-4 py-3 focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all"
+              className="flex-1 min-w-[200px] border border-gray-300 dark:border-transparent rounded-input px-4 py-3 focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
             />
             <div className="relative">
               <button
                 onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                className={`flex items-center gap-2 px-6 py-2 border rounded-full transition-all font-medium ${
+                className={`flex items-center gap-2 px-6 py-2.5 border rounded-button transition-all duration-200 font-medium hover:shadow-lg ${
                   selectedCategories.length > 0
-                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300'
-                    : 'bg-white dark:bg-brand-surface-grey-light border-gray-300 dark:border-brand-border-subtle text-gray-700 dark:text-brand-text-primary hover:opacity-90'
+                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 shadow-blue-500/10'
+                    : 'bg-white dark:bg-brand-surface-grey-light border-gray-300 dark:border-brand-border-subtle text-gray-700 dark:text-brand-text-primary hover:brightness-110'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,7 +339,7 @@ export default function Home() {
                 )}
               </button>
               {showCategoryFilter && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-brand-surface-black border border-gray-300 dark:border-brand-border-subtle rounded-input shadow-lg z-50 max-h-80 overflow-y-auto">
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-brand-surface-black border border-gray-300 dark:border-brand-border-subtle rounded-input shadow-lg z-50 max-h-80 overflow-y-auto animate-slide-in">
                   <div className="p-2 border-b border-gray-200 dark:border-brand-border-subtle flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700 dark:text-brand-text-primary">Categories</span>
                     {selectedCategories.length > 0 && (
@@ -418,7 +418,7 @@ export default function Home() {
                 return (
                   <tr
                     key={sheet.id}
-                    className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark cursor-pointer transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark cursor-pointer transition-all duration-200"
                     onClick={(e) => handleRowClick(sheet.id, e)}
                   >
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">

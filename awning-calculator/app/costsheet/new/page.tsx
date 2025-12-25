@@ -644,12 +644,12 @@ function CostSheetForm() {
     }
   };
 
-  // Common styles - Brand Identity
-  const inputClass = "w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-3 text-sm bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint transition-all";
+  // Common styles - Brand Identity with Sharp Corners & Smooth Animations
+  const inputClass = "w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-3 text-sm bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint transition-all duration-200";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-brand-text-secondary mb-1";
-  const cardClass = "bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-6";
-  const deleteBtn = "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium";
-  const addBtn = "px-6 py-2 bg-blue-600 dark:bg-brand-mint hover:bg-blue-700 dark:hover:opacity-90 text-white dark:text-brand-deep-black rounded-full text-sm font-medium transition-all";
+  const cardClass = "bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-6 transition-all duration-300";
+  const deleteBtn = "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium transition-colors duration-200";
+  const addBtn = "px-6 py-2.5 bg-blue-600 dark:bg-brand-mint hover:bg-blue-700 dark:hover:brightness-110 text-white dark:text-brand-deep-black rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors">
@@ -667,7 +667,7 @@ function CostSheetForm() {
                   </div>
                   <div className="flex items-center gap-4">
                     <DarkModeToggle />
-                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-brand-text-secondary dark:hover:text-brand-text-primary transition-colors">
+                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-brand-text-secondary dark:hover:text-brand-text-primary transition-all duration-200 hover:translate-x-[-2px]">
                       ← Dashboard
                     </button>
                   </div>
@@ -730,7 +730,7 @@ function CostSheetForm() {
 
                 <div className="space-y-4">
                   {products.map((product) => (
-                    <div key={product.id} className="border border-gray-200 dark:border-brand-border-subtle rounded-input p-4 bg-gray-50 dark:bg-brand-surface-grey-dark">
+                    <div key={product.id} className="border border-gray-200 dark:border-brand-border-subtle rounded-input p-4 bg-gray-50 dark:bg-brand-surface-grey-dark transition-all duration-200 hover:border-brand-text-muted">
                       <div className="flex justify-between items-center mb-3">
                         <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-48"} placeholder="Product name" />
                         {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn}>×</button>}
@@ -1110,8 +1110,8 @@ function CostSheetForm() {
 
               {/* Submit Buttons */}
               <div className="flex justify-end gap-4">
-                <button type="button" onClick={() => router.push('/')} className="px-6 py-2 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-full hover:bg-gray-100 dark:hover:opacity-90 text-gray-700 dark:text-brand-text-primary font-medium transition-all">Cancel</button>
-                <button type="submit" disabled={saving} className="px-8 py-2 bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black rounded-full hover:bg-blue-700 dark:hover:opacity-90 disabled:opacity-50 font-medium transition-all">
+                <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-button hover:bg-gray-100 dark:hover:brightness-110 text-gray-700 dark:text-brand-text-primary font-medium transition-all duration-200 hover:shadow-lg">Cancel</button>
+                <button type="submit" disabled={saving} className="px-8 py-2.5 bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black rounded-button hover:bg-blue-700 dark:hover:brightness-110 disabled:opacity-50 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30">
                   {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
                 </button>
               </div>
@@ -1182,7 +1182,7 @@ function CostSheetForm() {
 
 export default function NewCostSheet() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-brand-deep-black"><div className="text-xl text-gray-900 dark:text-brand-text-primary">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-brand-deep-black"><div className="text-xl text-gray-900 dark:text-brand-text-primary animate-pulse">Loading...</div></div>}>
       <CostSheetForm />
     </Suspense>
   );
