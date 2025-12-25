@@ -19,6 +19,8 @@ module.exports = {
           'text-secondary': '#959595',
           'text-muted': '#525252',
           'border-subtle': '#2A2A2A',
+          'google-blue': '#1a73e8',
+          'google-blue-hover': '#1557b0',
         },
       },
       fontFamily: {

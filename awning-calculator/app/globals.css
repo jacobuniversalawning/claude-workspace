@@ -68,10 +68,27 @@ button {
   transform: translateY(-2px);
 }
 
-/* Fix input text color to be always black/readable */
+/* Google Material Design input styling for light mode */
 input, select, textarea {
-  color: #000000 !important;
+  color: #202124 !important;
   background-color: #ffffff !important;
+  border-color: #dadce0 !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #1a73e8 !important;
+  box-shadow: 0 1px 6px 0 rgba(26, 115, 232, 0.1);
+}
+
+/* Date picker specific styling */
+input[type="date"] {
+  color: #5f6368 !important;
+  background-color: #f8f9fa !important;
+}
+
+input[type="date"]:focus {
+  background-color: #ffffff !important;
+  color: #202124 !important;
 }
 
 .dark input, .dark select, .dark textarea {
@@ -82,9 +99,9 @@ input, select, textarea {
 }
 
 .dark input:focus, .dark select:focus, .dark textarea:focus {
-  border-color: #C4F3CC !important;
+  border-color: #1a73e8 !important;
   transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(196, 243, 204, 0.1);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
 }
 
 .dark input::placeholder, .dark select::placeholder, .dark textarea::placeholder {
