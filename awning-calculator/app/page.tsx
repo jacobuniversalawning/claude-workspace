@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/calculations';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 interface CostSheet {
   id: string;
@@ -51,6 +52,7 @@ export default function Home() {
   const [showCategoryFilter, setShowCategoryFilter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [storageType, setStorageType] = useState<'database' | 'local' | null>(null);
+  const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCostSheets();
@@ -103,6 +105,32 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching analytics:', error);
     }
+  };
+
+  // Calculate local averages by category for price guardrails
+  const getLocalAverages = (category: string) => {
+    const categorySheets = costSheets.filter(s => s.category === category && s.outcome === 'Won');
+    if (categorySheets.length === 0) {
+      // If no won sheets, use all sheets for that category
+      const allCategorySheets = costSheets.filter(s => s.category === category);
+      if (allCategorySheets.length === 0) return { avgSqFt: 0, avgLinFt: 0 };
+
+      const sqFtPrices = allCategorySheets.filter(s => s.pricePerSqFtPreDelivery).map(s => s.pricePerSqFtPreDelivery!);
+      const linFtPrices = allCategorySheets.filter(s => s.pricePerLinFtPreDelivery).map(s => s.pricePerLinFtPreDelivery!);
+
+      return {
+        avgSqFt: sqFtPrices.length > 0 ? sqFtPrices.reduce((a, b) => a + b, 0) / sqFtPrices.length : 0,
+        avgLinFt: linFtPrices.length > 0 ? linFtPrices.reduce((a, b) => a + b, 0) / linFtPrices.length : 0,
+      };
+    }
+
+    const sqFtPrices = categorySheets.filter(s => s.pricePerSqFtPreDelivery).map(s => s.pricePerSqFtPreDelivery!);
+    const linFtPrices = categorySheets.filter(s => s.pricePerLinFtPreDelivery).map(s => s.pricePerLinFtPreDelivery!);
+
+    return {
+      avgSqFt: sqFtPrices.length > 0 ? sqFtPrices.reduce((a, b) => a + b, 0) / sqFtPrices.length : 0,
+      avgLinFt: linFtPrices.length > 0 ? linFtPrices.reduce((a, b) => a + b, 0) / linFtPrices.length : 0,
+    };
   };
 
   const filteredCostSheets = costSheets.filter((sheet) => {
@@ -158,16 +186,23 @@ export default function Home() {
     }
   };
 
-  const deleteSheet = (id: string) => {
-    if (!confirm('Are you sure you want to delete this cost sheet?')) return;
-
+  const confirmDelete = (id: string) => {
     if (storageType === 'local') {
       const updatedSheets = costSheets.filter((s) => s.id !== id);
       setCostSheets(updatedSheets);
       localStorage.setItem('costSheets', JSON.stringify(updatedSheets));
     }
+    setDeleteModalId(null);
   };
 
+  const handleRowClick = (id: string, e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION') {
+      return;
+    }
+    router.push(`/costsheet/new?edit=${id}`);
+  };
 
   if (loading) {
     return (
@@ -179,6 +214,30 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* Delete Confirmation Modal */}
+      {deleteModalId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Cost Sheet?</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">This action cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteModalId(null)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmDelete(deleteModalId)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
@@ -189,6 +248,7 @@ export default function Home() {
               <p className="text-gray-600 dark:text-gray-400 mt-1">Cost Sheet Calculator</p>
             </div>
             <div className="flex items-center gap-4">
+              <DarkModeToggle />
               <Link
                 href="/costsheet/new"
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
@@ -338,23 +398,29 @@ export default function Home() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Project</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" style={{ minWidth: '150px' }}>Project</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Estimator</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/sq ft</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/lin ft</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Outcome</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Actions</th>
+                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-10"></th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredCostSheets.map((sheet) => {
+                // Use analytics if available, otherwise calculate local averages
                 const categoryStats = analytics?.byCategory.find(c => c.category === sheet.category);
-                const avgSqFt = categoryStats?.wonAvgPricePerSqFt || 0;
-                const avgLinFt = categoryStats?.wonAvgPricePerLinFt || 0;
+                const localAvgs = getLocalAverages(sheet.category);
+                const avgSqFt = categoryStats?.wonAvgPricePerSqFt || localAvgs.avgSqFt;
+                const avgLinFt = categoryStats?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
 
                 return (
-                  <tr key={sheet.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr
+                    key={sheet.id}
+                    className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    onClick={(e) => handleRowClick(sheet.id, e)}
+                  >
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {new Date(sheet.inquiryDate).toLocaleDateString()}
                     </td>
@@ -365,7 +431,7 @@ export default function Home() {
                       <span className="block max-w-[100px] truncate" title={sheet.customer || '-'}>{sheet.customer || '-'}</span>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
-                      <span className="block max-w-[100px] truncate" title={sheet.project || '-'}>{sheet.project || '-'}</span>
+                      <span className="block max-w-[150px] truncate" title={sheet.project || '-'}>{sheet.project || '-'}</span>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
                       <span className="block max-w-[80px] truncate" title={sheet.estimator || '-'}>{sheet.estimator || '-'}</span>
@@ -383,6 +449,7 @@ export default function Home() {
                       <select
                         value={sheet.outcome || 'Unknown'}
                         onChange={(e) => updateOutcome(sheet.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                         className={`rounded px-2 py-1 text-xs font-medium ${
                           sheet.outcome === 'Won'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -396,18 +463,18 @@ export default function Home() {
                         <option value="Lost">Lost</option>
                       </select>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                    <td className="px-2 py-4 text-center">
                       <button
-                        onClick={() => router.push(`/costsheet/new?edit=${sheet.id}`)}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium mr-3"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteModalId(sheet.id);
+                        }}
+                        className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1"
+                        title="Delete"
                       >
-                        View
-                      </button>
-                      <button
-                        onClick={() => deleteSheet(sheet.id)}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                      >
-                        Delete
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                     </td>
                   </tr>
