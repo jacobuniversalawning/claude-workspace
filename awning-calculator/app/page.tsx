@@ -239,19 +239,19 @@ export default function Home() {
       )}
 
       <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">
                 Universal Awning & Canopy
               </h1>
-              <p className="text-h2 text-gray-600 dark:text-brand-text-secondary mt-1">Cost Sheet Calculator</p>
+              <p className="text-h2 text-gray-600 dark:text-brand-text-secondary mt-1.5">Cost Sheet Calculator</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <DarkModeToggle />
               <Link
                 href="/costsheet/new"
-                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-6 py-2.5 rounded-button hover:bg-blue-700 dark:hover:brightness-110 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30"
+                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-5 py-2 rounded-button hover:bg-blue-700 dark:hover:brightness-110 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30"
               >
                 + New Cost Sheet
               </Link>
@@ -261,19 +261,19 @@ export default function Home() {
       </header>
 
       {storageType === 'local' && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 text-yellow-800 dark:text-yellow-200 text-sm">
+        <div className="max-w-7xl mx-auto px-6 pt-5">
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-card p-3.5 text-yellow-800 dark:text-yellow-200 text-sm">
             Data is stored locally in your browser. To enable cloud storage, configure a PostgreSQL database.
           </div>
         </div>
       )}
 
       {analytics && analytics.byCategory && analytics.byCategory.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Average Pricing by Product</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {analytics.byCategory.slice(0, 6).map((cat) => (
-              <div key={cat.category} className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle hover-lift hover:border-brand-border-subtle dark:hover:border-brand-text-muted transition-all duration-300">
+              <div key={cat.category} className="bg-white dark:bg-brand-surface-black p-5 rounded-card border border-gray-200 dark:border-brand-border-subtle hover-lift hover:border-brand-border-subtle dark:hover:border-brand-text-muted transition-all duration-300">
                 <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">{cat.category}</h3>
                 <div className="mt-2 text-sm text-gray-600 dark:text-brand-text-secondary">
                   <div className="flex justify-between">
@@ -307,22 +307,22 @@ export default function Home() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-6">
         <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Cost Sheet History</h2>
 
-        <div className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-4 transition-all duration-300">
-          <div className="flex flex-wrap gap-4 items-center">
+        <div className="bg-white dark:bg-brand-surface-black p-5 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-3 transition-all duration-300">
+          <div className="flex flex-wrap gap-3 items-center">
             <input
               type="text"
               placeholder="Search customer, project, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-[200px] border border-gray-300 dark:border-transparent rounded-input px-4 py-3 focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
+              className="flex-1 min-w-[200px] border border-gray-300 dark:border-transparent rounded-input px-3.5 py-2.5 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
             />
             <div className="relative">
               <button
                 onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                className={`flex items-center gap-2 px-6 py-2.5 border rounded-button transition-all duration-200 font-medium hover:shadow-lg ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm border rounded-button transition-all duration-200 font-medium hover:shadow-lg ${
                   selectedCategories.length > 0
                     ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 shadow-blue-500/10'
                     : 'bg-white dark:bg-brand-surface-grey-light border-gray-300 dark:border-brand-border-subtle text-gray-700 dark:text-brand-text-primary hover:brightness-110'
@@ -372,16 +372,16 @@ export default function Home() {
             </div>
           </div>
           {selectedCategories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-brand-border-subtle">
               {selectedCategories.map(cat => (
                 <span
                   key={cat}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-sm rounded"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-sm rounded-button font-medium"
                 >
                   {cat}
                   <button
                     onClick={() => toggleCategory(cat)}
-                    className="hover:text-blue-900 dark:hover:text-blue-100"
+                    className="hover:text-blue-900 dark:hover:text-blue-100 ml-0.5"
                   >
                     ×
                   </button>
@@ -395,16 +395,16 @@ export default function Home() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-brand-border-subtle">
             <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" style={{ minWidth: '150px' }}>Project</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Estimator</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Total</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/sq ft</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">$/lin ft</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Outcome</th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-10"></th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ minWidth: '150px' }}>Project</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estimator</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">$/sq ft</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">$/lin ft</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Outcome</th>
+                <th className="px-3 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12"></th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-brand-surface-black divide-y divide-gray-200 dark:divide-brand-border-subtle">
@@ -421,36 +421,36 @@ export default function Home() {
                     className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark cursor-pointer transition-all duration-200"
                     onClick={(e) => handleRowClick(sheet.id, e)}
                   >
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {new Date(sheet.inquiryDate).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
                       <span className="block max-w-[120px] truncate" title={sheet.category || '-'}>{sheet.category || '-'}</span>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
                       <span className="block max-w-[100px] truncate" title={sheet.customer || '-'}>{sheet.customer || '-'}</span>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
                       <span className="block max-w-[150px] truncate" title={sheet.project || '-'}>{sheet.project || '-'}</span>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
                       <span className="block max-w-[80px] truncate" title={sheet.estimator || '-'}>{sheet.estimator || '-'}</span>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
                       {formatCurrency(sheet.totalPriceToClient)}
                     </td>
-                    <td className={`px-4 py-4 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerSqFtPreDelivery, avgSqFt)}`}>
+                    <td className={`px-5 py-3.5 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerSqFtPreDelivery, avgSqFt)}`}>
                       {sheet.pricePerSqFtPreDelivery ? formatCurrency(sheet.pricePerSqFtPreDelivery) : '-'}
                     </td>
-                    <td className={`px-4 py-4 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerLinFtPreDelivery, avgLinFt)}`}>
+                    <td className={`px-5 py-3.5 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerLinFtPreDelivery, avgLinFt)}`}>
                       {sheet.pricePerLinFtPreDelivery ? formatCurrency(sheet.pricePerLinFtPreDelivery) : '-'}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-sm">
                       <select
                         value={sheet.outcome || 'Unknown'}
                         onChange={(e) => updateOutcome(sheet.id, e.target.value)}
                         onClick={(e) => e.stopPropagation()}
-                        className={`rounded px-2 py-1 text-xs font-medium ${
+                        className={`rounded-button px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ${
                           sheet.outcome === 'Won'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : sheet.outcome === 'Lost'
@@ -463,7 +463,7 @@ export default function Home() {
                         <option value="Lost">Lost</option>
                       </select>
                     </td>
-                    <td className="px-2 py-4 text-center">
+                    <td className="px-3 py-3.5 text-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -483,7 +483,7 @@ export default function Home() {
             </tbody>
           </table>
           {filteredCostSheets.length === 0 && (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
               No cost sheets found. Create your first one!
             </div>
           )}
