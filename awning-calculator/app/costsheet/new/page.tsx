@@ -644,15 +644,15 @@ function CostSheetForm() {
     }
   };
 
-  // Common styles
-  const inputClass = "w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
-  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
-  const cardClass = "bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6";
+  // Common styles - Brand Identity
+  const inputClass = "w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-3 text-sm bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint transition-all";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-brand-text-secondary mb-1";
+  const cardClass = "bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-6";
   const deleteBtn = "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium";
-  const addBtn = "px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium";
+  const addBtn = "px-6 py-2 bg-blue-600 dark:bg-brand-mint hover:bg-blue-700 dark:hover:opacity-90 text-white dark:text-brand-deep-black rounded-full text-sm font-medium transition-all";
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors">
       <div className="max-w-7xl mx-auto px-4">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -662,12 +662,12 @@ function CostSheetForm() {
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Universal Awning & Canopy</h1>
-                    <p className="text-gray-600 dark:text-gray-400">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
+                    <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">Universal Awning & Canopy</h1>
+                    <p className="text-h2 text-gray-600 dark:text-brand-text-secondary">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <DarkModeToggle />
-                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-brand-text-secondary dark:hover:text-brand-text-primary transition-colors">
                       ← Dashboard
                     </button>
                   </div>
@@ -715,7 +715,7 @@ function CostSheetForm() {
               {/* Products Section */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Products & Dimensions</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Products & Dimensions</h2>
                   <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
                 </div>
 
@@ -730,7 +730,7 @@ function CostSheetForm() {
 
                 <div className="space-y-4">
                   {products.map((product) => (
-                    <div key={product.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50">
+                    <div key={product.id} className="border border-gray-200 dark:border-brand-border-subtle rounded-input p-4 bg-gray-50 dark:bg-brand-surface-grey-dark">
                       <div className="flex justify-between items-center mb-3">
                         <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-48"} placeholder="Product name" />
                         {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn}>×</button>}
@@ -776,7 +776,7 @@ function CostSheetForm() {
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-4">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Materials</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Materials</h2>
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
                       <input type="number" step="0.25" value={materialsTaxRate * 100} onChange={(e) => setMaterialsTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
@@ -833,7 +833,7 @@ function CostSheetForm() {
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-4">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabric</h2>
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
                       <input type="number" step="0.25" value={fabricTaxRate * 100} onChange={(e) => setFabricTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
@@ -880,7 +880,7 @@ function CostSheetForm() {
               {/* Labor */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabrication Labor</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabrication Labor</h2>
                   <div className="flex items-center gap-4">
                     <label className="text-sm text-gray-700 dark:text-gray-300">Rate:</label>
                     <select
@@ -951,7 +951,7 @@ function CostSheetForm() {
               {/* Installation */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Installation Labor</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Installation Labor</h2>
                   <button type="button" onClick={addInstall} className={addBtn}>+ Add Install</button>
                 </div>
                 <table className="w-full text-sm">
@@ -998,7 +998,7 @@ function CostSheetForm() {
 
               {/* Markup */}
               <div className={cardClass}>
-                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Subtotal & Markup</h2>
+                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-brand-text-primary">Subtotal & Markup</h2>
                 <div className="grid grid-cols-4 gap-4">
                   <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded">
                     <label className="text-sm text-gray-600 dark:text-gray-400">Subtotal</label>
@@ -1025,8 +1025,8 @@ function CostSheetForm() {
 
               {/* Other Requirements */}
               <div className={cardClass}>
-                <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Other Requirements</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Site-specific costs (excluded from pre-delivery pricing)</p>
+                <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-brand-text-primary">Other Requirements</h2>
+                <p className="text-sm text-gray-500 dark:text-brand-text-secondary mb-4">Site-specific costs (excluded from pre-delivery pricing)</p>
 
                 <div className="grid grid-cols-4 gap-4 mb-4">
                   <div><label className={labelClass}>O/S Permit</label><input type="number" step="0.01" value={permitCost || ''} onChange={(e) => setPermitCost(parseFloat(e.target.value) || 0)} className={inputClass} /></div>
@@ -1110,8 +1110,8 @@ function CostSheetForm() {
 
               {/* Submit Buttons */}
               <div className="flex justify-end gap-4">
-                <button type="button" onClick={() => router.push('/')} className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium">Cancel</button>
-                <button type="submit" disabled={saving} className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+                <button type="button" onClick={() => router.push('/')} className="px-6 py-2 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-full hover:bg-gray-100 dark:hover:opacity-90 text-gray-700 dark:text-brand-text-primary font-medium transition-all">Cancel</button>
+                <button type="submit" disabled={saving} className="px-8 py-2 bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black rounded-full hover:bg-blue-700 dark:hover:opacity-90 disabled:opacity-50 font-medium transition-all">
                   {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
                 </button>
               </div>
@@ -1182,7 +1182,7 @@ function CostSheetForm() {
 
 export default function NewCostSheet() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-900"><div className="text-xl text-white">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-brand-deep-black"><div className="text-xl text-gray-900 dark:text-brand-text-primary">Loading...</div></div>}>
       <CostSheetForm />
     </Suspense>
   );

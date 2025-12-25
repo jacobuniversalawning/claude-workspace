@@ -217,19 +217,19 @@ export default function Home() {
       {/* Delete Confirmation Modal */}
       {deleteModalId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Cost Sheet?</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">This action cannot be undone.</p>
+          <div className="bg-white dark:bg-brand-surface-black rounded-modal p-6 max-w-sm mx-4 shadow-xl border border-gray-200 dark:border-brand-border-subtle">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-4">Delete Cost Sheet?</h3>
+            <p className="text-gray-600 dark:text-brand-text-secondary mb-6">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteModalId(null)}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium"
+                className="px-6 py-2 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:opacity-90 rounded-full font-medium transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => confirmDelete(deleteModalId)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 font-medium transition-all"
               >
                 Delete
               </button>
@@ -238,20 +238,20 @@ export default function Home() {
         </div>
       )}
 
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">
                 Universal Awning & Canopy
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Cost Sheet Calculator</p>
+              <p className="text-h2 text-gray-600 dark:text-brand-text-secondary mt-1">Cost Sheet Calculator</p>
             </div>
             <div className="flex items-center gap-4">
               <DarkModeToggle />
               <Link
                 href="/costsheet/new"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-6 py-2 rounded-full hover:bg-blue-700 dark:hover:opacity-90 font-medium transition-all"
               >
                 + New Cost Sheet
               </Link>
@@ -270,22 +270,22 @@ export default function Home() {
 
       {analytics && analytics.byCategory && analytics.byCategory.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Average Pricing by Product</h2>
+          <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Average Pricing by Product</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {analytics.byCategory.slice(0, 6).map((cat) => (
-              <div key={cat.category} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-                <h3 className="font-semibold text-gray-900 dark:text-white">{cat.category}</h3>
-                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <div key={cat.category} className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle">
+                <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">{cat.category}</h3>
+                <div className="mt-2 text-sm text-gray-600 dark:text-brand-text-secondary">
                   <div className="flex justify-between">
                     <span>Total Sheets:</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{cat.count}</span>
+                    <span className="font-medium text-gray-900 dark:text-brand-text-primary">{cat.count}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Won:</span>
                     <span className="font-medium text-green-600 dark:text-green-400">{cat.wonCount}</span>
                   </div>
                   {cat.wonAvgPricePerSqFt > 0 && (
-                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200 dark:border-brand-border-subtle">
                       <span>Avg $/sq ft (Weighted):</span>
                       <span className="font-bold text-blue-600 dark:text-blue-400">
                         {formatCurrency(cat.wonAvgPricePerSqFt)}
@@ -308,24 +308,24 @@ export default function Home() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Cost Sheet History</h2>
+        <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Cost Sheet History</h2>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+        <div className="bg-white dark:bg-brand-surface-black p-6 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-4">
           <div className="flex flex-wrap gap-4 items-center">
             <input
               type="text"
               placeholder="Search customer, project, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-[200px] border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="flex-1 min-w-[200px] border border-gray-300 dark:border-transparent rounded-input px-4 py-3 focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all"
             />
             <div className="relative">
               <button
                 onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-6 py-2 border rounded-full transition-all font-medium ${
                   selectedCategories.length > 0
                     ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300'
-                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                    : 'bg-white dark:bg-brand-surface-grey-light border-gray-300 dark:border-brand-border-subtle text-gray-700 dark:text-brand-text-primary hover:opacity-90'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,9 +339,9 @@ export default function Home() {
                 )}
               </button>
               {showCategoryFilter && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                  <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Categories</span>
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-brand-surface-black border border-gray-300 dark:border-brand-border-subtle rounded-input shadow-lg z-50 max-h-80 overflow-y-auto">
+                  <div className="p-2 border-b border-gray-200 dark:border-brand-border-subtle flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700 dark:text-brand-text-primary">Categories</span>
                     {selectedCategories.length > 0 && (
                       <button
                         onClick={clearCategoryFilter}
@@ -391,9 +391,9 @@ export default function Home() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+        <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-brand-border-subtle">
+            <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Category</th>
@@ -407,7 +407,7 @@ export default function Home() {
                 <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-10"></th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white dark:bg-brand-surface-black divide-y divide-gray-200 dark:divide-brand-border-subtle">
               {filteredCostSheets.map((sheet) => {
                 // Use analytics if available, otherwise calculate local averages
                 const categoryStats = analytics?.byCategory.find(c => c.category === sheet.category);
@@ -418,7 +418,7 @@ export default function Home() {
                 return (
                   <tr
                     key={sheet.id}
-                    className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark cursor-pointer transition-colors"
                     onClick={(e) => handleRowClick(sheet.id, e)}
                   >
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
