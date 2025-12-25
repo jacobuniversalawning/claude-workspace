@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCT_CATEGORIES, LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
@@ -110,9 +110,12 @@ const DEFAULT_LABOR_TYPES = [
   { type: 'Paint Labor', isFabrication: true },
 ];
 
-export default function NewCostSheet() {
+function CostSheetForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   // Header Information
@@ -188,6 +191,10 @@ export default function NewCostSheet() {
 
   const [discountIncrease, setDiscountIncrease] = useState(0);
 
+  // Track if drive time has been manually edited
+  const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
+  const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
+
   // Fetch analytics
   useEffect(() => {
     fetch('/api/analytics')
@@ -196,11 +203,182 @@ export default function NewCostSheet() {
       .catch(console.error);
   }, []);
 
+  // Load existing data when editing
+  useEffect(() => {
+    if (editId) {
+      const data = localStorage.getItem('costSheets');
+      if (data) {
+        const sheets = JSON.parse(data);
+        const sheet = sheets.find((s: { id: string }) => s.id === editId);
+        if (sheet) {
+          setIsEditing(true);
+
+          // Load form data
+          setFormData({
+            inquiryDate: sheet.inquiryDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            dueDate: sheet.dueDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            category: sheet.category || PRODUCT_CATEGORIES[0],
+            customer: sheet.customer || '',
+            salesRep: sheet.salesRep || '',
+            project: sheet.project || '',
+            jobSite: sheet.jobSite || '',
+            estimator: sheet.estimator || '',
+          });
+
+          // Load products
+          if (sheet.products && sheet.products.length > 0) {
+            setProducts(sheet.products.map((p: ProductLine) => ({
+              id: generateId(),
+              name: p.name || 'Product 1',
+              width: p.width || 0,
+              projection: p.projection || 0,
+              height: p.height || 0,
+              valance: p.valance || 0,
+              sqFt: p.sqFt || 0,
+              linFt: p.linFt || 0,
+            })));
+          }
+
+          // Load materials
+          if (sheet.materials && sheet.materials.length > 0) {
+            setMaterials(sheet.materials.map((m: MaterialLine) => ({
+              id: generateId(),
+              description: m.description || '',
+              qty: m.qty || 0,
+              unitPrice: m.unitPrice || 0,
+              freight: m.freight || 0,
+            })));
+          }
+
+          // Load misc values
+          if (sheet.miscQty !== undefined) setMiscQty(sheet.miscQty);
+          if (sheet.miscPrice !== undefined) setMiscPrice(sheet.miscPrice);
+
+          // Load fabric
+          if (sheet.fabricLines && sheet.fabricLines.length > 0) {
+            setFabricLines(sheet.fabricLines.map((f: FabricLine) => ({
+              id: generateId(),
+              name: f.name || '',
+              yards: f.yards || 0,
+              pricePerYard: f.pricePerYard || 0,
+              freight: f.freight || 0,
+            })));
+          }
+
+          // Load labor rate
+          if (sheet.laborRate) setLaborRate(sheet.laborRate);
+
+          // Load labor lines (fabrication and installation)
+          if (sheet.laborLines && sheet.laborLines.length > 0) {
+            const fabLabor = sheet.laborLines.filter((l: LaborLine) => l.isFabrication);
+            const instLabor = sheet.laborLines.filter((l: LaborLine) => !l.isFabrication);
+
+            if (fabLabor.length > 0) {
+              setLaborLines(fabLabor.map((l: LaborLine) => ({
+                id: generateId(),
+                type: l.type || 'Custom',
+                description: l.description || '',
+                hours: l.hours || 0,
+                people: l.people || 1,
+                rate: l.rate || LABOR_RATES.REGULAR,
+                isFabrication: true,
+              })));
+            }
+
+            if (instLabor.length > 0) {
+              setInstallLines(instLabor.map((l: LaborLine) => ({
+                id: generateId(),
+                type: l.type || 'Installation 1',
+                description: l.description || '',
+                hours: l.hours || 0,
+                people: l.people || 1,
+                rate: l.rate || LABOR_RATES.REGULAR,
+                isFabrication: false,
+              })));
+            }
+          }
+
+          // Load markup
+          if (sheet.markup !== undefined) setMarkup(sheet.markup);
+
+          // Load other requirements
+          if (sheet.permitCost !== undefined) setPermitCost(sheet.permitCost);
+          if (sheet.engineeringCost !== undefined) setEngineeringCost(sheet.engineeringCost);
+          if (sheet.equipmentCost !== undefined) setEquipmentCost(sheet.equipmentCost);
+          if (sheet.foodCost !== undefined) setFoodCost(sheet.foodCost);
+
+          // Load drive time
+          if (sheet.driveTimeTrips || sheet.driveTimeHours || sheet.driveTimePeople) {
+            setDriveTimeLines([{
+              id: generateId(),
+              trips: sheet.driveTimeTrips || 0,
+              hoursPerTrip: sheet.driveTimeHours || 0,
+              people: sheet.driveTimePeople || 0,
+              rate: sheet.driveTimeRate || DEFAULTS.DRIVE_TIME_RATE,
+              description: '',
+            }]);
+          }
+
+          // Load mileage
+          if (sheet.roundtripMiles || sheet.roundtripTrips) {
+            setMileageLines([{
+              id: generateId(),
+              roundtripMiles: sheet.roundtripMiles || 0,
+              trips: sheet.roundtripTrips || 0,
+              rate: sheet.mileageRate || DEFAULTS.MILEAGE_RATE,
+              description: '',
+            }]);
+          }
+
+          // Load hotel
+          if (sheet.hotelNights || sheet.hotelPeople) {
+            setHotelLines([{
+              id: generateId(),
+              nights: sheet.hotelNights || 0,
+              people: sheet.hotelPeople || 0,
+              rate: sheet.hotelRate || 150,
+              description: '',
+            }]);
+          }
+
+          // Load discount/increase
+          if (sheet.discountIncrease !== undefined) setDiscountIncrease(sheet.discountIncrease);
+        }
+      }
+    }
+  }, [editId]);
+
   // Update labor rates when global rate changes
   useEffect(() => {
     setLaborLines((prev) => prev.map((line) => ({ ...line, rate: laborRate })));
     setInstallLines((prev) => prev.map((line) => ({ ...line, rate: laborRate })));
   }, [laborRate]);
+
+  // Auto-populate drive time and mileage from install labor
+  useEffect(() => {
+    // Calculate total install days and max people from install labor
+    const totalInstallHours = installLines.reduce((sum, l) => sum + l.hours, 0);
+    const installDays = Math.ceil(totalInstallHours / 8); // Round up for trips
+    const maxPeople = Math.max(...installLines.map(l => l.people), 0);
+
+    // Only auto-populate if there's install labor data and fields haven't been manually edited
+    if (installDays > 0 && maxPeople > 0) {
+      if (!driveTimeManuallyEdited) {
+        setDriveTimeLines(prev => [{
+          ...prev[0],
+          trips: installDays,
+          people: maxPeople,
+        }]);
+      }
+
+      if (!mileageManuallyEdited) {
+        setMileageLines(prev => [{
+          ...prev[0],
+          trips: installDays,
+        }]);
+      }
+    }
+  }, [installLines, driveTimeManuallyEdited, mileageManuallyEdited]);
 
   // === PRODUCT FUNCTIONS ===
   const addProduct = () => {
@@ -263,6 +441,10 @@ export default function NewCostSheet() {
   const addDriveTime = () => setDriveTimeLines([...driveTimeLines, { id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE, description: '' }]);
   const removeDriveTime = (id: string) => { if (driveTimeLines.length > 1) setDriveTimeLines(driveTimeLines.filter((d) => d.id !== id)); };
   const updateDriveTime = (id: string, field: keyof DriveTimeLine, value: string | number) => {
+    // Mark as manually edited when user changes trips or people
+    if (field === 'trips' || field === 'people') {
+      setDriveTimeManuallyEdited(true);
+    }
     setDriveTimeLines(driveTimeLines.map((d) => (d.id === id ? { ...d, [field]: value } : d)));
   };
 
@@ -270,6 +452,10 @@ export default function NewCostSheet() {
   const addMileage = () => setMileageLines([...mileageLines, { id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE, description: '' }]);
   const removeMileage = (id: string) => { if (mileageLines.length > 1) setMileageLines(mileageLines.filter((m) => m.id !== id)); };
   const updateMileage = (id: string, field: keyof MileageLine, value: string | number) => {
+    // Mark as manually edited when user changes trips
+    if (field === 'trips') {
+      setMileageManuallyEdited(true);
+    }
     setMileageLines(mileageLines.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
   };
 
@@ -434,10 +620,21 @@ export default function NewCostSheet() {
     // Save to localStorage (primary storage until database is configured)
     try {
       const existingData = localStorage.getItem('costSheets');
-      const costSheets = existingData ? JSON.parse(existingData) : [];
-      costSheets.unshift(payload);
+      let costSheets = existingData ? JSON.parse(existingData) : [];
+
+      if (isEditing && editId) {
+        // Update existing sheet
+        costSheets = costSheets.map((sheet: { id: string }) =>
+          sheet.id === editId ? { ...payload, id: editId } : sheet
+        );
+        alert('Cost sheet updated successfully!');
+      } else {
+        // Add new sheet
+        costSheets.unshift(payload);
+        alert('Cost sheet saved successfully!');
+      }
+
       localStorage.setItem('costSheets', JSON.stringify(costSheets));
-      alert('Cost sheet saved successfully!');
       router.push('/');
     } catch (error) {
       console.error('Save failed:', error);
@@ -466,7 +663,7 @@ export default function NewCostSheet() {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Universal Awning & Canopy</h1>
-                    <p className="text-gray-600 dark:text-gray-400">Cost Sheet</p>
+                    <p className="text-gray-600 dark:text-gray-400">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <DarkModeToggle />
@@ -914,7 +1111,9 @@ export default function NewCostSheet() {
               {/* Submit Buttons */}
               <div className="flex justify-end gap-4">
                 <button type="button" onClick={() => router.push('/')} className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium">Cancel</button>
-                <button type="submit" disabled={saving} className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">{saving ? 'Saving...' : 'Save Cost Sheet'}</button>
+                <button type="submit" disabled={saving} className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+                  {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
+                </button>
               </div>
             </div>
 
@@ -978,5 +1177,13 @@ export default function NewCostSheet() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function NewCostSheet() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-900"><div className="text-xl text-white">Loading...</div></div>}>
+      <CostSheetForm />
+    </Suspense>
   );
 }
