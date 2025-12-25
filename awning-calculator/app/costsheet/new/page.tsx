@@ -189,7 +189,7 @@ function CostSheetForm() {
     { id: generateId(), nights: 0, people: 0, rate: 150, description: '' },
   ]);
 
-  const [discountIncrease, setDiscountIncrease] = useState(0);
+  const [finalPriceOverride, setFinalPriceOverride] = useState<number | null>(null);
 
   // Track if drive time has been manually edited
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
@@ -341,8 +341,14 @@ function CostSheetForm() {
             }]);
           }
 
-          // Load discount/increase
-          if (sheet.discountIncrease !== undefined) setDiscountIncrease(sheet.discountIncrease);
+          // Load final price override (or legacy discountIncrease for backwards compatibility)
+          if (sheet.finalPriceOverride !== undefined) {
+            setFinalPriceOverride(sheet.finalPriceOverride);
+          } else if (sheet.discountIncrease !== undefined && sheet.discountIncrease !== 0) {
+            // Legacy: convert old discount/increase to final price override
+            const legacyTotal = (sheet.grandTotal || 0) + sheet.discountIncrease;
+            setFinalPriceOverride(legacyTotal);
+          }
         }
       }
     }
@@ -504,10 +510,13 @@ function CostSheetForm() {
 
   const totalOtherRequirements = permitCost + engineeringCost + equipmentCost + foodCost + totalDriveTime + totalMileage + totalHotel;
   const grandTotal = totalWithMarkup + totalOtherRequirements;
-  const totalPriceToClient = grandTotal + discountIncrease;
+  const totalPriceToClient = finalPriceOverride && finalPriceOverride > 0 ? finalPriceOverride : grandTotal;
 
+  // When final price is overridden, recalculate per-unit prices based on the override
   const pricePerSqFtPreDelivery = totalSqFt > 0 ? totalWithMarkup / totalSqFt : null;
   const pricePerLinFtPreDelivery = totalLinFt > 0 ? totalWithMarkup / totalLinFt : null;
+  const pricePerSqFtFinal = totalSqFt > 0 ? totalPriceToClient / totalSqFt : null;
+  const pricePerLinFtFinal = totalLinFt > 0 ? totalPriceToClient / totalLinFt : null;
 
   const categoryAnalytics = analytics?.byCategory.find((c) => c.category === formData.category);
   const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || 0;
@@ -575,10 +584,10 @@ function CostSheetForm() {
       totalOtherRequirements,
       totalWithOtherReqs: grandTotal,
       grandTotal,
-      discountIncrease,
+      finalPriceOverride,
       totalPriceToClient,
-      pricePerSqFt: totalSqFt > 0 ? totalPriceToClient / totalSqFt : null,
-      pricePerLinFt: totalLinFt > 0 ? totalPriceToClient / totalLinFt : null,
+      pricePerSqFt: pricePerSqFtFinal,
+      pricePerLinFt: pricePerLinFtFinal,
       pricePerSqFtPreDelivery,
       pricePerLinFtPreDelivery,
       outcome: 'Unknown',
@@ -645,11 +654,11 @@ function CostSheetForm() {
   };
 
   // Common styles - Brand Identity with Sharp Corners & Smooth Animations
-  const inputClass = "w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-3 text-sm bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint transition-all duration-200";
+  const inputClass = "w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-3 text-sm bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-blue-500 dark:focus:border-brand-google-blue transition-all duration-200";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-brand-text-secondary mb-1";
   const cardClass = "bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-6 transition-all duration-300";
   const deleteBtn = "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium transition-colors duration-200";
-  const addBtn = "px-6 py-2.5 bg-blue-600 dark:bg-brand-mint hover:bg-blue-700 dark:hover:brightness-110 text-white dark:text-brand-deep-black rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30";
+  const addBtn = "px-6 py-2.5 bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors">
@@ -732,8 +741,8 @@ function CostSheetForm() {
                   {products.map((product) => (
                     <div key={product.id} className="border border-gray-200 dark:border-brand-border-subtle rounded-input p-4 bg-gray-50 dark:bg-brand-surface-grey-dark transition-all duration-200 hover:border-brand-text-muted">
                       <div className="flex justify-between items-center mb-3">
-                        <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-48"} placeholder="Product name" />
-                        {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn}>×</button>}
+                        <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-48 pl-4 pr-3"} placeholder="Product name" />
+                        {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn + " ml-2"}>×</button>}
                       </div>
 
                       <div className="grid grid-cols-6 gap-3">
@@ -881,7 +890,7 @@ function CostSheetForm() {
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabrication Labor</h2>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <label className="text-sm text-gray-700 dark:text-gray-300">Rate:</label>
                     <select
                       value={laborRate === LABOR_RATES.AGGRESSIVE || laborRate === LABOR_RATES.REGULAR || laborRate === LABOR_RATES.PREVAILING_WAGE ? laborRate : 'custom'}
@@ -889,7 +898,7 @@ function CostSheetForm() {
                         if (e.target.value === 'custom') return;
                         setLaborRate(parseFloat(e.target.value));
                       }}
-                      className={inputClass + " w-40"}
+                      className={inputClass + " w-32"}
                     >
                       <option value={LABOR_RATES.AGGRESSIVE}>Aggressive (${LABOR_RATES.AGGRESSIVE}/hr)</option>
                       <option value={LABOR_RATES.REGULAR}>Regular (${LABOR_RATES.REGULAR}/hr)</option>
@@ -903,18 +912,18 @@ function CostSheetForm() {
                         step="1"
                         value={laborRate}
                         onChange={(e) => setLaborRate(parseFloat(e.target.value) || 0)}
-                        className={inputClass + " w-20 text-right"}
+                        className={inputClass + " w-24 text-right"}
                         placeholder="$/hr"
                       />
                       <span className="text-sm text-gray-500 dark:text-gray-400">/hr</span>
                     </div>
-                    <button type="button" onClick={addLabor} className={addBtn}>+ Add Row</button>
+                    <button type="button" onClick={addLabor} className="px-5 py-2 bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover text-white rounded-button text-sm font-medium transition-all duration-200">+ Add Row</button>
                   </div>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
                     <tr>
-                      <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 w-32">Type</th>
+                      <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 w-40">Type</th>
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300">Description / Notes</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Hours</th>
                       <th className="px-2 py-2 text-center text-gray-700 dark:text-gray-300 w-20">Days</th>
@@ -957,7 +966,7 @@ function CostSheetForm() {
                 <table className="w-full text-sm">
                   <thead className="bg-orange-100 dark:bg-orange-900/30">
                     <tr>
-                      <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 w-32">Type</th>
+                      <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 w-40">Type</th>
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300">Description / Notes</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Hours</th>
                       <th className="px-2 py-2 text-center text-gray-700 dark:text-gray-300 w-20">Days</th>
@@ -1111,7 +1120,7 @@ function CostSheetForm() {
               {/* Submit Buttons */}
               <div className="flex justify-end gap-4">
                 <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-button hover:bg-gray-100 dark:hover:brightness-110 text-gray-700 dark:text-brand-text-primary font-medium transition-all duration-200 hover:shadow-lg">Cancel</button>
-                <button type="submit" disabled={saving} className="px-8 py-2.5 bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black rounded-button hover:bg-blue-700 dark:hover:brightness-110 disabled:opacity-50 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30">
+                <button type="submit" disabled={saving} className="px-8 py-2.5 bg-blue-600 dark:bg-brand-google-blue text-white rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover disabled:opacity-50 font-medium transition-all duration-200 hover:shadow-lg">
                   {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
                 </button>
               </div>
@@ -1152,8 +1161,13 @@ function CostSheetForm() {
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <label className="text-xs text-gray-600 dark:text-gray-400">Discount / Increase</label>
-                    <input type="number" step="0.01" value={discountIncrease || ''} onChange={(e) => setDiscountIncrease(parseFloat(e.target.value) || 0)} className={inputClass + " mt-1"} placeholder="+/- amount" />
+                    <label className="text-xs text-gray-600 dark:text-gray-400">Adjust Final Price</label>
+                    <input type="number" step="0.01" value={finalPriceOverride || ''} onChange={(e) => setFinalPriceOverride(parseFloat(e.target.value) || null)} className={inputClass + " mt-1"} placeholder="Override total price" />
+                    {finalPriceOverride && finalPriceOverride > 0 && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        $/sqft: {pricePerSqFtFinal ? formatCurrency(pricePerSqFtFinal) : '-'} | $/linft: {pricePerLinFtFinal ? formatCurrency(pricePerLinFtFinal) : '-'}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-4 bg-green-100 dark:bg-green-900/50 p-3 rounded border-2 border-green-400 dark:border-green-600">
@@ -1166,9 +1180,9 @@ function CostSheetForm() {
                 <div className={cardClass}>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Price Legend</h3>
                   <div className="space-y-2 text-xs">
-                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-green-100 dark:bg-green-900/50 border-2 border-green-400"></div><span className="text-gray-600 dark:text-gray-400">Good - within 15%</span></div>
-                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-red-100 dark:bg-red-900/50 border-2 border-red-400"></div><span className="text-gray-600 dark:text-gray-400">High - 15%+ above</span></div>
-                    <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400"></div><span className="text-gray-600 dark:text-gray-400">Low - 15%+ below</span></div>
+                    <div className="flex items-center gap-2"><div className="w-4 h-4 bg-green-100 dark:bg-green-900/50 border-2 border-green-400"></div><span className="text-gray-600 dark:text-gray-400">Good - within 15%</span></div>
+                    <div className="flex items-center gap-2"><div className="w-4 h-4 bg-red-100 dark:bg-red-900/50 border-2 border-red-400"></div><span className="text-gray-600 dark:text-gray-400">High - 15%+ above</span></div>
+                    <div className="flex items-center gap-2"><div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400"></div><span className="text-gray-600 dark:text-gray-400">Low - 15%+ below</span></div>
                   </div>
                 </div>
               </div>

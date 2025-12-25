@@ -15,7 +15,7 @@ export function DarkModeToggle() {
   if (!mounted) {
     return (
       <button
-        className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 w-10 h-10"
+        className="p-2 rounded-button bg-gray-200 dark:bg-gray-700 w-10 h-10"
         disabled
       />
     );
@@ -25,7 +25,7 @@ export function DarkModeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      className="p-2 rounded-button bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
       title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {theme === 'dark' ? (
