@@ -22,7 +22,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       borderRadius: {
         'card': '6px',
@@ -31,9 +31,9 @@ module.exports = {
         'modal': '8px',
       },
       fontSize: {
-        'h1': ['25px', { letterSpacing: '-0.02em', fontWeight: '400' }],
-        'h2': ['18px', { fontWeight: '400' }],
-        'label': ['12px', { letterSpacing: '0.05em', textTransform: 'uppercase' }],
+        'h1': ['25px', { letterSpacing: '0em', fontWeight: '500', lineHeight: '1.2' }],
+        'h2': ['18px', { letterSpacing: '0.0075em', fontWeight: '400', lineHeight: '1.334' }],
+        'label': ['12px', { letterSpacing: '0.08333em', fontWeight: '500', textTransform: 'uppercase', lineHeight: '1.66' }],
       },
       transitionDuration: {
         '400': '400ms',
