@@ -723,18 +723,17 @@ function CostSheetForm() {
 
               {/* Products Section */}
               <div className={cardClass}>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Products & Dimensions</h2>
-                  <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
-                </div>
-
-                {/* Category Selection */}
-                <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <label className={labelClass}>Product Category</label>
-                  <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass + " max-w-md"}>
-                    {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This category applies to all products on this cost sheet</p>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Products & Dimensions</h2>
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-brand-text-secondary">Category:</label>
+                      <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass + " max-w-xs"}>
+                        {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                      </select>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Applies to all products</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -775,9 +774,12 @@ function CostSheetForm() {
                   ))}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-8">
-                  <div><span className="text-gray-600 dark:text-gray-400">Total Sq Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalSqFt.toFixed(2)}</span></div>
-                  <div><span className="text-gray-600 dark:text-gray-400">Total Lin Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalLinFt.toFixed(2)}</span></div>
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
+                  <div className="flex gap-8">
+                    <div><span className="text-gray-600 dark:text-gray-400">Total Sq Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalSqFt.toFixed(2)}</span></div>
+                    <div><span className="text-gray-600 dark:text-gray-400">Total Lin Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalLinFt.toFixed(2)}</span></div>
+                  </div>
                 </div>
               </div>
 
@@ -889,36 +891,37 @@ function CostSheetForm() {
               {/* Labor */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabrication Labor</h2>
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">Rate:</label>
-                    <select
-                      value={laborRate === LABOR_RATES.AGGRESSIVE || laborRate === LABOR_RATES.REGULAR || laborRate === LABOR_RATES.PREVAILING_WAGE ? laborRate : 'custom'}
-                      onChange={(e) => {
-                        if (e.target.value === 'custom') return;
-                        setLaborRate(parseFloat(e.target.value));
-                      }}
-                      className={inputClass + " w-32"}
-                    >
-                      <option value={LABOR_RATES.AGGRESSIVE}>Aggressive (${LABOR_RATES.AGGRESSIVE}/hr)</option>
-                      <option value={LABOR_RATES.REGULAR}>Regular (${LABOR_RATES.REGULAR}/hr)</option>
-                      <option value={LABOR_RATES.PREVAILING_WAGE}>Prevailing (${LABOR_RATES.PREVAILING_WAGE}/hr)</option>
-                      <option value="custom">Custom Rate</option>
-                    </select>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">$</span>
-                      <input
-                        type="number"
-                        step="1"
-                        value={laborRate}
-                        onChange={(e) => setLaborRate(parseFloat(e.target.value) || 0)}
-                        className={inputClass + " w-24 text-right"}
-                        placeholder="$/hr"
-                      />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">/hr</span>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabrication Labor</h2>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600 dark:text-gray-400">Rate:</label>
+                      <select
+                        value={laborRate === LABOR_RATES.AGGRESSIVE || laborRate === LABOR_RATES.REGULAR || laborRate === LABOR_RATES.PREVAILING_WAGE ? laborRate : 'custom'}
+                        onChange={(e) => {
+                          if (e.target.value === 'custom') return;
+                          setLaborRate(parseFloat(e.target.value));
+                        }}
+                        className={inputClass + " w-32"}
+                      >
+                        <option value={LABOR_RATES.AGGRESSIVE}>Aggressive (${LABOR_RATES.AGGRESSIVE}/hr)</option>
+                        <option value={LABOR_RATES.REGULAR}>Regular (${LABOR_RATES.REGULAR}/hr)</option>
+                        <option value={LABOR_RATES.PREVAILING_WAGE}>Prevailing (${LABOR_RATES.PREVAILING_WAGE}/hr)</option>
+                        <option value="custom">Custom Rate</option>
+                      </select>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">$</span>
+                        <input
+                          type="number"
+                          step="1"
+                          value={laborRate}
+                          onChange={(e) => setLaborRate(parseFloat(e.target.value) || 0)}
+                          className={inputClass + " w-20 text-right"}
+                          placeholder="$/hr"
+                        />
+                      </div>
                     </div>
-                    <button type="button" onClick={addLabor} className="px-5 py-2 bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover text-white rounded-button text-sm font-medium transition-all duration-200">+ Add Row</button>
                   </div>
+                  <button type="button" onClick={addLabor} className={addBtn}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
