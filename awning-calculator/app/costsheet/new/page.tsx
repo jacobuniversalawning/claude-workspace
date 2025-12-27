@@ -921,6 +921,7 @@ function CostSheetForm() {
                       <input type="number" step="0.25" value={materialsTaxRate * 100} onChange={(e) => setMaterialsTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
                       <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
+                    <button type="button" onClick={clearMaterials} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">Clear</button>
                   </div>
                   <button type="button" onClick={addMaterial} className={addBtn}>+ Add Row</button>
                 </div>
@@ -969,6 +970,7 @@ function CostSheetForm() {
                       <input type="number" step="0.25" value={fabricTaxRate * 100} onChange={(e) => setFabricTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
                       <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
+                    <button type="button" onClick={clearFabric} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">Clear</button>
                   </div>
                   <button type="button" onClick={addFabric} className={addBtn}>+ Add Row</button>
                 </div>
@@ -1039,6 +1041,7 @@ function CostSheetForm() {
                         />
                       </div>
                     </div>
+                    <button type="button" onClick={clearFabricationLabor} className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">Clear</button>
                   </div>
                   <button type="button" onClick={addLabor} className={addBtn}>+ Add Row</button>
                 </div>
