@@ -136,10 +136,8 @@ function CostSheetForm() {
 
   // Materials
   const [materials, setMaterials] = useState<MaterialLine[]>([
-    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: 'Miscellaneous', qty: 1, unitPrice: 0, freight: 0 },
   ]);
-  const [miscQty, setMiscQty] = useState(1);
-  const [miscPrice, setMiscPrice] = useState(200);
   const [materialsTaxRate, setMaterialsTaxRate] = useState<number>(DEFAULTS.SALES_TAX);
 
   // Fabric
@@ -264,11 +262,16 @@ function CostSheetForm() {
               unitPrice: m.unitPrice || 0,
               freight: m.freight || 0,
             })));
+          } else if (sheet.miscQty !== undefined || sheet.miscPrice !== undefined) {
+            // Backwards compatibility: migrate old miscQty/miscPrice to materials array
+            setMaterials([{
+              id: generateId(),
+              description: 'Miscellaneous',
+              qty: sheet.miscQty || 1,
+              unitPrice: sheet.miscPrice || 0,
+              freight: 0,
+            }]);
           }
-
-          // Load misc values
-          if (sheet.miscQty !== undefined) setMiscQty(sheet.miscQty);
-          if (sheet.miscPrice !== undefined) setMiscPrice(sheet.miscPrice);
 
           // Load fabric
           if (sheet.fabricLines && sheet.fabricLines.length > 0) {
@@ -506,9 +509,7 @@ function CostSheetForm() {
     const subtotal = m.qty * m.unitPrice;
     return subtotal + subtotal * materialsTaxRate + m.freight;
   };
-  const materialsSubtotal = materials.reduce((sum, m) => sum + calcMaterialTotal(m), 0);
-  const miscTotal = miscQty * miscPrice * (1 + materialsTaxRate);
-  const totalMaterials = materialsSubtotal + miscTotal;
+  const totalMaterials = materials.reduce((sum, m) => sum + calcMaterialTotal(m), 0);
 
   const calcFabricTotal = (f: FabricLine) => {
     const subtotal = f.yards * f.pricePerYard;
@@ -618,8 +619,6 @@ function CostSheetForm() {
       valance: products[0]?.valance || 0,
       canopySqFt: totalSqFt,
       awningLinFt: totalLinFt,
-      miscQty,
-      miscPrice,
       laborRate,
       totalMaterials,
       totalFabric,
@@ -725,10 +724,10 @@ function CostSheetForm() {
   const deleteBtn = "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium transition-colors duration-200";
   const addBtn = "px-6 py-2.5 bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg";
 
-  // Helper function to get error class for People field when hours > 0 but people = 0
+  // Helper function to get error class for People field when hours > 0 but people <= 0
   const getPeopleFieldClass = (hours: number, people: number): string => {
-    // Check if there are hours but no people (catches 0, null, undefined, NaN)
-    const hasError = hours > 0 && !people;
+    // Check if there are hours but no people
+    const hasError = hours > 0 && people <= 0;
     if (hasError) {
       // Error state: red border and background
       return "w-full border-2 border-red-500 dark:border-red-500 rounded-input px-4 py-3 text-sm bg-red-50 dark:bg-red-900/20 text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-red-600 dark:focus:border-red-400 transition-all duration-200 text-right";
@@ -895,15 +894,6 @@ function CostSheetForm() {
                         <td className="px-2 py-1 text-center">{materials.length > 1 && <button type="button" onClick={() => removeMaterial(m.id)} className={deleteBtn}>×</button>}</td>
                       </tr>
                     ))}
-                    <tr className="border-t border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700">
-                      <td className="px-2 py-1 font-medium text-gray-900 dark:text-white">Misc</td>
-                      <td className="px-2 py-1"><input type="number" value={miscQty} onChange={(e) => setMiscQty(parseInt(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
-                      <td className="px-2 py-1"><input type="number" step="0.01" value={miscPrice} onChange={(e) => setMiscPrice(parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
-                      <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(miscQty * miscPrice * materialsTaxRate)}</td>
-                      <td className="px-2 py-1">-</td>
-                      <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(miscTotal)}</td>
-                      <td></td>
-                    </tr>
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30">
