@@ -1017,11 +1017,10 @@ function CostSheetForm() {
                         <td className="px-2 py-1">
                           <input
                             type="number"
-                            value={l.people === 0 ? '' : l.people}
-                            onChange={(e) => updateLabor(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                            value={l.people}
+                            onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 0)}
                             className={getPeopleFieldClass(l.hours, l.people)}
                             style={l.hours > 0 && l.people <= 0 ? { borderColor: '#ef4444', borderWidth: '2px', backgroundColor: 'rgba(254, 226, 226, 0.5)' } : {}}
-                            placeholder="1"
                           />
                         </td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
@@ -1069,11 +1068,10 @@ function CostSheetForm() {
                         <td className="px-2 py-1">
                           <input
                             type="number"
-                            value={l.people === 0 ? '' : l.people}
-                            onChange={(e) => updateInstall(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                            value={l.people}
+                            onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 0)}
                             className={getPeopleFieldClass(l.hours, l.people)}
                             style={l.hours > 0 && l.people <= 0 ? { borderColor: '#ef4444', borderWidth: '2px', backgroundColor: 'rgba(254, 226, 226, 0.5)' } : {}}
-                            placeholder="1"
                           />
                         </td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
