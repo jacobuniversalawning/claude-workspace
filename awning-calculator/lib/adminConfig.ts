@@ -53,6 +53,13 @@ export interface AdminConfig {
 
   // Default AI provider to use
   defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'grok' | 'kimi' | 'deepseek' | 'none';
+
+  // HubSpot CRM Integration
+  hubspot: {
+    enabled: boolean;
+    accessToken: string;
+    portalId: string;
+  };
 }
 
 // Default configuration - matches the existing constants
@@ -166,7 +173,12 @@ export const DEFAULT_CONFIG: AdminConfig = {
       maxTokens: 8192
     }
   },
-  defaultAIProvider: 'none'
+  defaultAIProvider: 'none',
+  hubspot: {
+    enabled: false,
+    accessToken: '',
+    portalId: ''
+  }
 };
 
 const ADMIN_CONFIG_KEY = 'adminConfig';
@@ -195,6 +207,7 @@ export function getAdminConfig(): AdminConfig {
           deepseek: { ...DEFAULT_CONFIG.aiProviders.deepseek, ...parsed.aiProviders?.deepseek },
         },
         defaultAIProvider: parsed.defaultAIProvider || DEFAULT_CONFIG.defaultAIProvider,
+        hubspot: { ...DEFAULT_CONFIG.hubspot, ...parsed.hubspot },
       };
     }
   } catch (error) {

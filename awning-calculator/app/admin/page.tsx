@@ -2034,18 +2034,99 @@ export default function AdminPage() {
                             <p className="text-xs text-gray-500 dark:text-gray-400">Pull customer &amp; job site data with autocomplete</p>
                           </div>
                         </div>
-                        <span className="px-3 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
-                          Coming Soon
-                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={config.hubspot?.enabled || false}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              hubspot: { ...config.hubspot, enabled: e.target.checked }
+                            })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
                       </div>
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>Setup Required:</strong> Contact your administrator (Jacob@universalawning.com) to configure the HubSpot OAuth integration. This will enable:
-                        <ul className="list-disc ml-5 mt-2 space-y-1">
-                          <li>Customer name autocomplete from HubSpot contacts</li>
-                          <li>Auto-populate job site address from deal properties</li>
-                          <li>Sync cost sheets back to HubSpot deals</li>
-                        </ul>
-                      </div>
+                      {config.hubspot?.enabled && (
+                        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Private App Access Token</label>
+                            <input
+                              type="password"
+                              value={config.hubspot?.accessToken || ''}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                hubspot: { ...config.hubspot, accessToken: e.target.value }
+                              })}
+                              className={inputClass}
+                              placeholder="pat-na1-..."
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Create a Private App in HubSpot Settings &gt; Integrations &gt; Private Apps
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Portal ID (auto-detected)</label>
+                            <input
+                              type="text"
+                              value={config.hubspot?.portalId || ''}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                hubspot: { ...config.hubspot, portalId: e.target.value }
+                              })}
+                              className={inputClass}
+                              placeholder="Will be set after testing connection"
+                              readOnly
+                            />
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (!config.hubspot?.accessToken) {
+                                setModal({ type: 'alert', title: 'Error', message: 'Please enter an access token first' });
+                                return;
+                              }
+                              try {
+                                const response = await fetch('/api/hubspot', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ accessToken: config.hubspot.accessToken })
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                  setModal({
+                                    type: 'alert',
+                                    title: 'Connection Successful',
+                                    message: `Connected to HubSpot Portal ID: ${data.portalId}`
+                                  });
+                                  updateConfig({
+                                    ...config,
+                                    hubspot: { ...config.hubspot, portalId: data.portalId.toString() }
+                                  });
+                                } else {
+                                  setModal({ type: 'alert', title: 'Connection Failed', message: data.error || 'Could not connect to HubSpot' });
+                                }
+                              } catch {
+                                setModal({ type: 'alert', title: 'Error', message: 'Failed to test connection' });
+                              }
+                            }}
+                            className={secondaryButtonClass}
+                          >
+                            Test Connection
+                          </button>
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-sm text-blue-800 dark:text-blue-200">
+                            <strong>Required Scopes:</strong> crm.objects.contacts.read, crm.objects.deals.read
+                            <ul className="list-disc ml-5 mt-2 space-y-1">
+                              <li>Customer name autocomplete from HubSpot contacts</li>
+                              <li>Auto-populate job site address from deal properties</li>
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                      {!config.hubspot?.enabled && (
+                        <div className="p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-400">
+                          Enable HubSpot integration to auto-fill customer information on cost sheets.
+                        </div>
+                      )}
                     </div>
                   </div>
 

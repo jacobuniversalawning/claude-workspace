@@ -248,11 +248,25 @@ export default function Home() {
     }
   };
 
-  const confirmDelete = (id: string) => {
+  const confirmDelete = async (id: string) => {
     if (storageType === 'local') {
       const updatedSheets = costSheets.filter((s) => s.id !== id);
       setCostSheets(updatedSheets);
       localStorage.setItem('costSheets', JSON.stringify(updatedSheets));
+    } else {
+      // Delete from database via API
+      try {
+        const response = await fetch(`/api/costsheets/${id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setCostSheets(costSheets.filter((s) => s.id !== id));
+        } else {
+          console.error('Failed to delete cost sheet');
+        }
+      } catch (error) {
+        console.error('Error deleting cost sheet:', error);
+      }
     }
     setDeleteModalId(null);
   };

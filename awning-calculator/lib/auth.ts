@@ -111,24 +111,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (session.user) {
           session.user.id = userId;
 
-          // Try to get role from token first (already fetched in jwt callback)
-          if (token?.role) {
-            session.user.role = token.role as string;
-            session.user.isActive = token.isActive as boolean;
-          } else {
-            // Fallback: Get role from database
-            try {
-              const dbUser = await prisma.user.findUnique({
-                where: { id: userId },
-                select: { role: true, isActive: true },
-              });
-              session.user.role = dbUser?.role || "pending";
-              session.user.isActive = dbUser?.isActive ?? false;
-            } catch (dbError) {
-              console.error("[Auth] Session callback DB error:", dbError);
-              session.user.role = "pending";
-              session.user.isActive = false;
+          // Always fetch fresh role/isActive from database to ensure updates are reflected
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: userId },
+              select: { role: true, isActive: true },
+            });
+            if (dbUser) {
+              session.user.role = dbUser.role;
+              session.user.isActive = dbUser.isActive;
+            } else {
+              // User not in DB yet - use token values or defaults
+              session.user.role = (token?.role as string) || "pending";
+              session.user.isActive = (token?.isActive as boolean) ?? false;
             }
+          } catch (dbError) {
+            console.error("[Auth] Session callback DB error:", dbError);
+            // Fallback to token values
+            session.user.role = (token?.role as string) || "pending";
+            session.user.isActive = (token?.isActive as boolean) ?? false;
           }
         }
         return session;
