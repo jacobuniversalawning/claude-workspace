@@ -30,6 +30,12 @@ function LoginContent() {
               <p className="text-sm text-red-600 dark:text-red-400 text-center">
                 {error === 'AccessDenied'
                   ? 'Access denied. Only @universalawning.com emails are allowed.'
+                  : error === 'OAuthCallbackError'
+                  ? 'Google sign-in failed. Please try again or contact support if the issue persists.'
+                  : error === 'SessionError'
+                  ? 'Session expired or invalid. Please sign in again.'
+                  : error === 'Configuration'
+                  ? 'Server configuration error. Please contact support.'
                   : 'Sign in failed. Please try again.'}
               </p>
             </div>
