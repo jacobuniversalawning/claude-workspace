@@ -26,17 +26,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (dbUser) {
             session.user.role = dbUser.role || "estimator";
             session.user.isActive = dbUser.isActive ?? true;
-            // Ensure name is available from the database
             if (dbUser.name) {
               session.user.name = dbUser.name;
             }
           } else {
-            // User not found in DB yet - use defaults
             session.user.role = "estimator";
             session.user.isActive = true;
           }
         } catch {
-          // Database error - use safe defaults
           session.user.role = "estimator";
           session.user.isActive = true;
         }
@@ -44,13 +41,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async signIn({ user }) {
-      const email = user.email || "";
-      // Only allow @universalawning.com emails
-      if (!email.endsWith("@universalawning.com")) {
-        // Return false to reject - NextAuth will handle redirect to error page
-        return false;
+      const email = (user.email || "").toLowerCase();
+      // Allow ALL @universalawning.com emails (case-insensitive)
+      if (email.endsWith("@universalawning.com")) {
+        return true;
       }
-      return true;
+      // Reject all other emails
+      return false;
     },
   },
   pages: {
