@@ -195,3 +195,16 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* People field error state - RED validation */
+input.people-field-error {
+  border-color: #ef4444 !important;
+  border-width: 2px !important;
+  background-color: rgba(254, 226, 226, 0.5) !important;
+}
+
+.dark input.people-field-error {
+  border-color: #ef4444 !important;
+  border-width: 2px !important;
+  background-color: rgba(153, 27, 27, 0.3) !important;
+}

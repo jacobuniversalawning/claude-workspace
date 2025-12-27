@@ -730,17 +730,6 @@ function CostSheetForm() {
   const deleteBtn = "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium transition-colors duration-200";
   const addBtn = "px-6 py-2.5 bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg";
 
-  // Helper function to get error class for People field when hours > 0 but people <= 0
-  const getPeopleFieldClass = (hours: number, people: number): string => {
-    // Check if there are hours but no people
-    const hasError = hours > 0 && people <= 0;
-    if (hasError) {
-      // Error state: red border and background
-      return "w-full border-2 border-red-500 dark:border-red-500 rounded-input px-4 py-3 text-sm bg-red-50 dark:bg-red-900/20 text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-red-600 dark:focus:border-red-400 transition-all duration-200 text-right";
-    }
-    return inputClass + " text-right";
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors">
       <div className="max-w-7xl mx-auto px-4">
@@ -1019,8 +1008,7 @@ function CostSheetForm() {
                             type="number"
                             value={l.people}
                             onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 0)}
-                            className={getPeopleFieldClass(l.hours, l.people)}
-                            style={l.hours > 0 && l.people <= 0 ? { borderColor: '#ef4444', borderWidth: '2px', backgroundColor: 'rgba(254, 226, 226, 0.5)' } : {}}
+                            className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
@@ -1070,8 +1058,7 @@ function CostSheetForm() {
                             type="number"
                             value={l.people}
                             onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 0)}
-                            className={getPeopleFieldClass(l.hours, l.people)}
-                            style={l.hours > 0 && l.people <= 0 ? { borderColor: '#ef4444', borderWidth: '2px', backgroundColor: 'rgba(254, 226, 226, 0.5)' } : {}}
+                            className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
