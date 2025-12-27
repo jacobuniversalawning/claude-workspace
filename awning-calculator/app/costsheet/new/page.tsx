@@ -22,6 +22,7 @@ interface ProductLine {
 interface MaterialLine {
   id: string;
   description: string;
+  length: number; // Track material length (e.g., 20ft, 24ft, 40ft)
   qty: number;
   unitPrice: number;
   freight: number;
@@ -162,9 +163,9 @@ function CostSheetForm() {
 
   // Materials - Start with 2 blank rows + Miscellaneous
   const [materials, setMaterials] = useState<MaterialLine[]>([
-    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
-    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
-    { id: generateId(), description: 'Miscellaneous', qty: 1, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: 'Miscellaneous', length: 0, qty: 1, unitPrice: 0, freight: 0 },
   ]);
   const [materialsTaxRate, setMaterialsTaxRate] = useState<number>(DEFAULTS.SALES_TAX);
 
@@ -286,6 +287,7 @@ function CostSheetForm() {
             setMaterials(sheet.materials.map((m: MaterialLine) => ({
               id: generateId(),
               description: m.description || '',
+              length: m.length || 0,
               qty: m.qty || 0,
               unitPrice: m.unitPrice || 0,
               freight: m.freight || 0,
@@ -293,11 +295,12 @@ function CostSheetForm() {
           } else if (sheet.miscQty !== undefined || sheet.miscPrice !== undefined) {
             // Backwards compatibility: migrate old miscQty/miscPrice to materials array with 2 blank rows
             setMaterials([
-              { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
-              { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+              { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+              { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
               {
                 id: generateId(),
                 description: 'Miscellaneous',
+                length: 0,
                 qty: sheet.miscQty || 1,
                 unitPrice: sheet.miscPrice || 0,
                 freight: 0,
@@ -474,7 +477,7 @@ function CostSheetForm() {
   };
 
   // === MATERIAL FUNCTIONS ===
-  const addMaterial = () => setMaterials([...materials, { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 }]);
+  const addMaterial = () => setMaterials([...materials, { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 }]);
   const removeMaterial = (id: string) => { if (materials.length > 3) setMaterials(materials.filter((m) => m.id !== id)); };
   const updateMaterial = (id: string, field: keyof MaterialLine, value: string | number) => {
     setMaterials(materials.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
@@ -698,6 +701,7 @@ function CostSheetForm() {
       })),
       materials: materials.filter((m) => m.qty > 0 || m.description).map((m) => ({
         description: m.description,
+        length: m.length,
         qty: m.qty,
         unitPrice: m.unitPrice,
         salesTax: DEFAULTS.SALES_TAX,
@@ -928,6 +932,7 @@ function CostSheetForm() {
                   <thead className="bg-gray-100 dark:bg-gray-700">
                     <tr>
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300">Description</th>
+                      <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Length</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Qty</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-24">Unit $</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Tax</th>
@@ -940,6 +945,7 @@ function CostSheetForm() {
                     {materials.map((m) => (
                       <tr key={m.id} className="border-t border-gray-200 dark:border-gray-700">
                         <td className="px-2 py-1"><input type="text" value={m.description} onChange={(e) => updateMaterial(m.id, 'description', e.target.value)} className={inputClass} placeholder="Material" /></td>
+                        <td className="px-2 py-1"><input type="number" step="0.1" value={m.length || ''} onChange={(e) => updateMaterial(m.id, 'length', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} placeholder="ft" /></td>
                         <td className="px-2 py-1"><input type="number" value={m.qty || ''} onChange={(e) => updateMaterial(m.id, 'qty', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={m.unitPrice || ''} onChange={(e) => updateMaterial(m.id, 'unitPrice', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(m.qty * m.unitPrice * materialsTaxRate)}</td>
@@ -951,7 +957,7 @@ function CostSheetForm() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30">
-                      <td colSpan={5} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Total Materials:</td>
+                      <td colSpan={6} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Total Materials:</td>
                       <td className="px-2 py-2 text-right font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalMaterials)}</td>
                       <td></td>
                     </tr>

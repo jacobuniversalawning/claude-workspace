@@ -200,6 +200,7 @@ model MaterialLine {
   costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
 
   description String
+  length      Float?    // Material length in feet (e.g., 20ft, 24ft, 40ft)
   qty         Float
   unitPrice   Float
   salesTax    Float    @default(0.0975)
