@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/calculations';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 interface CostSheet {
   id: string;
@@ -306,15 +305,12 @@ export default function Home() {
               </h1>
               <p className="text-h2 text-gray-600 dark:text-brand-text-secondary mt-1.5">Cost Sheet Calculator</p>
             </div>
-            <div className="flex items-center gap-3">
-              <DarkModeToggle />
-              <Link
-                href="/costsheet/new"
-                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-5 py-2 rounded-button hover:bg-blue-700 dark:hover:brightness-110 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30"
-              >
-                + New Cost Sheet
-              </Link>
-            </div>
+            <Link
+              href="/costsheet/new"
+              className="bg-blue-600 dark:bg-brand-google-blue text-white px-6 py-2.5 rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover font-medium transition-all duration-200 hover:shadow-lg"
+            >
+              + New Cost Sheet
+            </Link>
           </div>
         </div>
       </header>

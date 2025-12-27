@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCT_CATEGORIES, LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 // Interfaces
 interface ProductLine {
@@ -195,11 +194,11 @@ function CostSheetForm() {
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
 
-  // Prevent scroll wheel from changing number inputs
+  // Prevent scroll wheel from changing number inputs - only when focused
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number') {
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number' && document.activeElement === target) {
         e.preventDefault();
       }
     };
@@ -730,12 +729,9 @@ function CostSheetForm() {
                     <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">Universal Awning & Canopy</h1>
                     <p className="text-h2 text-gray-600 dark:text-brand-text-secondary">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <DarkModeToggle />
-                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-brand-text-secondary dark:hover:text-brand-text-primary transition-all duration-200 hover:translate-x-[-2px]">
-                      ← Dashboard
-                    </button>
-                  </div>
+                  <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg">
+                    Go back to Dashboard
+                  </button>
                 </div>
 
                 {/* Row 1: Dates */}
@@ -750,8 +746,8 @@ function CostSheetForm() {
                   </div>
                 </div>
 
-                {/* Row 2: Customer, Sales Rep, Estimator, Project */}
-                <div className="grid grid-cols-4 gap-4 mt-4">
+                {/* Row 2: Customer, Sales Rep, Estimator */}
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Customer</label>
                     <input type="text" value={formData.customer} onChange={(e) => setFormData({ ...formData, customer: e.target.value })} className={inputClass} placeholder="Customer name" />
@@ -764,16 +760,18 @@ function CostSheetForm() {
                     <label className={labelClass}>Estimator</label>
                     <input type="text" value={formData.estimator} onChange={(e) => setFormData({ ...formData, estimator: e.target.value })} className={inputClass} placeholder="Estimator name" />
                   </div>
+                </div>
+
+                {/* Row 3: Project (1/3) and Job Site Address (2/3) */}
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Project</label>
                     <input type="text" value={formData.project} onChange={(e) => setFormData({ ...formData, project: e.target.value })} className={inputClass} placeholder="Project name" />
                   </div>
-                </div>
-
-                {/* Row 3: Job Site Address (full width) */}
-                <div className="mt-4">
-                  <label className={labelClass}>Job Site Address</label>
-                  <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
+                  <div className="col-span-2">
+                    <label className={labelClass}>Job Site Address</label>
+                    <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
+                  </div>
                 </div>
               </div>
 
