@@ -249,162 +249,173 @@ function CostSheetForm() {
   // Load existing data when editing
   useEffect(() => {
     if (editId) {
-      const data = localStorage.getItem('costSheets');
-      if (data) {
-        const sheets = JSON.parse(data);
-        const sheet = sheets.find((s: { id: string }) => s.id === editId);
-        if (sheet) {
-          setIsEditing(true);
-
-          // Load form data
-          setFormData({
-            inquiryDate: sheet.inquiryDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-            dueDate: sheet.dueDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-            category: sheet.category || adminConfig.categories[0],
-            customer: sheet.customer || '',
-            salesRep: sheet.salesRep || '',
-            project: sheet.project || '',
-            jobSite: sheet.jobSite || '',
-            estimator: sheet.estimator || '',
-          });
-
-          // Load products
-          if (sheet.products && sheet.products.length > 0) {
-            setProducts(sheet.products.map((p: ProductLine) => ({
-              id: generateId(),
-              name: p.name || 'Product 1',
-              width: p.width || 0,
-              projection: p.projection || 0,
-              height: p.height || 0,
-              valance: p.valance || 0,
-              sqFt: p.sqFt || 0,
-              linFt: p.linFt || 0,
-            })));
+      const loadCostSheet = async () => {
+        try {
+          // Fetch from API
+          const response = await fetch(`/api/costsheets/${editId}`);
+          if (!response.ok) {
+            throw new Error('Failed to load cost sheet');
           }
+          const sheet = await response.json();
 
-          // Load materials
-          if (sheet.materials && sheet.materials.length > 0) {
-            setMaterials(sheet.materials.map((m: MaterialLine) => ({
-              id: generateId(),
-              description: m.description || '',
-              length: m.length || 0,
-              qty: m.qty || 0,
-              unitPrice: m.unitPrice || 0,
-              freight: m.freight || 0,
-            })));
-          } else if (sheet.miscQty !== undefined || sheet.miscPrice !== undefined) {
-            // Backwards compatibility: migrate old miscQty/miscPrice to materials array with 2 blank rows
-            setMaterials([
-              { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
-              { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
-              {
+          if (sheet) {
+            setIsEditing(true);
+
+            // Load form data
+            setFormData({
+              inquiryDate: sheet.inquiryDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+              dueDate: sheet.dueDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+              category: sheet.category || adminConfig.categories[0],
+              customer: sheet.customer || '',
+              salesRep: sheet.salesRep || '',
+              project: sheet.project || '',
+              jobSite: sheet.jobSite || '',
+              estimator: sheet.estimator || '',
+            });
+
+            // Load products
+            if (sheet.products && sheet.products.length > 0) {
+              setProducts(sheet.products.map((p: ProductLine) => ({
                 id: generateId(),
-                description: 'Miscellaneous',
-                length: 0,
-                qty: sheet.miscQty || 1,
-                unitPrice: sheet.miscPrice || 0,
-                freight: 0,
+                name: p.name || 'Product 1',
+                width: p.width || 0,
+                projection: p.projection || 0,
+                height: p.height || 0,
+                valance: p.valance || 0,
+                sqFt: p.sqFt || 0,
+                linFt: p.linFt || 0,
+              })));
+            }
+
+            // Load materials
+            if (sheet.materials && sheet.materials.length > 0) {
+              setMaterials(sheet.materials.map((m: MaterialLine) => ({
+                id: generateId(),
+                description: m.description || '',
+                length: m.length || 0,
+                qty: m.qty || 0,
+                unitPrice: m.unitPrice || 0,
+                freight: m.freight || 0,
+              })));
+            } else if (sheet.miscQty !== undefined || sheet.miscPrice !== undefined) {
+              // Backwards compatibility: migrate old miscQty/miscPrice to materials array with 2 blank rows
+              setMaterials([
+                { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+                { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+                {
+                  id: generateId(),
+                  description: 'Miscellaneous',
+                  length: 0,
+                  qty: sheet.miscQty || 1,
+                  unitPrice: sheet.miscPrice || 0,
+                  freight: 0,
+                }
+              ]);
+            }
+
+            // Load fabric
+            if (sheet.fabricLines && sheet.fabricLines.length > 0) {
+              setFabricLines(sheet.fabricLines.map((f: FabricLine) => ({
+                id: generateId(),
+                name: f.name || '',
+                yards: f.yards || 0,
+                pricePerYard: f.pricePerYard || 0,
+                freight: f.freight || 0,
+              })));
+            }
+
+            // Load labor rate
+            if (sheet.laborRate) setLaborRate(sheet.laborRate);
+
+            // Load labor lines (fabrication and installation)
+            if (sheet.laborLines && sheet.laborLines.length > 0) {
+              const fabLabor = sheet.laborLines.filter((l: LaborLine) => l.isFabrication);
+              const instLabor = sheet.laborLines.filter((l: LaborLine) => !l.isFabrication);
+
+              if (fabLabor.length > 0) {
+                setLaborLines(fabLabor.map((l: LaborLine) => ({
+                  id: generateId(),
+                  type: l.type || 'Custom',
+                  description: l.description || '',
+                  hours: l.hours || 0,
+                  people: l.people || 1,
+                  rate: l.rate || LABOR_RATES.REGULAR,
+                  isFabrication: true,
+                })));
               }
-            ]);
-          }
 
-          // Load fabric
-          if (sheet.fabricLines && sheet.fabricLines.length > 0) {
-            setFabricLines(sheet.fabricLines.map((f: FabricLine) => ({
-              id: generateId(),
-              name: f.name || '',
-              yards: f.yards || 0,
-              pricePerYard: f.pricePerYard || 0,
-              freight: f.freight || 0,
-            })));
-          }
-
-          // Load labor rate
-          if (sheet.laborRate) setLaborRate(sheet.laborRate);
-
-          // Load labor lines (fabrication and installation)
-          if (sheet.laborLines && sheet.laborLines.length > 0) {
-            const fabLabor = sheet.laborLines.filter((l: LaborLine) => l.isFabrication);
-            const instLabor = sheet.laborLines.filter((l: LaborLine) => !l.isFabrication);
-
-            if (fabLabor.length > 0) {
-              setLaborLines(fabLabor.map((l: LaborLine) => ({
-                id: generateId(),
-                type: l.type || 'Custom',
-                description: l.description || '',
-                hours: l.hours || 0,
-                people: l.people || 1,
-                rate: l.rate || LABOR_RATES.REGULAR,
-                isFabrication: true,
-              })));
+              if (instLabor.length > 0) {
+                setInstallLines(instLabor.map((l: LaborLine) => ({
+                  id: generateId(),
+                  type: l.type || 'Installation 1',
+                  description: l.description || '',
+                  hours: l.hours || 0,
+                  people: l.people || 1,
+                  rate: l.rate || LABOR_RATES.REGULAR,
+                  isFabrication: false,
+                })));
+              }
             }
 
-            if (instLabor.length > 0) {
-              setInstallLines(instLabor.map((l: LaborLine) => ({
+            // Load markup
+            if (sheet.markup !== undefined) setMarkup(sheet.markup);
+
+            // Load other requirements
+            if (sheet.permitCost !== undefined) setPermitCost(sheet.permitCost);
+            if (sheet.engineeringCost !== undefined) setEngineeringCost(sheet.engineeringCost);
+            if (sheet.equipmentCost !== undefined) setEquipmentCost(sheet.equipmentCost);
+            if (sheet.foodCost !== undefined) setFoodCost(sheet.foodCost);
+
+            // Load drive time
+            if (sheet.driveTimeTrips || sheet.driveTimeHours || sheet.driveTimePeople) {
+              setDriveTimeLines([{
                 id: generateId(),
-                type: l.type || 'Installation 1',
-                description: l.description || '',
-                hours: l.hours || 0,
-                people: l.people || 1,
-                rate: l.rate || LABOR_RATES.REGULAR,
-                isFabrication: false,
-              })));
+                trips: sheet.driveTimeTrips || 0,
+                hoursPerTrip: sheet.driveTimeHours || 0,
+                people: sheet.driveTimePeople || 0,
+                rate: sheet.driveTimeRate || DEFAULTS.DRIVE_TIME_RATE,
+                description: '',
+              }]);
+            }
+
+            // Load mileage
+            if (sheet.roundtripMiles || sheet.roundtripTrips) {
+              setMileageLines([{
+                id: generateId(),
+                roundtripMiles: sheet.roundtripMiles || 0,
+                trips: sheet.roundtripTrips || 0,
+                rate: sheet.mileageRate || DEFAULTS.MILEAGE_RATE,
+                description: '',
+              }]);
+            }
+
+            // Load hotel
+            if (sheet.hotelNights || sheet.hotelPeople) {
+              setHotelLines([{
+                id: generateId(),
+                nights: sheet.hotelNights || 0,
+                people: sheet.hotelPeople || 0,
+                rate: sheet.hotelRate || 150,
+                description: '',
+              }]);
+            }
+
+            // Load final price override (or legacy discountIncrease for backwards compatibility)
+            if (sheet.finalPriceOverride !== undefined) {
+              setFinalPriceOverride(sheet.finalPriceOverride);
+            } else if (sheet.discountIncrease !== undefined && sheet.discountIncrease !== 0) {
+              // Legacy: convert old discount/increase to final price override
+              const legacyTotal = (sheet.grandTotal || 0) + sheet.discountIncrease;
+              setFinalPriceOverride(legacyTotal);
             }
           }
-
-          // Load markup
-          if (sheet.markup !== undefined) setMarkup(sheet.markup);
-
-          // Load other requirements
-          if (sheet.permitCost !== undefined) setPermitCost(sheet.permitCost);
-          if (sheet.engineeringCost !== undefined) setEngineeringCost(sheet.engineeringCost);
-          if (sheet.equipmentCost !== undefined) setEquipmentCost(sheet.equipmentCost);
-          if (sheet.foodCost !== undefined) setFoodCost(sheet.foodCost);
-
-          // Load drive time
-          if (sheet.driveTimeTrips || sheet.driveTimeHours || sheet.driveTimePeople) {
-            setDriveTimeLines([{
-              id: generateId(),
-              trips: sheet.driveTimeTrips || 0,
-              hoursPerTrip: sheet.driveTimeHours || 0,
-              people: sheet.driveTimePeople || 0,
-              rate: sheet.driveTimeRate || DEFAULTS.DRIVE_TIME_RATE,
-              description: '',
-            }]);
-          }
-
-          // Load mileage
-          if (sheet.roundtripMiles || sheet.roundtripTrips) {
-            setMileageLines([{
-              id: generateId(),
-              roundtripMiles: sheet.roundtripMiles || 0,
-              trips: sheet.roundtripTrips || 0,
-              rate: sheet.mileageRate || DEFAULTS.MILEAGE_RATE,
-              description: '',
-            }]);
-          }
-
-          // Load hotel
-          if (sheet.hotelNights || sheet.hotelPeople) {
-            setHotelLines([{
-              id: generateId(),
-              nights: sheet.hotelNights || 0,
-              people: sheet.hotelPeople || 0,
-              rate: sheet.hotelRate || 150,
-              description: '',
-            }]);
-          }
-
-          // Load final price override (or legacy discountIncrease for backwards compatibility)
-          if (sheet.finalPriceOverride !== undefined) {
-            setFinalPriceOverride(sheet.finalPriceOverride);
-          } else if (sheet.discountIncrease !== undefined && sheet.discountIncrease !== 0) {
-            // Legacy: convert old discount/increase to final price override
-            const legacyTotal = (sheet.grandTotal || 0) + sheet.discountIncrease;
-            setFinalPriceOverride(legacyTotal);
-          }
+        } catch (error) {
+          console.error('Error loading cost sheet:', error);
+          alert('Failed to load cost sheet');
         }
-      }
+      };
+
+      loadCostSheet();
     }
   }, [editId]);
 
@@ -726,24 +737,34 @@ function CostSheetForm() {
       })),
     };
 
-    // Save to localStorage (primary storage until database is configured)
+    // Save to database via API
     try {
-      const existingData = localStorage.getItem('costSheets');
-      let costSheets = existingData ? JSON.parse(existingData) : [];
-
       if (isEditing && editId) {
         // Update existing sheet
-        costSheets = costSheets.map((sheet: { id: string }) =>
-          sheet.id === editId ? { ...payload, id: editId } : sheet
-        );
+        const response = await fetch(`/api/costsheets/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update cost sheet');
+        }
         alert('Cost sheet updated successfully!');
       } else {
-        // Add new sheet
-        costSheets.unshift(payload);
+        // Create new sheet
+        const response = await fetch('/api/costsheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save cost sheet');
+        }
         alert('Cost sheet saved successfully!');
       }
 
-      localStorage.setItem('costSheets', JSON.stringify(costSheets));
       router.push('/');
     } catch (error) {
       console.error('Save failed:', error);
