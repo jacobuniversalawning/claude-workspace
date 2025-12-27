@@ -1,4 +1,6 @@
-// Auth module exports for Google OAuth (Vercel-compatible)
-export { setupAuth, isAuthenticated, getSession } from "./googleAuth";
+// Auth module exports - JWT-based for Vercel serverless
+export { setupJWTAuth as setupAuth, isAuthenticated } from "./jwtAuth";
 export { authStorage, type IAuthStorage } from "./storage";
-export { registerAuthRoutes } from "./routes";
+
+// No-op for compatibility - routes are registered in setupJWTAuth
+export function registerAuthRoutes() {}
