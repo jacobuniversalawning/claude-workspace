@@ -13,22 +13,17 @@ function LoginContent() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push(callbackUrl);
+      // Use window.location for a hard redirect to ensure session is fully recognized
+      window.location.href = callbackUrl;
     }
-  }, [status, router, callbackUrl]);
+  }, [status, callbackUrl]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || status === 'authenticated') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (status === 'authenticated') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Redirecting...</div>
+        <div className="text-white text-xl">
+          {status === 'loading' ? 'Loading...' : 'Redirecting...'}
+        </div>
       </div>
     );
   }
