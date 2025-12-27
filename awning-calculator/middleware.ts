@@ -20,7 +20,8 @@ export default auth((req) => {
   }
 
   // Check if user is active
-  if (req.auth && req.auth.user?.isActive === false) {    return NextResponse.redirect(new URL("/login?error=AccessDenied", req.url));
+  if (req.auth && req.auth.user?.isActive === false) {
+    return NextResponse.redirect(new URL("/login?error=AccessDenied", req.url));
   }
 
   // Admin routes require admin role (currently allowing all authenticated users)
