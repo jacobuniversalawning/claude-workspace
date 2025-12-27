@@ -2,32 +2,33 @@
 
 import { signIn, useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
 function LoginContent() {
   const { status } = useSession();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
   const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      // Small delay to ensure session is fully written to database before redirect
-      setTimeout(() => {
-        window.location.href = callbackUrl;
-      }, 100);
+    if (status === 'authenticated' && !isRedirecting) {
+      setIsRedirecting(true);
+      // Redirect after session is confirmed
+      window.location.href = callbackUrl;
     }
-  }, [status, callbackUrl]);
+  }, [status, callbackUrl, isRedirecting]);
 
-  if (status === 'loading' || status === 'authenticated') {
+  // Only show redirecting if we've confirmed authenticated and started redirect
+  if (isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">
-          {status === 'loading' ? 'Loading...' : 'Redirecting...'}
-        </div>
+        <div className="text-white text-xl">Redirecting...</div>
       </div>
     );
   }
+
+  // Always show the login form (even during loading) so button is visible
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
