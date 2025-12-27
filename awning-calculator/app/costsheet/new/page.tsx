@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react';
 import { LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
 import { getAdminConfig, AdminConfig, DEFAULT_CONFIG } from '@/lib/adminConfig';
+import { AddressAutocomplete, calculateDistance } from '@/components/AddressAutocomplete';
+import { DescriptionGenerator } from '@/components/DescriptionGenerator';
 
 // Interfaces
 interface ProductLine {
@@ -209,6 +211,60 @@ function CostSheetForm() {
   // Track if drive time has been manually edited
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
+  const [calculatingDistance, setCalculatingDistance] = useState(false);
+  const [distanceError, setDistanceError] = useState<string | null>(null);
+  const [showDescriptionGenerator, setShowDescriptionGenerator] = useState(false);
+
+  // Calculate distance from home base to job site
+  const handleCalculateDistance = async () => {
+    const homeBase = adminConfig.homeBaseAddress;
+    const jobSite = formData.jobSite;
+
+    if (!homeBase) {
+      setDistanceError('Please set home base address in Admin > Defaults first');
+      return;
+    }
+    if (!jobSite) {
+      setDistanceError('Please enter a job site address');
+      return;
+    }
+
+    setCalculatingDistance(true);
+    setDistanceError(null);
+
+    try {
+      const result = await calculateDistance(homeBase, jobSite);
+      if (result) {
+        // Update mileage with round trip miles
+        setMileageLines([{
+          id: mileageLines[0]?.id || generateId(),
+          roundtripMiles: result.roundTripMiles,
+          trips: 1,
+          rate: mileageLines[0]?.rate || DEFAULTS.MILEAGE_RATE,
+          description: `From ${result.origin} to ${result.destination}`,
+        }]);
+        setMileageManuallyEdited(true);
+
+        // Update drive time with estimated hours (one way)
+        setDriveTimeLines([{
+          id: driveTimeLines[0]?.id || generateId(),
+          trips: 1,
+          hoursPerTrip: result.hours,
+          people: driveTimeLines[0]?.people || 1,
+          rate: driveTimeLines[0]?.rate || DEFAULTS.DRIVE_TIME_RATE,
+          description: `Est. ${result.hours.toFixed(1)} hrs one way`,
+        }]);
+        setDriveTimeManuallyEdited(true);
+      } else {
+        setDistanceError('Could not calculate distance. Please check the addresses.');
+      }
+    } catch (error) {
+      console.error('Error calculating distance:', error);
+      setDistanceError('Failed to calculate distance');
+    } finally {
+      setCalculatingDistance(false);
+    }
+  };
 
   // Prevent scroll wheel from changing number inputs - only when focused
   useEffect(() => {
@@ -812,7 +868,42 @@ function CostSheetForm() {
                   </div>
                   <div className="col-span-2">
                     <label className={labelClass}>Job Site Address</label>
-                    <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <AddressAutocomplete
+                          value={formData.jobSite}
+                          onChange={(address) => setFormData({ ...formData, jobSite: address })}
+                          className={inputClass}
+                          placeholder="Enter job site address..."
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCalculateDistance}
+                        disabled={calculatingDistance || !formData.jobSite}
+                        className="px-3 py-2 text-sm bg-blue-600 dark:bg-brand-google-blue text-white rounded hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap"
+                        title="Calculate drive time and mileage from home base"
+                      >
+                        {calculatingDistance ? (
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        )}
+                        <span className="hidden sm:inline">Calc Distance</span>
+                      </button>
+                    </div>
+                    {distanceError && (
+                      <p className="text-xs text-red-500 mt-1">{distanceError}</p>
+                    )}
+                    {adminConfig.homeBaseAddress && (
+                      <p className="text-xs text-gray-400 mt-1">From: {adminConfig.homeBaseAddress}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1226,11 +1317,23 @@ function CostSheetForm() {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex justify-end gap-4">
-                <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-button hover:bg-gray-100 dark:hover:brightness-110 text-gray-700 dark:text-brand-text-primary font-medium transition-all duration-200 hover:shadow-lg">Cancel</button>
-                <button type="submit" disabled={saving} className="px-8 py-2.5 bg-blue-600 dark:bg-brand-google-blue text-white rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover disabled:opacity-50 font-medium transition-all duration-200 hover:shadow-lg">
-                  {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
+              <div className="flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => setShowDescriptionGenerator(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-button hover:bg-gray-100 dark:hover:brightness-110 text-gray-700 dark:text-brand-text-primary font-medium transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Generate Description
                 </button>
+                <div className="flex gap-4">
+                  <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 border border-gray-300 dark:border-brand-border-subtle bg-white dark:bg-brand-surface-grey-light rounded-button hover:bg-gray-100 dark:hover:brightness-110 text-gray-700 dark:text-brand-text-primary font-medium transition-all duration-200 hover:shadow-lg">Cancel</button>
+                  <button type="submit" disabled={saving} className="px-8 py-2.5 bg-blue-600 dark:bg-brand-google-blue text-white rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover disabled:opacity-50 font-medium transition-all duration-200 hover:shadow-lg">
+                    {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1302,6 +1405,21 @@ function CostSheetForm() {
             </div>
           </div>
         </form>
+
+        {/* Description Generator Modal */}
+        <DescriptionGenerator
+          isOpen={showDescriptionGenerator}
+          onClose={() => setShowDescriptionGenerator(false)}
+          formData={formData}
+          products={products}
+          totals={{
+            totalSqFt: totalSqFt,
+            totalLinFt: totalLinFt,
+            totalPriceToClient: totalPriceToClient,
+            pricePerSqFt: pricePerSqFtFinal,
+            pricePerLinFt: pricePerLinFtFinal,
+          }}
+        />
       </div>
     </div>
   );
