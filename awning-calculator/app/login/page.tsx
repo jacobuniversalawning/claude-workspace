@@ -16,10 +16,10 @@ function LoginContent() {
     // Only redirect when fully authenticated and not already redirecting
     if (status === 'authenticated' && !isRedirecting) {
       setIsRedirecting(true);
-      // Use Next.js router for client-side navigation
-      router.push(callbackUrl);
+      // Use hard navigation to ensure redirect works
+      window.location.href = callbackUrl.startsWith('/') ? callbackUrl : '/';
     }
-  }, [status, callbackUrl, isRedirecting, router]);
+  }, [status, callbackUrl, isRedirecting]);
 
   // Only show redirecting if we've confirmed authenticated and started redirect
   if (isRedirecting) {
