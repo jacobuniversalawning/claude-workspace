@@ -52,8 +52,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("estimator") // admin, estimator
-  isActive      Boolean   @default(true)
+  role          String    @default("estimator") // admin, estimator, salesperson
+  isActive      Boolean   @default(false) // New users are inactive by default, must be activated by admin
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

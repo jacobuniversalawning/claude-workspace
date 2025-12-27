@@ -89,7 +89,8 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      const response = await fetch('/api/users');
+      // Use ?all=true to get all users with full details for admin management
+      const response = await fetch('/api/users?all=true');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -1418,6 +1419,7 @@ export default function AdminPage() {
                               className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                               <option value="estimator">Estimator</option>
+                              <option value="salesperson">Salesperson</option>
                               <option value="admin">Admin</option>
                             </select>
                           </div>
