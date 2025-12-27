@@ -2,8 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PRODUCT_CATEGORIES, LABOR_RATES, DEFAULTS } from '@/lib/constants';
+import { LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
+import { getAdminConfig, AdminConfig, DEFAULT_CONFIG } from '@/lib/adminConfig';
 
 // Interfaces
 interface ProductLine {
@@ -116,12 +117,18 @@ function CostSheetForm() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [adminConfig, setAdminConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
+
+  // Load admin config on mount
+  useEffect(() => {
+    setAdminConfig(getAdminConfig());
+  }, []);
 
   // Header Information
   const [formData, setFormData] = useState<FormData>({
     inquiryDate: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
-    category: PRODUCT_CATEGORIES[0],
+    category: DEFAULT_CONFIG.categories[0],
     customer: '',
     salesRep: '',
     project: '',
@@ -233,7 +240,7 @@ function CostSheetForm() {
           setFormData({
             inquiryDate: sheet.inquiryDate?.split('T')[0] || new Date().toISOString().split('T')[0],
             dueDate: sheet.dueDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-            category: sheet.category || PRODUCT_CATEGORIES[0],
+            category: sheet.category || adminConfig.categories[0],
             customer: sheet.customer || '',
             salesRep: sheet.salesRep || '',
             project: sheet.project || '',
@@ -809,7 +816,7 @@ function CostSheetForm() {
                     <div className="flex items-center gap-3">
                       <label className="text-sm font-medium text-gray-700 dark:text-brand-text-secondary">Category:</label>
                       <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass + " max-w-xs"}>
-                        {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                        {adminConfig.categories.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
                       </select>
                       <span className="text-xs text-gray-500 dark:text-gray-400">Applies to all products</span>
                     </div>
