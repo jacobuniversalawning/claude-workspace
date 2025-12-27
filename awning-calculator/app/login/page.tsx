@@ -1,36 +1,15 @@
 'use client';
 
-import { signIn, useSession } from 'next-auth/react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 function LoginContent() {
-  const { status } = useSession();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const error = searchParams.get('error');
   const callbackUrl = searchParams.get('callbackUrl') || '/';
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  useEffect(() => {
-    // Only redirect when fully authenticated and not already redirecting
-    if (status === 'authenticated' && !isRedirecting) {
-      setIsRedirecting(true);
-      // Use Next.js router for client-side navigation
-      router.push(callbackUrl);
-    }
-  }, [status, callbackUrl, isRedirecting, router]);
-
-  // Only show redirecting if we've confirmed authenticated and started redirect
-  if (isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Redirecting...</div>
-      </div>
-    );
-  }
-
-  // Always show the login form (even during loading) so button is visible
+  // Middleware handles redirect for authenticated users - just show login form
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
