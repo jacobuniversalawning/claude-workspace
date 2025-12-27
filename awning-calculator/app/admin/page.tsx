@@ -13,8 +13,17 @@ import {
   importCostSheets,
   DEFAULT_CONFIG
 } from '@/lib/adminConfig';
+import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
 type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'data';
+
+// Modal state types
+type ModalType =
+  | { type: 'none' }
+  | { type: 'confirm'; title: string; message: string; onConfirm: () => void; variant?: 'default' | 'danger' }
+  | { type: 'input'; title: string; label?: string; placeholder?: string; defaultValue?: string; onSubmit: (value: string) => void }
+  | { type: 'dual'; title: string; label1: string; label2: string; placeholder1?: string; placeholder2?: string; defaultValue1?: string; defaultValue2?: string; onSubmit: (v1: string, v2: string) => void; inputType2?: 'text' | 'number'; prefix2?: string; suffix2?: string }
+  | { type: 'alert'; title: string; message: string };
 
 export default function AdminPage() {
   const [config, setConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
@@ -27,6 +36,7 @@ export default function AdminPage() {
   const [editingMaterial, setEditingMaterial] = useState<number | null>(null);
   const [editingFabric, setEditingFabric] = useState<number | null>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<number | null>(null);
+  const [modal, setModal] = useState<ModalType>({ type: 'none' });
   const configFileInputRef = useRef<HTMLInputElement>(null);
   const dataFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,26 +44,37 @@ export default function AdminPage() {
     setConfig(getAdminConfig());
   }, []);
 
+  const closeModal = () => setModal({ type: 'none' });
+
   const updateConfig = (newConfig: AdminConfig) => {
     setConfig(newConfig);
     setHasChanges(true);
   };
 
+  const showMessage = (msg: string, duration = 3000) => {
+    setSaveMessage(msg);
+    setTimeout(() => setSaveMessage(null), duration);
+  };
+
   const handleSave = () => {
     saveAdminConfig(config);
     setHasChanges(false);
-    setSaveMessage('Settings saved successfully!');
-    setTimeout(() => setSaveMessage(null), 3000);
+    showMessage('Settings saved successfully!');
   };
 
   const handleReset = () => {
-    if (confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
-      const defaultConfig = resetAdminConfig();
-      setConfig(defaultConfig);
-      setHasChanges(false);
-      setSaveMessage('Settings reset to defaults.');
-      setTimeout(() => setSaveMessage(null), 3000);
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Reset to Defaults',
+      message: 'Are you sure you want to reset all settings to defaults? This cannot be undone.',
+      variant: 'danger',
+      onConfirm: () => {
+        const defaultConfig = resetAdminConfig();
+        setConfig(defaultConfig);
+        setHasChanges(false);
+        showMessage('Settings reset to defaults.');
+      }
+    });
   };
 
   const handleConfigImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,10 +88,13 @@ export default function AdminPage() {
       if (imported) {
         setConfig(imported);
         setHasChanges(false);
-        setSaveMessage('Configuration imported successfully!');
-        setTimeout(() => setSaveMessage(null), 3000);
+        showMessage('Configuration imported successfully!');
       } else {
-        alert('Failed to import configuration. Invalid file format.');
+        setModal({
+          type: 'alert',
+          title: 'Import Failed',
+          message: 'Failed to import configuration. Invalid file format.'
+        });
       }
     };
     reader.readAsText(file);
@@ -85,10 +109,13 @@ export default function AdminPage() {
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (importCostSheets(content)) {
-        setSaveMessage('Cost sheets imported successfully! Refresh the dashboard to see changes.');
-        setTimeout(() => setSaveMessage(null), 5000);
+        showMessage('Cost sheets imported successfully! Refresh the dashboard to see changes.', 5000);
       } else {
-        alert('Failed to import cost sheets. Invalid file format.');
+        setModal({
+          type: 'alert',
+          title: 'Import Failed',
+          message: 'Failed to import cost sheets. Invalid file format.'
+        });
       }
     };
     reader.readAsText(file);
@@ -97,13 +124,18 @@ export default function AdminPage() {
 
   // Category management
   const addCategory = () => {
-    const name = prompt('Enter new category name:');
-    if (name && name.trim()) {
-      updateConfig({
-        ...config,
-        categories: [...config.categories, name.trim()]
-      });
-    }
+    setModal({
+      type: 'input',
+      title: 'Add Category',
+      label: 'Category Name',
+      placeholder: 'Enter category name...',
+      onSubmit: (name) => {
+        updateConfig({
+          ...config,
+          categories: [...config.categories, name]
+        });
+      }
+    });
   };
 
   const updateCategory = (index: number, newName: string) => {
@@ -114,12 +146,18 @@ export default function AdminPage() {
   };
 
   const deleteCategory = (index: number) => {
-    if (confirm(`Delete category "${config.categories[index]}"? Existing cost sheets with this category will not be affected.`)) {
-      updateConfig({
-        ...config,
-        categories: config.categories.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Category',
+      message: `Delete category "${config.categories[index]}"? Existing cost sheets with this category will not be affected.`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          categories: config.categories.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   const moveCategory = (index: number, direction: 'up' | 'down') => {
@@ -132,13 +170,18 @@ export default function AdminPage() {
 
   // Labor type management
   const addLaborType = () => {
-    const name = prompt('Enter new labor type:');
-    if (name && name.trim()) {
-      updateConfig({
-        ...config,
-        laborTypes: [...config.laborTypes, name.trim()]
-      });
-    }
+    setModal({
+      type: 'input',
+      title: 'Add Labor Type',
+      label: 'Labor Type',
+      placeholder: 'e.g., Finishing',
+      onSubmit: (name) => {
+        updateConfig({
+          ...config,
+          laborTypes: [...config.laborTypes, name]
+        });
+      }
+    });
   };
 
   const updateLaborType = (index: number, newName: string) => {
@@ -149,26 +192,39 @@ export default function AdminPage() {
   };
 
   const deleteLaborType = (index: number) => {
-    if (confirm(`Delete labor type "${config.laborTypes[index]}"?`)) {
-      updateConfig({
-        ...config,
-        laborTypes: config.laborTypes.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Labor Type',
+      message: `Delete labor type "${config.laborTypes[index]}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          laborTypes: config.laborTypes.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Labor rate management
   const addLaborRate = () => {
-    const name = prompt('Enter rate name (e.g., "Premium"):');
-    if (name && name.trim()) {
-      const rate = prompt('Enter hourly rate:');
-      if (rate && !isNaN(parseFloat(rate))) {
+    setModal({
+      type: 'dual',
+      title: 'Add Labor Rate',
+      label1: 'Rate Name',
+      label2: 'Hourly Rate',
+      placeholder1: 'e.g., Premium',
+      placeholder2: '0.00',
+      inputType2: 'number',
+      prefix2: '$',
+      suffix2: '/hr',
+      onSubmit: (name, rate) => {
         updateConfig({
           ...config,
-          laborRates: [...config.laborRates, { name: name.trim(), rate: parseFloat(rate) }]
+          laborRates: [...config.laborRates, { name, rate: parseFloat(rate) || 0 }]
         });
       }
-    }
+    });
   };
 
   const updateLaborRate = (index: number, field: 'name' | 'rate', value: string) => {
@@ -183,29 +239,45 @@ export default function AdminPage() {
 
   const deleteLaborRate = (index: number) => {
     if (config.laborRates.length <= 1) {
-      alert('You must have at least one labor rate.');
+      setModal({
+        type: 'alert',
+        title: 'Cannot Delete',
+        message: 'You must have at least one labor rate.'
+      });
       return;
     }
-    if (confirm(`Delete labor rate "${config.laborRates[index].name}"?`)) {
-      updateConfig({
-        ...config,
-        laborRates: config.laborRates.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Labor Rate',
+      message: `Delete labor rate "${config.laborRates[index].name}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          laborRates: config.laborRates.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Material preset management
   const addMaterialPreset = () => {
-    const description = prompt('Enter material description:');
-    if (description && description.trim()) {
-      const price = prompt('Enter unit price:');
-      if (price && !isNaN(parseFloat(price))) {
+    setModal({
+      type: 'dual',
+      title: 'Add Material Preset',
+      label1: 'Material Description',
+      label2: 'Unit Price',
+      placeholder1: 'e.g., Steel Tubing',
+      placeholder2: '0.00',
+      inputType2: 'number',
+      prefix2: '$',
+      onSubmit: (description, price) => {
         updateConfig({
           ...config,
-          materialPresets: [...config.materialPresets, { description: description.trim(), unitPrice: parseFloat(price) }]
+          materialPresets: [...config.materialPresets, { description, unitPrice: parseFloat(price) || 0 }]
         });
       }
-    }
+    });
   };
 
   const updateMaterialPreset = (index: number, field: 'description' | 'unitPrice', value: string) => {
@@ -219,26 +291,39 @@ export default function AdminPage() {
   };
 
   const deleteMaterialPreset = (index: number) => {
-    if (confirm(`Delete material preset "${config.materialPresets[index].description}"?`)) {
-      updateConfig({
-        ...config,
-        materialPresets: config.materialPresets.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Material Preset',
+      message: `Delete material preset "${config.materialPresets[index].description}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          materialPresets: config.materialPresets.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Fabric preset management
   const addFabricPreset = () => {
-    const name = prompt('Enter fabric name:');
-    if (name && name.trim()) {
-      const price = prompt('Enter price per yard:');
-      if (price && !isNaN(parseFloat(price))) {
+    setModal({
+      type: 'dual',
+      title: 'Add Fabric Preset',
+      label1: 'Fabric Name',
+      label2: 'Price per Yard',
+      placeholder1: 'e.g., Sunbrella Premium',
+      placeholder2: '0.00',
+      inputType2: 'number',
+      prefix2: '$',
+      suffix2: '/yard',
+      onSubmit: (name, price) => {
         updateConfig({
           ...config,
-          fabricPresets: [...config.fabricPresets, { name: name.trim(), pricePerYard: parseFloat(price) }]
+          fabricPresets: [...config.fabricPresets, { name, pricePerYard: parseFloat(price) || 0 }]
         });
       }
-    }
+    });
   };
 
   const updateFabricPreset = (index: number, field: 'name' | 'pricePerYard', value: string) => {
@@ -252,23 +337,34 @@ export default function AdminPage() {
   };
 
   const deleteFabricPreset = (index: number) => {
-    if (confirm(`Delete fabric preset "${config.fabricPresets[index].name}"?`)) {
-      updateConfig({
-        ...config,
-        fabricPresets: config.fabricPresets.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Fabric Preset',
+      message: `Delete fabric preset "${config.fabricPresets[index].name}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          fabricPresets: config.fabricPresets.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Sales rep management
   const addSalesRep = () => {
-    const name = prompt('Enter sales rep / estimator name:');
-    if (name && name.trim()) {
-      updateConfig({
-        ...config,
-        salesReps: [...config.salesReps, name.trim()]
-      });
-    }
+    setModal({
+      type: 'input',
+      title: 'Add Sales Rep / Estimator',
+      label: 'Name',
+      placeholder: 'Enter name...',
+      onSubmit: (name) => {
+        updateConfig({
+          ...config,
+          salesReps: [...config.salesReps, name]
+        });
+      }
+    });
   };
 
   const updateSalesRep = (index: number, newName: string) => {
@@ -279,12 +375,18 @@ export default function AdminPage() {
   };
 
   const deleteSalesRep = (index: number) => {
-    if (confirm(`Remove "${config.salesReps[index]}" from sales reps list?`)) {
-      updateConfig({
-        ...config,
-        salesReps: config.salesReps.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Remove Sales Rep',
+      message: `Remove "${config.salesReps[index]}" from sales reps list?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          salesReps: config.salesReps.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Default value updates
@@ -292,6 +394,29 @@ export default function AdminPage() {
     updateConfig({
       ...config,
       defaults: { ...config.defaults, [field]: value }
+    });
+  };
+
+  // Delete all data
+  const handleDeleteAllData = () => {
+    setModal({
+      type: 'confirm',
+      title: 'Delete All Cost Sheet Data',
+      message: 'Are you absolutely sure? All cost sheet data will be permanently deleted. This cannot be undone.',
+      variant: 'danger',
+      onConfirm: () => {
+        // Second confirmation
+        setModal({
+          type: 'confirm',
+          title: 'Final Confirmation',
+          message: 'This is your last chance. All data will be permanently deleted.',
+          variant: 'danger',
+          onConfirm: () => {
+            localStorage.removeItem('costSheets');
+            showMessage('All cost sheet data has been deleted.');
+          }
+        });
+      }
     });
   };
 
@@ -313,6 +438,62 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* Custom Modals */}
+      {modal.type === 'confirm' && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={closeModal}
+          onConfirm={modal.onConfirm}
+          title={modal.title}
+          message={modal.message}
+          variant={modal.variant}
+          confirmText={modal.variant === 'danger' ? 'Delete' : 'Confirm'}
+        />
+      )}
+      {modal.type === 'input' && (
+        <InputModal
+          isOpen={true}
+          onClose={closeModal}
+          onSubmit={modal.onSubmit}
+          title={modal.title}
+          label={modal.label}
+          placeholder={modal.placeholder}
+          defaultValue={modal.defaultValue}
+          submitText="Add"
+        />
+      )}
+      {modal.type === 'dual' && (
+        <DualInputModal
+          isOpen={true}
+          onClose={closeModal}
+          onSubmit={modal.onSubmit}
+          title={modal.title}
+          label1={modal.label1}
+          label2={modal.label2}
+          placeholder1={modal.placeholder1}
+          placeholder2={modal.placeholder2}
+          defaultValue1={modal.defaultValue1}
+          defaultValue2={modal.defaultValue2}
+          inputType2={modal.inputType2}
+          prefix2={modal.prefix2}
+          suffix2={modal.suffix2}
+          submitText="Add"
+        />
+      )}
+      {modal.type === 'alert' && (
+        <Modal isOpen={true} onClose={closeModal} title={modal.title} size="sm">
+          <p className="text-gray-600 dark:text-brand-text-secondary mb-6">{modal.message}</p>
+          <div className="flex justify-end">
+            <button
+              onClick={closeModal}
+              className={primaryButtonClass}
+            >
+              OK
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* Header */}
       <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
         <div className="max-w-7xl mx-auto px-6 py-5">
@@ -1015,15 +1196,7 @@ export default function AdminPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
 
                     <button
-                      onClick={() => {
-                        if (confirm('Are you absolutely sure you want to delete ALL cost sheet data? This cannot be undone.')) {
-                          if (confirm('This is your last chance. All data will be permanently deleted.')) {
-                            localStorage.removeItem('costSheets');
-                            setSaveMessage('All cost sheet data has been deleted.');
-                            setTimeout(() => setSaveMessage(null), 3000);
-                          }
-                        }
-                      }}
+                      onClick={handleDeleteAllData}
                       className={dangerButtonClass}
                     >
                       Delete All Cost Sheet Data
