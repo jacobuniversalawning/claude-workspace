@@ -3,22 +3,18 @@ import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const pathname = req.nextUrl.pathname;
 
-  // Always allow login page
-  if (pathname === "/login") {
-    // If logged in, redirect away from login to home
+  // Login page - redirect to home if already logged in
+  if (req.nextUrl.pathname === "/login") {
     if (isLoggedIn) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
   }
 
-  // For all other pages, require auth
+  // All other pages - require login
   if (!isLoggedIn) {
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();
