@@ -221,6 +221,80 @@ function CostSheetForm() {
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
 
+  // Distance calculation state
+  const [calculatingDistance, setCalculatingDistance] = useState(false);
+  const [distanceInfo, setDistanceInfo] = useState<{
+    roundTripMiles: number;
+    roundTripHours: number;
+    origin: string;
+    destination: string;
+  } | null>(null);
+
+  // Calculate distance from home base to job site
+  const calculateDistance = async () => {
+    if (!formData.jobSite) {
+      alert('Please enter a job site address first');
+      return;
+    }
+
+    if (!adminConfig.homeBaseAddress) {
+      alert('Please set a home base address in the Admin Panel > Defaults tab');
+      return;
+    }
+
+    setCalculatingDistance(true);
+    try {
+      const params = new URLSearchParams({
+        origin: adminConfig.homeBaseAddress,
+        destination: formData.jobSite,
+      });
+
+      const response = await fetch(`/api/distance?${params}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to calculate distance');
+      }
+
+      setDistanceInfo({
+        roundTripMiles: data.distance.roundTripMiles,
+        roundTripHours: data.duration.roundTripHours,
+        origin: data.origin,
+        destination: data.destination,
+      });
+
+      // Auto-populate mileage if not manually edited
+      if (!mileageManuallyEdited) {
+        setMileageLines([{
+          id: mileageLines[0]?.id || generateId(),
+          roundtripMiles: data.distance.roundTripMiles,
+          trips: mileageLines[0]?.trips || 1,
+          rate: mileageLines[0]?.rate || DEFAULTS.MILEAGE_RATE,
+          description: `From: ${data.origin}`,
+        }]);
+      }
+
+      // Auto-populate drive time if not manually edited
+      if (!driveTimeManuallyEdited) {
+        setDriveTimeLines([{
+          id: driveTimeLines[0]?.id || generateId(),
+          trips: driveTimeLines[0]?.trips || 1,
+          hoursPerTrip: parseFloat(data.duration.roundTripHours.toFixed(2)),
+          people: driveTimeLines[0]?.people || 2,
+          rate: driveTimeLines[0]?.rate || DEFAULTS.DRIVE_TIME_RATE,
+          description: `Travel time to job site`,
+        }]);
+      }
+
+      alert(`Distance calculated: ${data.distance.roundTripMiles} miles round trip (${data.duration.roundTripHours.toFixed(1)} hours)`);
+    } catch (error) {
+      console.error('Error calculating distance:', error);
+      alert('Error calculating distance: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setCalculatingDistance(false);
+    }
+  };
+
   // Prevent scroll wheel from changing number inputs - only when focused
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -869,7 +943,29 @@ function CostSheetForm() {
                   </div>
                   <div className="col-span-2">
                     <label className={labelClass}>Job Site Address</label>
-                    <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={formData.jobSite}
+                        onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })}
+                        className={inputClass + " flex-1"}
+                        placeholder="Full job site address"
+                      />
+                      <button
+                        type="button"
+                        onClick={calculateDistance}
+                        disabled={calculatingDistance || !formData.jobSite}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-button text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                        title="Calculate distance from home base"
+                      >
+                        {calculatingDistance ? 'Calculating...' : '📍 Calc Distance'}
+                      </button>
+                    </div>
+                    {distanceInfo && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        ✓ {distanceInfo.roundTripMiles} miles round trip • {distanceInfo.roundTripHours.toFixed(1)} hrs drive time
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -106,7 +106,7 @@ export const DEFAULT_CONFIG: AdminConfig = {
     { name: 'Stamoid', pricePerYard: 40 },
     { name: 'Vinyl', pricePerYard: 15 }
   ],
-  homeBaseAddress: ''
+  homeBaseAddress: '7053 Canby Avenue, Reseda, CA 91335'
 };
 
 const ADMIN_CONFIG_KEY = 'adminConfig';
