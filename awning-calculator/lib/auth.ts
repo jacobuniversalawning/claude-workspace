@@ -16,10 +16,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async session({ session, user }) {
-      // With database strategy, user comes from the database
       if (session.user) {
         session.user.id = user.id;
-        // Fetch additional user fields
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { role: true, isActive: true },
@@ -29,28 +27,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async signIn({ user, profile }) {
-      // Only allow @universalawning.com email addresses
-      const email = user.email || profile?.email || "";
+    async signIn({ user }) {
+      const email = user.email || "";
+      // Only allow @universalawning.com emails
       if (!email.endsWith("@universalawning.com")) {
-        return false;
+        return "/login?error=AccessDenied";
       }
-
-      // Check if user is active (only for existing users)
-      const dbUser = await prisma.user.findUnique({
-        where: { email },
-        select: { isActive: true },
-      });
-
-      // Allow new users to sign in (they don't exist yet)
-      if (!dbUser) return true;
-
-      // Block inactive users
-      return dbUser.isActive;
-    },
-    authorized: async ({ auth }) => {
-      // Logged in users are authenticated
-      return !!auth;
+      return true;
     },
   },
   pages: {
