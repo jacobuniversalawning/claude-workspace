@@ -158,8 +158,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return false;
         }
 
-        // Verify we have valid OAuth tokens
-        if (!account?.access_token) {
+        // Verify we have valid OAuth tokens (only for Google)
+        if (account?.provider === "google" && !account?.access_token) {
           console.error("[Auth] SignIn failed: No access token from Google");
           return false;
         }
