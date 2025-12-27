@@ -1,34 +1,30 @@
 'use client';
 
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, Suspense } from 'react';
 
 function LoginContent() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push(callbackUrl);
+      // Small delay to ensure session is fully written to database before redirect
+      setTimeout(() => {
+        window.location.href = callbackUrl;
+      }, 100);
     }
-  }, [status, router, callbackUrl]);
+  }, [status, callbackUrl]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || status === 'authenticated') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (status === 'authenticated') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div className="text-white text-xl">Redirecting...</div>
+        <div className="text-white text-xl">
+          {status === 'loading' ? 'Loading...' : 'Redirecting...'}
+        </div>
       </div>
     );
   }
