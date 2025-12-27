@@ -14,8 +14,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "database",
   },
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   callbacks: {
     async jwt({ token, user, account }) {
+      console.log("[Auth] JWT Callback", { userId: user?.id, tokenId: token?.id });
       // On initial sign in, user object is available from the provider
       if (user) {
         token.id = user.id;
@@ -49,6 +63,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token, user }) {
+      console.log("[Auth] Session Callback", {
+        sessionId: session?.user?.id,
+        userId: user?.id,
+        tokenId: token?.id
+      });
+
       try {
         // Handle both JWT strategy (token) and database strategy (user)
         const userId = user?.id || (token?.id as string);
@@ -98,6 +118,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
     },
     async signIn({ user, account }) {
+      console.log("[Auth] SignIn Callback", { email: user.email });
       try {
         // SIMPLE CHECK: Only @universalawning.com emails
         const email = user.email?.toLowerCase() || "";
