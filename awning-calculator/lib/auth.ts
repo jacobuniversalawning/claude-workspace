@@ -12,38 +12,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: "database",
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        // Fetch user role from database
+    async session({ session, user }) {
+      // With database strategy, user comes from the database
+      if (session.user) {
+        session.user.id = user.id;
+        // Fetch additional user fields
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { role: true, isActive: true },
         });
-        token.role = dbUser?.role || "estimator";
-        token.isActive = dbUser?.isActive ?? true;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.isActive = token.isActive as boolean;
+        session.user.role = dbUser?.role || "estimator";
+        session.user.isActive = dbUser?.isActive ?? true;
       }
       return session;
     },
-    async signIn({ user }) {
+    async signIn({ user, profile }) {
       // Only allow @universalawning.com email addresses
-      const email = user.email || "";
+      const email = user.email || profile?.email || "";
       if (!email.endsWith("@universalawning.com")) {
         return false;
       }
 
-      // Check if user is active
+      // Check if user is active (only for existing users)
       const dbUser = await prisma.user.findUnique({
         where: { email },
         select: { isActive: true },
