@@ -195,6 +195,23 @@ function CostSheetForm() {
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
 
+  // Prevent scroll wheel from changing number inputs
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number') {
+        e.preventDefault();
+      }
+    };
+
+    // Add event listener with passive: false to allow preventDefault
+    document.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   // Fetch analytics
   useEffect(() => {
     fetch('/api/analytics')
