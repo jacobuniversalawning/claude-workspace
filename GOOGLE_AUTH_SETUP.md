@@ -30,13 +30,16 @@ Get your `DATABASE_URL` connection string from your database provider.
 
 Go to your Vercel project settings > Environment Variables and add:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host/db` |
-| `SESSION_SECRET` | Random string for session encryption | Generate with: `openssl rand -base64 32` |
-| `GOOGLE_CLIENT_ID` | From Google Cloud Console | `xxxxx.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console | `GOCSPX-xxxxx` |
-| `APP_URL` | Your production URL | `https://your-app.vercel.app` |
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `DATABASE_URL` | **Yes** | PostgreSQL connection string | `postgresql://user:pass@host/db` |
+| `SESSION_SECRET` | **Yes** | Random string for session encryption | Generate with: `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID` | **Yes** | From Google Cloud Console | `xxxxx.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | **Yes** | From Google Cloud Console | `GOCSPX-xxxxx` |
+| `APP_URL` | **Yes** | Your production URL (no trailing slash) | `https://your-app.vercel.app` |
+| `NODE_ENV` | Auto | Set automatically by Vercel | `production` |
+
+**IMPORTANT**: All variables marked as required MUST be set or login will fail with a 500 error.
 
 ## Step 4: Install Dependencies
 

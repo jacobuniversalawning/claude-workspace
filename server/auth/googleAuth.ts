@@ -44,8 +44,27 @@ export async function setupAuth(app: Express) {
   app.use(passport.session());
 
   // Validate required environment variables
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    console.error("WARNING: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set for authentication to work");
+  const missingVars: string[] = [];
+  if (!process.env.GOOGLE_CLIENT_ID) missingVars.push("GOOGLE_CLIENT_ID");
+  if (!process.env.GOOGLE_CLIENT_SECRET) missingVars.push("GOOGLE_CLIENT_SECRET");
+  if (process.env.NODE_ENV === "production" && !process.env.APP_URL) missingVars.push("APP_URL");
+  
+  if (missingVars.length > 0) {
+    const errorMsg = `FATAL: Missing required environment variables: ${missingVars.join(", ")}. Authentication will not work.`;
+    console.error(errorMsg);
+    
+    // In production, fail fast with an error route
+    if (process.env.NODE_ENV === "production") {
+      app.get("/api/login", (req, res) => {
+        res.status(500).json({ error: "Authentication not configured", missing: missingVars });
+      });
+      app.get("/api/auth/google/callback", (req, res) => {
+        res.status(500).json({ error: "Authentication not configured", missing: missingVars });
+      });
+      return;
+    }
+    // In development, just warn but allow the app to start
+    console.error("NOTE: Set these environment variables to enable login.");
     return;
   }
 
