@@ -29,6 +29,9 @@ export interface AdminConfig {
 
   // Fabric presets
   fabricPresets: { name: string; pricePerYard: number }[];
+
+  // Home base address for distance calculations
+  homeBaseAddress: string;
 }
 
 // Default configuration - matches the existing constants
@@ -102,7 +105,8 @@ export const DEFAULT_CONFIG: AdminConfig = {
     { name: 'Ferrari Soltis', pricePerYard: 45 },
     { name: 'Stamoid', pricePerYard: 40 },
     { name: 'Vinyl', pricePerYard: 15 }
-  ]
+  ],
+  homeBaseAddress: ''
 };
 
 const ADMIN_CONFIG_KEY = 'adminConfig';

@@ -15,7 +15,17 @@ import {
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
-type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'data';
+type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'data';
+
+interface User {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+}
 
 // Modal state types
 type ModalType =
@@ -37,12 +47,102 @@ export default function AdminPage() {
   const [editingFabric, setEditingFabric] = useState<number | null>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<number | null>(null);
   const [modal, setModal] = useState<ModalType>({ type: 'none' });
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
   const configFileInputRef = useRef<HTMLInputElement>(null);
   const dataFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setConfig(getAdminConfig());
   }, []);
+
+  // Fetch users when users tab is active
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUsers(users.map(u => u.id === userId ? updatedUser : u));
+        showMessage(`User role updated to ${newRole}`);
+      } else {
+        const error = await response.json();
+        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to update user role' });
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      setModal({ type: 'alert', title: 'Error', message: 'Failed to update user role' });
+    }
+  };
+
+  const toggleUserActive = async (userId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !currentStatus }),
+      });
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUsers(users.map(u => u.id === userId ? updatedUser : u));
+        showMessage(`User ${!currentStatus ? 'activated' : 'deactivated'}`);
+      } else {
+        const error = await response.json();
+        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to update user status' });
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      setModal({ type: 'alert', title: 'Error', message: 'Failed to update user status' });
+    }
+  };
+
+  const deleteUser = async (userId: string, userName: string) => {
+    setModal({
+      type: 'confirm',
+      title: 'Delete User',
+      message: `Are you sure you want to delete "${userName}"? This action cannot be undone.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+          if (response.ok) {
+            setUsers(users.filter(u => u.id !== userId));
+            showMessage('User deleted successfully');
+          } else {
+            const error = await response.json();
+            setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to delete user' });
+          }
+        } catch (error) {
+          console.error('Error deleting user:', error);
+          setModal({ type: 'alert', title: 'Error', message: 'Failed to delete user' });
+        }
+      }
+    });
+  };
 
   const closeModal = () => setModal({ type: 'none' });
 
@@ -433,6 +533,7 @@ export default function AdminPage() {
     { id: 'defaults', label: 'Defaults', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
     { id: 'materials', label: 'Materials & Fabric', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     { id: 'data', label: 'Data', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' }
   ];
 
@@ -892,6 +993,25 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Home Base Address */}
+                  <div className="mt-8 pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Company Location</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This address is used to calculate drive time and mileage to job sites.</p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Home Base Address
+                      </label>
+                      <input
+                        type="text"
+                        value={config.homeBaseAddress || ''}
+                        onChange={(e) => updateConfig({ ...config, homeBaseAddress: e.target.value })}
+                        className={inputClass}
+                        placeholder="Enter Universal Awning company address..."
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Full address including city, state, and zip code</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1108,6 +1228,123 @@ export default function AdminPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Users Tab */}
+              {activeTab === 'users' && (
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">User Management</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage user access, roles, and permissions.</p>
+                    </div>
+                    <button onClick={fetchUsers} className={secondaryButtonClass} disabled={usersLoading}>
+                      {usersLoading ? 'Loading...' : 'Refresh'}
+                    </button>
+                  </div>
+
+                  {usersLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-dashed border-gray-300 dark:border-gray-600">
+                      <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <p className="text-gray-500 dark:text-gray-400">No users found. Users will appear here after they sign in with Google.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {users.map((user) => (
+                        <div
+                          key={user.id}
+                          className={`flex items-center gap-4 p-4 rounded-lg border ${
+                            user.isActive
+                              ? 'bg-white dark:bg-brand-surface-grey-dark border-gray-200 dark:border-brand-border-subtle'
+                              : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 opacity-60'
+                          }`}
+                        >
+                          {/* User Avatar */}
+                          {user.image ? (
+                            <img
+                              src={user.image}
+                              alt={user.name || 'User'}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                              <span className="text-blue-600 dark:text-blue-300 font-medium">
+                                {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-gray-900 dark:text-brand-text-primary truncate">
+                                {user.name || 'Unknown User'}
+                              </p>
+                              {!user.isActive && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {user.email}
+                            </p>
+                          </div>
+
+                          {/* Role Select */}
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-500 dark:text-gray-400">Role:</label>
+                            <select
+                              value={user.role}
+                              onChange={(e) => updateUserRole(user.id, e.target.value)}
+                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="estimator">Estimator</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleUserActive(user.id, user.isActive)}
+                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                                user.isActive
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                              }`}
+                              title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                            >
+                              {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
+                              className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                              title="Delete user"
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Note:</strong> Users are automatically created when they sign in with Google for the first time.
+                      New users default to the &quot;Estimator&quot; role. Deactivated users cannot sign in.
+                    </p>
+                  </div>
                 </div>
               )}
 
