@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, registerAuthRoutes, isAuthenticated, authStorage } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup Replit Auth (MUST be before other routes)
+  // Setup Google OAuth authentication (MUST be before other routes)
   await setupAuth(app);
   registerAuthRoutes(app);
 
