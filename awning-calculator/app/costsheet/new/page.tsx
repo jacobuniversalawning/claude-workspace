@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
 import { getAdminConfig, AdminConfig, DEFAULT_CONFIG } from '@/lib/adminConfig';
@@ -113,6 +114,7 @@ const DEFAULT_LABOR_TYPES = [
 function CostSheetForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const editId = searchParams.get('edit');
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -135,6 +137,13 @@ function CostSheetForm() {
     jobSite: '',
     estimator: '',
   });
+
+  // Auto-populate estimator from session when creating new cost sheet
+  useEffect(() => {
+    if (session?.user?.name && !editId && !formData.estimator) {
+      setFormData(prev => ({ ...prev, estimator: session.user.name || '' }));
+    }
+  }, [session?.user?.name, editId, formData.estimator]);
 
   // Products (dimensions only, category is at top level)
   const [products, setProducts] = useState<ProductLine[]>([

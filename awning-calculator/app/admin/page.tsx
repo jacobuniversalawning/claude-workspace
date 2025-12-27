@@ -13,8 +13,27 @@ import {
   importCostSheets,
   DEFAULT_CONFIG
 } from '@/lib/adminConfig';
+import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
-type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'data';
+type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'data';
+
+interface User {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image: string | null;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// Modal state types
+type ModalType =
+  | { type: 'none' }
+  | { type: 'confirm'; title: string; message: string; onConfirm: () => void; variant?: 'default' | 'danger' }
+  | { type: 'input'; title: string; label?: string; placeholder?: string; defaultValue?: string; onSubmit: (value: string) => void }
+  | { type: 'dual'; title: string; label1: string; label2: string; placeholder1?: string; placeholder2?: string; defaultValue1?: string; defaultValue2?: string; onSubmit: (v1: string, v2: string) => void; inputType2?: 'text' | 'number'; prefix2?: string; suffix2?: string }
+  | { type: 'alert'; title: string; message: string };
 
 export default function AdminPage() {
   const [config, setConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
@@ -27,6 +46,9 @@ export default function AdminPage() {
   const [editingMaterial, setEditingMaterial] = useState<number | null>(null);
   const [editingFabric, setEditingFabric] = useState<number | null>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<number | null>(null);
+  const [modal, setModal] = useState<ModalType>({ type: 'none' });
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
   const configFileInputRef = useRef<HTMLInputElement>(null);
   const dataFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,26 +56,125 @@ export default function AdminPage() {
     setConfig(getAdminConfig());
   }, []);
 
+  // Fetch users when users tab is active
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUsers(users.map(u => u.id === userId ? updatedUser : u));
+        showMessage(`User role updated to ${newRole}`);
+      } else {
+        const error = await response.json();
+        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to update user role' });
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      setModal({ type: 'alert', title: 'Error', message: 'Failed to update user role' });
+    }
+  };
+
+  const toggleUserActive = async (userId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !currentStatus }),
+      });
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUsers(users.map(u => u.id === userId ? updatedUser : u));
+        showMessage(`User ${!currentStatus ? 'activated' : 'deactivated'}`);
+      } else {
+        const error = await response.json();
+        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to update user status' });
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      setModal({ type: 'alert', title: 'Error', message: 'Failed to update user status' });
+    }
+  };
+
+  const deleteUser = async (userId: string, userName: string) => {
+    setModal({
+      type: 'confirm',
+      title: 'Delete User',
+      message: `Are you sure you want to delete "${userName}"? This action cannot be undone.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+          if (response.ok) {
+            setUsers(users.filter(u => u.id !== userId));
+            showMessage('User deleted successfully');
+          } else {
+            const error = await response.json();
+            setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to delete user' });
+          }
+        } catch (error) {
+          console.error('Error deleting user:', error);
+          setModal({ type: 'alert', title: 'Error', message: 'Failed to delete user' });
+        }
+      }
+    });
+  };
+
+  const closeModal = () => setModal({ type: 'none' });
+
   const updateConfig = (newConfig: AdminConfig) => {
     setConfig(newConfig);
     setHasChanges(true);
   };
 
+  const showMessage = (msg: string, duration = 3000) => {
+    setSaveMessage(msg);
+    setTimeout(() => setSaveMessage(null), duration);
+  };
+
   const handleSave = () => {
     saveAdminConfig(config);
     setHasChanges(false);
-    setSaveMessage('Settings saved successfully!');
-    setTimeout(() => setSaveMessage(null), 3000);
+    showMessage('Settings saved successfully!');
   };
 
   const handleReset = () => {
-    if (confirm('Are you sure you want to reset all settings to defaults? This cannot be undone.')) {
-      const defaultConfig = resetAdminConfig();
-      setConfig(defaultConfig);
-      setHasChanges(false);
-      setSaveMessage('Settings reset to defaults.');
-      setTimeout(() => setSaveMessage(null), 3000);
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Reset to Defaults',
+      message: 'Are you sure you want to reset all settings to defaults? This cannot be undone.',
+      variant: 'danger',
+      onConfirm: () => {
+        const defaultConfig = resetAdminConfig();
+        setConfig(defaultConfig);
+        setHasChanges(false);
+        showMessage('Settings reset to defaults.');
+      }
+    });
   };
 
   const handleConfigImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,10 +188,13 @@ export default function AdminPage() {
       if (imported) {
         setConfig(imported);
         setHasChanges(false);
-        setSaveMessage('Configuration imported successfully!');
-        setTimeout(() => setSaveMessage(null), 3000);
+        showMessage('Configuration imported successfully!');
       } else {
-        alert('Failed to import configuration. Invalid file format.');
+        setModal({
+          type: 'alert',
+          title: 'Import Failed',
+          message: 'Failed to import configuration. Invalid file format.'
+        });
       }
     };
     reader.readAsText(file);
@@ -85,10 +209,13 @@ export default function AdminPage() {
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (importCostSheets(content)) {
-        setSaveMessage('Cost sheets imported successfully! Refresh the dashboard to see changes.');
-        setTimeout(() => setSaveMessage(null), 5000);
+        showMessage('Cost sheets imported successfully! Refresh the dashboard to see changes.', 5000);
       } else {
-        alert('Failed to import cost sheets. Invalid file format.');
+        setModal({
+          type: 'alert',
+          title: 'Import Failed',
+          message: 'Failed to import cost sheets. Invalid file format.'
+        });
       }
     };
     reader.readAsText(file);
@@ -97,13 +224,18 @@ export default function AdminPage() {
 
   // Category management
   const addCategory = () => {
-    const name = prompt('Enter new category name:');
-    if (name && name.trim()) {
-      updateConfig({
-        ...config,
-        categories: [...config.categories, name.trim()]
-      });
-    }
+    setModal({
+      type: 'input',
+      title: 'Add Category',
+      label: 'Category Name',
+      placeholder: 'Enter category name...',
+      onSubmit: (name) => {
+        updateConfig({
+          ...config,
+          categories: [...config.categories, name]
+        });
+      }
+    });
   };
 
   const updateCategory = (index: number, newName: string) => {
@@ -114,12 +246,18 @@ export default function AdminPage() {
   };
 
   const deleteCategory = (index: number) => {
-    if (confirm(`Delete category "${config.categories[index]}"? Existing cost sheets with this category will not be affected.`)) {
-      updateConfig({
-        ...config,
-        categories: config.categories.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Category',
+      message: `Delete category "${config.categories[index]}"? Existing cost sheets with this category will not be affected.`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          categories: config.categories.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   const moveCategory = (index: number, direction: 'up' | 'down') => {
@@ -132,13 +270,18 @@ export default function AdminPage() {
 
   // Labor type management
   const addLaborType = () => {
-    const name = prompt('Enter new labor type:');
-    if (name && name.trim()) {
-      updateConfig({
-        ...config,
-        laborTypes: [...config.laborTypes, name.trim()]
-      });
-    }
+    setModal({
+      type: 'input',
+      title: 'Add Labor Type',
+      label: 'Labor Type',
+      placeholder: 'e.g., Finishing',
+      onSubmit: (name) => {
+        updateConfig({
+          ...config,
+          laborTypes: [...config.laborTypes, name]
+        });
+      }
+    });
   };
 
   const updateLaborType = (index: number, newName: string) => {
@@ -149,26 +292,39 @@ export default function AdminPage() {
   };
 
   const deleteLaborType = (index: number) => {
-    if (confirm(`Delete labor type "${config.laborTypes[index]}"?`)) {
-      updateConfig({
-        ...config,
-        laborTypes: config.laborTypes.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Labor Type',
+      message: `Delete labor type "${config.laborTypes[index]}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          laborTypes: config.laborTypes.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Labor rate management
   const addLaborRate = () => {
-    const name = prompt('Enter rate name (e.g., "Premium"):');
-    if (name && name.trim()) {
-      const rate = prompt('Enter hourly rate:');
-      if (rate && !isNaN(parseFloat(rate))) {
+    setModal({
+      type: 'dual',
+      title: 'Add Labor Rate',
+      label1: 'Rate Name',
+      label2: 'Hourly Rate',
+      placeholder1: 'e.g., Premium',
+      placeholder2: '0.00',
+      inputType2: 'number',
+      prefix2: '$',
+      suffix2: '/hr',
+      onSubmit: (name, rate) => {
         updateConfig({
           ...config,
-          laborRates: [...config.laborRates, { name: name.trim(), rate: parseFloat(rate) }]
+          laborRates: [...config.laborRates, { name, rate: parseFloat(rate) || 0 }]
         });
       }
-    }
+    });
   };
 
   const updateLaborRate = (index: number, field: 'name' | 'rate', value: string) => {
@@ -183,29 +339,45 @@ export default function AdminPage() {
 
   const deleteLaborRate = (index: number) => {
     if (config.laborRates.length <= 1) {
-      alert('You must have at least one labor rate.');
+      setModal({
+        type: 'alert',
+        title: 'Cannot Delete',
+        message: 'You must have at least one labor rate.'
+      });
       return;
     }
-    if (confirm(`Delete labor rate "${config.laborRates[index].name}"?`)) {
-      updateConfig({
-        ...config,
-        laborRates: config.laborRates.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Labor Rate',
+      message: `Delete labor rate "${config.laborRates[index].name}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          laborRates: config.laborRates.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Material preset management
   const addMaterialPreset = () => {
-    const description = prompt('Enter material description:');
-    if (description && description.trim()) {
-      const price = prompt('Enter unit price:');
-      if (price && !isNaN(parseFloat(price))) {
+    setModal({
+      type: 'dual',
+      title: 'Add Material Preset',
+      label1: 'Material Description',
+      label2: 'Unit Price',
+      placeholder1: 'e.g., Steel Tubing',
+      placeholder2: '0.00',
+      inputType2: 'number',
+      prefix2: '$',
+      onSubmit: (description, price) => {
         updateConfig({
           ...config,
-          materialPresets: [...config.materialPresets, { description: description.trim(), unitPrice: parseFloat(price) }]
+          materialPresets: [...config.materialPresets, { description, unitPrice: parseFloat(price) || 0 }]
         });
       }
-    }
+    });
   };
 
   const updateMaterialPreset = (index: number, field: 'description' | 'unitPrice', value: string) => {
@@ -219,26 +391,39 @@ export default function AdminPage() {
   };
 
   const deleteMaterialPreset = (index: number) => {
-    if (confirm(`Delete material preset "${config.materialPresets[index].description}"?`)) {
-      updateConfig({
-        ...config,
-        materialPresets: config.materialPresets.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Material Preset',
+      message: `Delete material preset "${config.materialPresets[index].description}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          materialPresets: config.materialPresets.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Fabric preset management
   const addFabricPreset = () => {
-    const name = prompt('Enter fabric name:');
-    if (name && name.trim()) {
-      const price = prompt('Enter price per yard:');
-      if (price && !isNaN(parseFloat(price))) {
+    setModal({
+      type: 'dual',
+      title: 'Add Fabric Preset',
+      label1: 'Fabric Name',
+      label2: 'Price per Yard',
+      placeholder1: 'e.g., Sunbrella Premium',
+      placeholder2: '0.00',
+      inputType2: 'number',
+      prefix2: '$',
+      suffix2: '/yard',
+      onSubmit: (name, price) => {
         updateConfig({
           ...config,
-          fabricPresets: [...config.fabricPresets, { name: name.trim(), pricePerYard: parseFloat(price) }]
+          fabricPresets: [...config.fabricPresets, { name, pricePerYard: parseFloat(price) || 0 }]
         });
       }
-    }
+    });
   };
 
   const updateFabricPreset = (index: number, field: 'name' | 'pricePerYard', value: string) => {
@@ -252,23 +437,34 @@ export default function AdminPage() {
   };
 
   const deleteFabricPreset = (index: number) => {
-    if (confirm(`Delete fabric preset "${config.fabricPresets[index].name}"?`)) {
-      updateConfig({
-        ...config,
-        fabricPresets: config.fabricPresets.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Delete Fabric Preset',
+      message: `Delete fabric preset "${config.fabricPresets[index].name}"?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          fabricPresets: config.fabricPresets.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Sales rep management
   const addSalesRep = () => {
-    const name = prompt('Enter sales rep / estimator name:');
-    if (name && name.trim()) {
-      updateConfig({
-        ...config,
-        salesReps: [...config.salesReps, name.trim()]
-      });
-    }
+    setModal({
+      type: 'input',
+      title: 'Add Sales Rep / Estimator',
+      label: 'Name',
+      placeholder: 'Enter name...',
+      onSubmit: (name) => {
+        updateConfig({
+          ...config,
+          salesReps: [...config.salesReps, name]
+        });
+      }
+    });
   };
 
   const updateSalesRep = (index: number, newName: string) => {
@@ -279,12 +475,18 @@ export default function AdminPage() {
   };
 
   const deleteSalesRep = (index: number) => {
-    if (confirm(`Remove "${config.salesReps[index]}" from sales reps list?`)) {
-      updateConfig({
-        ...config,
-        salesReps: config.salesReps.filter((_, i) => i !== index)
-      });
-    }
+    setModal({
+      type: 'confirm',
+      title: 'Remove Sales Rep',
+      message: `Remove "${config.salesReps[index]}" from sales reps list?`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateConfig({
+          ...config,
+          salesReps: config.salesReps.filter((_, i) => i !== index)
+        });
+      }
+    });
   };
 
   // Default value updates
@@ -292,6 +494,29 @@ export default function AdminPage() {
     updateConfig({
       ...config,
       defaults: { ...config.defaults, [field]: value }
+    });
+  };
+
+  // Delete all data
+  const handleDeleteAllData = () => {
+    setModal({
+      type: 'confirm',
+      title: 'Delete All Cost Sheet Data',
+      message: 'Are you absolutely sure? All cost sheet data will be permanently deleted. This cannot be undone.',
+      variant: 'danger',
+      onConfirm: () => {
+        // Second confirmation
+        setModal({
+          type: 'confirm',
+          title: 'Final Confirmation',
+          message: 'This is your last chance. All data will be permanently deleted.',
+          variant: 'danger',
+          onConfirm: () => {
+            localStorage.removeItem('costSheets');
+            showMessage('All cost sheet data has been deleted.');
+          }
+        });
+      }
     });
   };
 
@@ -308,11 +533,68 @@ export default function AdminPage() {
     { id: 'defaults', label: 'Defaults', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
     { id: 'materials', label: 'Materials & Fabric', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+    { id: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     { id: 'data', label: 'Data', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' }
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* Custom Modals */}
+      {modal.type === 'confirm' && (
+        <ConfirmModal
+          isOpen={true}
+          onClose={closeModal}
+          onConfirm={modal.onConfirm}
+          title={modal.title}
+          message={modal.message}
+          variant={modal.variant}
+          confirmText={modal.variant === 'danger' ? 'Delete' : 'Confirm'}
+        />
+      )}
+      {modal.type === 'input' && (
+        <InputModal
+          isOpen={true}
+          onClose={closeModal}
+          onSubmit={modal.onSubmit}
+          title={modal.title}
+          label={modal.label}
+          placeholder={modal.placeholder}
+          defaultValue={modal.defaultValue}
+          submitText="Add"
+        />
+      )}
+      {modal.type === 'dual' && (
+        <DualInputModal
+          isOpen={true}
+          onClose={closeModal}
+          onSubmit={modal.onSubmit}
+          title={modal.title}
+          label1={modal.label1}
+          label2={modal.label2}
+          placeholder1={modal.placeholder1}
+          placeholder2={modal.placeholder2}
+          defaultValue1={modal.defaultValue1}
+          defaultValue2={modal.defaultValue2}
+          inputType2={modal.inputType2}
+          prefix2={modal.prefix2}
+          suffix2={modal.suffix2}
+          submitText="Add"
+        />
+      )}
+      {modal.type === 'alert' && (
+        <Modal isOpen={true} onClose={closeModal} title={modal.title} size="sm">
+          <p className="text-gray-600 dark:text-brand-text-secondary mb-6">{modal.message}</p>
+          <div className="flex justify-end">
+            <button
+              onClick={closeModal}
+              className={primaryButtonClass}
+            >
+              OK
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* Header */}
       <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
         <div className="max-w-7xl mx-auto px-6 py-5">
@@ -711,6 +993,25 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Home Base Address */}
+                  <div className="mt-8 pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Company Location</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This address is used to calculate drive time and mileage to job sites.</p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Home Base Address
+                      </label>
+                      <input
+                        type="text"
+                        value={config.homeBaseAddress || ''}
+                        onChange={(e) => updateConfig({ ...config, homeBaseAddress: e.target.value })}
+                        className={inputClass}
+                        placeholder="Enter Universal Awning company address..."
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Full address including city, state, and zip code</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -930,6 +1231,123 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {/* Users Tab */}
+              {activeTab === 'users' && (
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">User Management</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage user access, roles, and permissions.</p>
+                    </div>
+                    <button onClick={fetchUsers} className={secondaryButtonClass} disabled={usersLoading}>
+                      {usersLoading ? 'Loading...' : 'Refresh'}
+                    </button>
+                  </div>
+
+                  {usersLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : users.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-dashed border-gray-300 dark:border-gray-600">
+                      <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <p className="text-gray-500 dark:text-gray-400">No users found. Users will appear here after they sign in with Google.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {users.map((user) => (
+                        <div
+                          key={user.id}
+                          className={`flex items-center gap-4 p-4 rounded-lg border ${
+                            user.isActive
+                              ? 'bg-white dark:bg-brand-surface-grey-dark border-gray-200 dark:border-brand-border-subtle'
+                              : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 opacity-60'
+                          }`}
+                        >
+                          {/* User Avatar */}
+                          {user.image ? (
+                            <img
+                              src={user.image}
+                              alt={user.name || 'User'}
+                              className="w-10 h-10 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                              <span className="text-blue-600 dark:text-blue-300 font-medium">
+                                {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-gray-900 dark:text-brand-text-primary truncate">
+                                {user.name || 'Unknown User'}
+                              </p>
+                              {!user.isActive && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                              {user.email}
+                            </p>
+                          </div>
+
+                          {/* Role Select */}
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-500 dark:text-gray-400">Role:</label>
+                            <select
+                              value={user.role}
+                              onChange={(e) => updateUserRole(user.id, e.target.value)}
+                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="estimator">Estimator</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleUserActive(user.id, user.isActive)}
+                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                                user.isActive
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                              }`}
+                              title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                            >
+                              {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
+                              className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                              title="Delete user"
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Note:</strong> Users are automatically created when they sign in with Google for the first time.
+                      New users default to the &quot;Estimator&quot; role. Deactivated users cannot sign in.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Data Tab */}
               {activeTab === 'data' && (
                 <div className="space-y-8">
@@ -1015,15 +1433,7 @@ export default function AdminPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
 
                     <button
-                      onClick={() => {
-                        if (confirm('Are you absolutely sure you want to delete ALL cost sheet data? This cannot be undone.')) {
-                          if (confirm('This is your last chance. All data will be permanently deleted.')) {
-                            localStorage.removeItem('costSheets');
-                            setSaveMessage('All cost sheet data has been deleted.');
-                            setTimeout(() => setSaveMessage(null), 3000);
-                          }
-                        }
-                      }}
+                      onClick={handleDeleteAllData}
                       className={dangerButtonClass}
                     >
                       Delete All Cost Sheet Data

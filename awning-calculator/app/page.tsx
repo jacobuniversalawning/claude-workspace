@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import { formatCurrency } from '@/lib/calculations';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
 
@@ -44,6 +45,7 @@ interface Analytics {
 
 export default function Home() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [costSheets, setCostSheets] = useState<CostSheet[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -331,6 +333,39 @@ export default function Home() {
               >
                 + New Cost Sheet
               </Link>
+
+              {/* User Menu */}
+              {session?.user && (
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-300 dark:border-brand-border-subtle">
+                  <div className="flex items-center gap-2">
+                    {session.user.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || 'User'}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                        <span className="text-blue-600 dark:text-blue-300 font-medium text-sm">
+                          {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:inline">
+                      {session.user.name || session.user.email}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    title="Sign out"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
