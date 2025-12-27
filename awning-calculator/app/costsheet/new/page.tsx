@@ -22,6 +22,7 @@ interface ProductLine {
 interface MaterialLine {
   id: string;
   description: string;
+  length: number;  // Length in feet for materials like tubing, pipe, etc.
   qty: number;
   unitPrice: number;
   freight: number;
@@ -162,9 +163,9 @@ function CostSheetForm() {
 
   // Materials - Start with 2 blank rows + Miscellaneous
   const [materials, setMaterials] = useState<MaterialLine[]>([
-    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
-    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
-    { id: generateId(), description: 'Miscellaneous', qty: 1, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: 'Miscellaneous', length: 0, qty: 1, unitPrice: 0, freight: 0 },
   ]);
   const [materialsTaxRate, setMaterialsTaxRate] = useState<number>(DEFAULTS.SALES_TAX);
 
@@ -248,17 +249,25 @@ function CostSheetForm() {
   // Load existing data when editing
   useEffect(() => {
     if (editId) {
-      const data = localStorage.getItem('costSheets');
-      if (data) {
-        const sheets = JSON.parse(data);
-        const sheet = sheets.find((s: { id: string }) => s.id === editId);
-        if (sheet) {
+      // Fetch from database via API
+      fetch(`/api/costsheets/${editId}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Cost sheet not found');
+          return res.json();
+        })
+        .then(sheet => {
           setIsEditing(true);
+
+          // Format date strings for input fields
+          const formatDate = (dateStr: string) => {
+            if (!dateStr) return new Date().toISOString().split('T')[0];
+            return new Date(dateStr).toISOString().split('T')[0];
+          };
 
           // Load form data
           setFormData({
-            inquiryDate: sheet.inquiryDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-            dueDate: sheet.dueDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            inquiryDate: formatDate(sheet.inquiryDate),
+            dueDate: formatDate(sheet.dueDate),
             category: sheet.category || adminConfig.categories[0],
             customer: sheet.customer || '',
             salesRep: sheet.salesRep || '',
@@ -267,18 +276,18 @@ function CostSheetForm() {
             estimator: sheet.estimator || '',
           });
 
-          // Load products
-          if (sheet.products && sheet.products.length > 0) {
-            setProducts(sheet.products.map((p: ProductLine) => ({
+          // Load products from dimensions (backward compatible)
+          if (sheet.width || sheet.projection || sheet.height) {
+            setProducts([{
               id: generateId(),
-              name: p.name || 'Product 1',
-              width: p.width || 0,
-              projection: p.projection || 0,
-              height: p.height || 0,
-              valance: p.valance || 0,
-              sqFt: p.sqFt || 0,
-              linFt: p.linFt || 0,
-            })));
+              name: `${sheet.category} 1`,
+              width: sheet.width || 0,
+              projection: sheet.projection || 0,
+              height: sheet.height || 0,
+              valance: sheet.valance || 0,
+              sqFt: sheet.canopySqFt || 0,
+              linFt: sheet.awningLinFt || 0,
+            }]);
           }
 
           // Load materials
@@ -286,6 +295,7 @@ function CostSheetForm() {
             setMaterials(sheet.materials.map((m: MaterialLine) => ({
               id: generateId(),
               description: m.description || '',
+              length: m.length || 0,
               qty: m.qty || 0,
               unitPrice: m.unitPrice || 0,
               freight: m.freight || 0,
@@ -293,11 +303,12 @@ function CostSheetForm() {
           } else if (sheet.miscQty !== undefined || sheet.miscPrice !== undefined) {
             // Backwards compatibility: migrate old miscQty/miscPrice to materials array with 2 blank rows
             setMaterials([
-              { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
-              { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+              { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
+              { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 },
               {
                 id: generateId(),
                 description: 'Miscellaneous',
+                length: 0,
                 qty: sheet.miscQty || 1,
                 unitPrice: sheet.miscPrice || 0,
                 freight: 0,
@@ -392,18 +403,19 @@ function CostSheetForm() {
             }]);
           }
 
-          // Load final price override (or legacy discountIncrease for backwards compatibility)
-          if (sheet.finalPriceOverride !== undefined) {
-            setFinalPriceOverride(sheet.finalPriceOverride);
-          } else if (sheet.discountIncrease !== undefined && sheet.discountIncrease !== 0) {
-            // Legacy: convert old discount/increase to final price override
-            const legacyTotal = (sheet.grandTotal || 0) + sheet.discountIncrease;
-            setFinalPriceOverride(legacyTotal);
+          // Load final price override from discountIncrease
+          if (sheet.discountIncrease !== undefined && sheet.discountIncrease !== 0) {
+            const overrideTotal = (sheet.grandTotal || 0) + sheet.discountIncrease;
+            setFinalPriceOverride(overrideTotal);
           }
-        }
-      }
+        })
+        .catch(error => {
+          console.error('Error loading cost sheet:', error);
+          alert('Error loading cost sheet. Redirecting to dashboard.');
+          router.push('/');
+        });
     }
-  }, [editId]);
+  }, [editId, router, adminConfig.categories]);
 
   // Update labor rates when global rate changes
   useEffect(() => {
@@ -474,7 +486,7 @@ function CostSheetForm() {
   };
 
   // === MATERIAL FUNCTIONS ===
-  const addMaterial = () => setMaterials([...materials, { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 }]);
+  const addMaterial = () => setMaterials([...materials, { id: generateId(), description: '', length: 0, qty: 0, unitPrice: 0, freight: 0 }]);
   const removeMaterial = (id: string) => { if (materials.length > 3) setMaterials(materials.filter((m) => m.id !== id)); };
   const updateMaterial = (id: string, field: keyof MaterialLine, value: string | number) => {
     setMaterials(materials.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
@@ -642,8 +654,6 @@ function CostSheetForm() {
     setSaving(true);
 
     const payload = {
-      id: generateId(),
-      createdAt: new Date().toISOString(),
       ...formData,
       width: products[0]?.width || 0,
       projection: products[0]?.projection || 0,
@@ -680,7 +690,7 @@ function CostSheetForm() {
       totalOtherRequirements,
       totalWithOtherReqs: grandTotal,
       grandTotal,
-      finalPriceOverride,
+      discountIncrease: finalPriceOverride ? finalPriceOverride - grandTotal : 0,
       totalPriceToClient,
       pricePerSqFt: pricePerSqFtFinal,
       pricePerLinFt: pricePerLinFtFinal,
@@ -698,6 +708,7 @@ function CostSheetForm() {
       })),
       materials: materials.filter((m) => m.qty > 0 || m.description).map((m) => ({
         description: m.description,
+        length: m.length,
         qty: m.qty,
         unitPrice: m.unitPrice,
         salesTax: DEFAULTS.SALES_TAX,
@@ -722,24 +733,23 @@ function CostSheetForm() {
       })),
     };
 
-    // Save to localStorage (primary storage until database is configured)
+    // Save to database via API
     try {
-      const existingData = localStorage.getItem('costSheets');
-      let costSheets = existingData ? JSON.parse(existingData) : [];
+      const url = isEditing && editId ? `/api/costsheets/${editId}` : '/api/costsheets';
+      const method = isEditing && editId ? 'PUT' : 'POST';
 
-      if (isEditing && editId) {
-        // Update existing sheet
-        costSheets = costSheets.map((sheet: { id: string }) =>
-          sheet.id === editId ? { ...payload, id: editId } : sheet
-        );
-        alert('Cost sheet updated successfully!');
-      } else {
-        // Add new sheet
-        costSheets.unshift(payload);
-        alert('Cost sheet saved successfully!');
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save cost sheet');
       }
 
-      localStorage.setItem('costSheets', JSON.stringify(costSheets));
+      alert(isEditing ? 'Cost sheet updated successfully!' : 'Cost sheet saved successfully!');
       router.push('/');
     } catch (error) {
       console.error('Save failed:', error);
@@ -928,6 +938,7 @@ function CostSheetForm() {
                   <thead className="bg-gray-100 dark:bg-gray-700">
                     <tr>
                       <th className="px-2 py-2 text-left text-gray-700 dark:text-gray-300">Description</th>
+                      <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Length</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Qty</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-24">Unit $</th>
                       <th className="px-2 py-2 text-right text-gray-700 dark:text-gray-300 w-20">Tax</th>
@@ -940,6 +951,7 @@ function CostSheetForm() {
                     {materials.map((m) => (
                       <tr key={m.id} className="border-t border-gray-200 dark:border-gray-700">
                         <td className="px-2 py-1"><input type="text" value={m.description} onChange={(e) => updateMaterial(m.id, 'description', e.target.value)} className={inputClass} placeholder="Material" /></td>
+                        <td className="px-2 py-1"><input type="number" step="0.01" value={m.length || ''} onChange={(e) => updateMaterial(m.id, 'length', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} placeholder="ft" /></td>
                         <td className="px-2 py-1"><input type="number" value={m.qty || ''} onChange={(e) => updateMaterial(m.id, 'qty', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={m.unitPrice || ''} onChange={(e) => updateMaterial(m.id, 'unitPrice', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(m.qty * m.unitPrice * materialsTaxRate)}</td>
@@ -951,7 +963,7 @@ function CostSheetForm() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30">
-                      <td colSpan={5} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Total Materials:</td>
+                      <td colSpan={6} className="px-2 py-2 text-right font-semibold text-gray-900 dark:text-white">Total Materials:</td>
                       <td className="px-2 py-2 text-right font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalMaterials)}</td>
                       <td></td>
                     </tr>

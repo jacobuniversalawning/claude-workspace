@@ -27,7 +27,7 @@ interface CostSheet {
   markup?: number;
 }
 
-type TabType = 'overview' | 'categories' | 'trends' | 'winloss' | 'salesreps' | 'search';
+type TabType = 'overview' | 'categories' | 'trends' | 'winloss' | 'salesreps' | 'charts' | 'search';
 
 // Simple bar chart component
 function BarChart({
@@ -87,6 +87,182 @@ function WinRateBar({ winRate }: { winRate: number }) {
       <span className="text-sm font-medium text-gray-900 dark:text-gray-100 w-16 text-right">
         {winRate.toFixed(1)}%
       </span>
+    </div>
+  );
+}
+
+// Donut Chart Component
+function DonutChart({
+  data,
+  centerLabel,
+  centerValue
+}: {
+  data: { label: string; value: number; color: string }[];
+  centerLabel?: string;
+  centerValue?: string;
+}) {
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  let cumulativePercent = 0;
+
+  const segments = data.map(d => {
+    const percent = total > 0 ? (d.value / total) * 100 : 0;
+    const startPercent = cumulativePercent;
+    cumulativePercent += percent;
+    return {
+      ...d,
+      percent,
+      startPercent,
+      endPercent: cumulativePercent
+    };
+  });
+
+  return (
+    <div className="relative">
+      <div className="relative w-48 h-48 mx-auto">
+        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+          {segments.map((seg, idx) => {
+            const radius = 40;
+            const circumference = 2 * Math.PI * radius;
+            const strokeDasharray = `${(seg.percent / 100) * circumference} ${circumference}`;
+            const strokeDashoffset = -((seg.startPercent / 100) * circumference);
+
+            return (
+              <circle
+                key={idx}
+                cx="50"
+                cy="50"
+                r={radius}
+                fill="none"
+                strokeWidth="15"
+                stroke={seg.color}
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-500"
+              />
+            );
+          })}
+        </svg>
+        {centerLabel && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{centerValue}</span>
+            <span className="text-sm text-gray-500">{centerLabel}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-wrap justify-center gap-4 mt-4">
+        {segments.map((seg, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              {seg.label} ({seg.percent.toFixed(0)}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Bubble Chart Component for job distribution visualization
+function BubbleChart({
+  data
+}: {
+  data: { label: string; value: number; revenue: number; color: string }[];
+}) {
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
+
+  return (
+    <div className="relative h-80 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 overflow-hidden">
+      <div className="absolute inset-4 flex flex-wrap items-center justify-center gap-2">
+        {data.map((item, idx) => {
+          // Size based on revenue, position based on value
+          const size = Math.max(30, Math.min(120, (item.revenue / maxRevenue) * 100 + 30));
+          const opacity = Math.max(0.4, item.value / maxValue);
+
+          return (
+            <div
+              key={idx}
+              className="relative group cursor-pointer transition-transform hover:scale-110"
+              style={{
+                width: size,
+                height: size,
+              }}
+            >
+              <div
+                className="absolute inset-0 rounded-full flex items-center justify-center text-white font-medium text-xs text-center p-1"
+                style={{
+                  backgroundColor: item.color,
+                  opacity
+                }}
+              >
+                <span className="truncate max-w-full">
+                  {item.label.length > 10 ? item.label.substring(0, 10) + '...' : item.label}
+                </span>
+              </div>
+              <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                {item.label}: {item.value} jobs, {formatCurrency(item.revenue)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Scatter Plot Component
+function ScatterPlot({
+  data
+}: {
+  data: { x: number; y: number; label: string; outcome: string }[];
+}) {
+  const maxX = Math.max(...data.map(d => d.x), 1);
+  const maxY = Math.max(...data.map(d => d.y), 1);
+
+  return (
+    <div className="relative h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300 dark:bg-gray-600" />
+      <div className="absolute top-0 bottom-0 left-0 w-px bg-gray-300 dark:bg-gray-600" />
+      <div className="absolute bottom-2 right-4 text-xs text-gray-400">Price →</div>
+      <div className="absolute top-4 left-2 text-xs text-gray-400 transform -rotate-90">Size →</div>
+
+      {data.map((point, idx) => {
+        const xPos = (point.x / maxX) * 90 + 5;
+        const yPos = 95 - ((point.y / maxY) * 85 + 5);
+
+        return (
+          <div
+            key={idx}
+            className="absolute w-3 h-3 rounded-full transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+            style={{
+              left: `${xPos}%`,
+              top: `${yPos}%`,
+              backgroundColor: point.outcome === 'Won' ? '#22c55e' : point.outcome === 'Lost' ? '#ef4444' : '#9ca3af'
+            }}
+            title={`${point.label}: ${formatCurrency(point.x)} price, ${point.y.toFixed(0)} sq ft`}
+          >
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+              {point.label}: {formatCurrency(point.x)}, {point.y.toFixed(0)} sq ft
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="absolute bottom-4 right-4 flex gap-4 text-xs">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <span className="text-gray-500">Won</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-gray-500">Lost</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-gray-400" />
+          <span className="text-gray-500">Unknown</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -326,6 +502,7 @@ export default function AnalyticsPage() {
     { id: 'trends', label: 'Trends', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     { id: 'winloss', label: 'Win/Loss', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+    { id: 'charts', label: 'Charts', icon: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z' },
     { id: 'search', label: 'Search', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' }
   ];
 
@@ -767,6 +944,145 @@ export default function AnalyticsPage() {
                 {salesRepMetrics.length === 0 && (
                   <div className="text-center py-12 text-gray-500">No data available</div>
                 )}
+              </div>
+            )}
+
+            {/* Charts Tab */}
+            {activeTab === 'charts' && (
+              <div className="space-y-6">
+                {/* Bubble Chart - Category Distribution */}
+                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Category Bubble Map</h3>
+                  <p className="text-sm text-gray-500 mb-4">Bubble size represents revenue, opacity represents job count</p>
+                  <BubbleChart
+                    data={categoryMetrics.slice(0, 12).map((cat, idx) => ({
+                      label: cat.name,
+                      value: cat.count,
+                      revenue: cat.revenue,
+                      color: [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899',
+                        '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7'
+                      ][idx % 12]
+                    }))}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Donut Chart - Outcome Distribution */}
+                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Job Outcomes</h3>
+                    <DonutChart
+                      data={[
+                        { label: 'Won', value: overviewMetrics.wonCount, color: '#22c55e' },
+                        { label: 'Lost', value: overviewMetrics.lostCount, color: '#ef4444' },
+                        { label: 'Unknown', value: overviewMetrics.unknownCount, color: '#9ca3af' }
+                      ].filter(d => d.value > 0)}
+                      centerLabel="Total"
+                      centerValue={overviewMetrics.totalJobs.toString()}
+                    />
+                  </div>
+
+                  {/* Donut Chart - Revenue by Top Categories */}
+                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Revenue by Category</h3>
+                    <DonutChart
+                      data={categoryMetrics.slice(0, 5).map((cat, idx) => ({
+                        label: cat.name.length > 15 ? cat.name.substring(0, 15) + '...' : cat.name,
+                        value: cat.revenue,
+                        color: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'][idx]
+                      }))}
+                      centerLabel="Total"
+                      centerValue={formatCurrency(overviewMetrics.totalRevenue)}
+                    />
+                  </div>
+                </div>
+
+                {/* Scatter Plot - Price vs Size */}
+                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Price vs Size Analysis</h3>
+                  <p className="text-sm text-gray-500 mb-4">Each point represents a job - X axis is price, Y axis is square footage</p>
+                  <ScatterPlot
+                    data={filteredSheets
+                      .filter(s => s.totalPriceToClient && s.canopySqFt)
+                      .slice(0, 50)
+                      .map(s => ({
+                        x: s.totalPriceToClient,
+                        y: s.canopySqFt || 0,
+                        label: s.customer || s.project || 'Unknown',
+                        outcome: s.outcome
+                      }))}
+                  />
+                </div>
+
+                {/* Cost Breakdown Donut */}
+                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Average Cost Breakdown</h3>
+                  <div className="grid grid-cols-2 gap-8">
+                    <DonutChart
+                      data={(() => {
+                        const wonSheets = filteredSheets.filter(s => s.outcome === 'Won');
+                        const avgMaterials = wonSheets.length > 0 ? wonSheets.reduce((sum, s) => sum + (s.totalMaterials || 0), 0) / wonSheets.length : 0;
+                        const avgFabric = wonSheets.length > 0 ? wonSheets.reduce((sum, s) => sum + (s.totalFabric || 0), 0) / wonSheets.length : 0;
+                        const avgLabor = wonSheets.length > 0 ? wonSheets.reduce((sum, s) => sum + (s.totalLabor || 0), 0) / wonSheets.length : 0;
+
+                        return [
+                          { label: 'Materials', value: avgMaterials, color: '#3b82f6' },
+                          { label: 'Fabric', value: avgFabric, color: '#10b981' },
+                          { label: 'Labor', value: avgLabor, color: '#f59e0b' }
+                        ].filter(d => d.value > 0);
+                      })()}
+                      centerLabel="Avg Cost"
+                      centerValue={formatCurrency(
+                        filteredSheets.filter(s => s.outcome === 'Won').length > 0
+                          ? filteredSheets.filter(s => s.outcome === 'Won').reduce((sum, s) => sum + (s.subtotalBeforeMarkup || 0), 0) / filteredSheets.filter(s => s.outcome === 'Won').length
+                          : 0
+                      )}
+                    />
+                    <div className="flex flex-col justify-center space-y-4">
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <h4 className="text-sm font-medium text-gray-500 mb-2">Cost Insights</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-300">Avg Materials</span>
+                            <span className="font-medium text-blue-600">
+                              {formatCurrency(
+                                filteredSheets.filter(s => s.outcome === 'Won').length > 0
+                                  ? filteredSheets.filter(s => s.outcome === 'Won').reduce((sum, s) => sum + (s.totalMaterials || 0), 0) / filteredSheets.filter(s => s.outcome === 'Won').length
+                                  : 0
+                              )}
+                            </span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-300">Avg Fabric</span>
+                            <span className="font-medium text-green-600">
+                              {formatCurrency(
+                                filteredSheets.filter(s => s.outcome === 'Won').length > 0
+                                  ? filteredSheets.filter(s => s.outcome === 'Won').reduce((sum, s) => sum + (s.totalFabric || 0), 0) / filteredSheets.filter(s => s.outcome === 'Won').length
+                                  : 0
+                              )}
+                            </span>
+                          </li>
+                          <li className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-300">Avg Labor</span>
+                            <span className="font-medium text-yellow-600">
+                              {formatCurrency(
+                                filteredSheets.filter(s => s.outcome === 'Won').length > 0
+                                  ? filteredSheets.filter(s => s.outcome === 'Won').reduce((sum, s) => sum + (s.totalLabor || 0), 0) / filteredSheets.filter(s => s.outcome === 'Won').length
+                                  : 0
+                              )}
+                            </span>
+                          </li>
+                          <li className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                            <span className="text-gray-600 dark:text-gray-300">Avg Markup</span>
+                            <span className="font-medium text-purple-600">
+                              {overviewMetrics.avgMarkup.toFixed(0)}%
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

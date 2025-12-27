@@ -1,6 +1,14 @@
 // Admin configuration for Universal Awning Cost Sheet Calculator
 // Stored in localStorage to allow admin editing without code changes
 
+// AI Provider configuration
+export interface AIProviderConfig {
+  enabled: boolean;
+  apiKey: string;
+  model: string;
+  maxTokens: number;
+}
+
 export interface AdminConfig {
   // Product categories
   categories: string[];
@@ -32,6 +40,16 @@ export interface AdminConfig {
 
   // Home base address for distance calculations
   homeBaseAddress: string;
+
+  // AI API configurations
+  aiProviders: {
+    claude: AIProviderConfig;
+    openai: AIProviderConfig;
+    gemini: AIProviderConfig;
+  };
+
+  // Default AI provider to use
+  defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'none';
 }
 
 // Default configuration - matches the existing constants
@@ -106,7 +124,28 @@ export const DEFAULT_CONFIG: AdminConfig = {
     { name: 'Stamoid', pricePerYard: 40 },
     { name: 'Vinyl', pricePerYard: 15 }
   ],
-  homeBaseAddress: ''
+  homeBaseAddress: '',
+  aiProviders: {
+    claude: {
+      enabled: false,
+      apiKey: '',
+      model: 'claude-3-5-sonnet-20241022',
+      maxTokens: 4096
+    },
+    openai: {
+      enabled: false,
+      apiKey: '',
+      model: 'gpt-4o',
+      maxTokens: 4096
+    },
+    gemini: {
+      enabled: false,
+      apiKey: '',
+      model: 'gemini-1.5-pro',
+      maxTokens: 4096
+    }
+  },
+  defaultAIProvider: 'none'
 };
 
 const ADMIN_CONFIG_KEY = 'adminConfig';
@@ -125,7 +164,13 @@ export function getAdminConfig(): AdminConfig {
       return {
         ...DEFAULT_CONFIG,
         ...parsed,
-        defaults: { ...DEFAULT_CONFIG.defaults, ...parsed.defaults }
+        defaults: { ...DEFAULT_CONFIG.defaults, ...parsed.defaults },
+        aiProviders: {
+          claude: { ...DEFAULT_CONFIG.aiProviders.claude, ...parsed.aiProviders?.claude },
+          openai: { ...DEFAULT_CONFIG.aiProviders.openai, ...parsed.aiProviders?.openai },
+          gemini: { ...DEFAULT_CONFIG.aiProviders.gemini, ...parsed.aiProviders?.gemini },
+        },
+        defaultAIProvider: parsed.defaultAIProvider || DEFAULT_CONFIG.defaultAIProvider,
       };
     }
   } catch (error) {

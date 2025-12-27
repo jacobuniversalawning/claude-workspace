@@ -73,15 +73,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.role = dbUser.role;
             token.isActive = dbUser.isActive;
           } else {
-            // User not yet in database, use defaults
-            token.role = "estimator";
-            token.isActive = true;
+            // User not yet in database, use defaults (pending/inactive)
+            token.role = "pending";
+            token.isActive = false;
           }
         } catch (error) {
           console.error("[Auth] JWT callback error fetching user:", error);
-          // Set defaults on error
-          token.role = "estimator";
-          token.isActive = true;
+          // Set defaults on error (pending/inactive for security)
+          token.role = "pending";
+          token.isActive = false;
         }
       }
 
@@ -100,10 +100,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!userId) {
           console.warn("[Auth] Session callback: No user ID available");
-          // Return session with defaults
+          // Return session with defaults (pending/inactive for security)
           if (session.user) {
-            session.user.role = "estimator";
-            session.user.isActive = true;
+            session.user.role = "pending";
+            session.user.isActive = false;
           }
           return session;
         }
@@ -122,22 +122,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 where: { id: userId },
                 select: { role: true, isActive: true },
               });
-              session.user.role = dbUser?.role || "estimator";
-              session.user.isActive = dbUser?.isActive ?? true;
+              session.user.role = dbUser?.role || "pending";
+              session.user.isActive = dbUser?.isActive ?? false;
             } catch (dbError) {
               console.error("[Auth] Session callback DB error:", dbError);
-              session.user.role = "estimator";
-              session.user.isActive = true;
+              session.user.role = "pending";
+              session.user.isActive = false;
             }
           }
         }
         return session;
       } catch (error) {
         console.error("[Auth] Session callback error:", error);
-        // Return session with defaults to prevent redirect loops
+        // Return session with defaults to prevent redirect loops (still inactive for security)
         if (session.user) {
-          session.user.role = "estimator";
-          session.user.isActive = true;
+          session.user.role = "pending";
+          session.user.isActive = false;
         }
         return session;
       }
