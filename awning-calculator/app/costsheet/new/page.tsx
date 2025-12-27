@@ -997,7 +997,7 @@ function CostSheetForm() {
                         <td className="px-2 py-1"><input type="text" value={l.description} onChange={(e) => updateLabor(l.id, 'description', e.target.value)} className={inputClass} placeholder="Notes..." /></td>
                         <td className="px-2 py-1"><input type="number" step="0.5" value={l.hours || ''} onChange={(e) => updateLabor(l.id, 'hours', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-center text-xs text-blue-600 dark:text-blue-400 font-medium">{calculateDays(l.hours)}</td>
-                        <td className="px-2 py-1"><input type="number" value={l.people || ''} onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 1)} className={inputClass + " text-right"} /></td>
+                        <td className="px-2 py-1"><input type="number" value={l.people === 0 ? '' : l.people} onChange={(e) => updateLabor(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} className={inputClass + " text-right"} placeholder="1" /></td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcLaborTotal(l))}</td>
                         <td className="px-2 py-1 text-center">{laborLines.length > 1 && <button type="button" onClick={() => removeLabor(l.id)} className={deleteBtn}>×</button>}</td>
@@ -1040,7 +1040,7 @@ function CostSheetForm() {
                         <td className="px-2 py-1"><input type="text" value={l.description} onChange={(e) => updateInstall(l.id, 'description', e.target.value)} className={inputClass} placeholder="Notes..." /></td>
                         <td className="px-2 py-1"><input type="number" step="0.5" value={l.hours || ''} onChange={(e) => updateInstall(l.id, 'hours', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-center text-xs text-orange-600 dark:text-orange-400 font-medium">{calculateDays(l.hours)}</td>
-                        <td className="px-2 py-1"><input type="number" value={l.people || ''} onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 1)} className={inputClass + " text-right"} /></td>
+                        <td className="px-2 py-1"><input type="number" value={l.people === 0 ? '' : l.people} onChange={(e) => updateInstall(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} className={inputClass + " text-right"} placeholder="1" /></td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcLaborTotal(l))}</td>
                         <td className="px-2 py-1 text-center">{installLines.length > 1 && <button type="button" onClick={() => removeInstall(l.id)} className={deleteBtn}>×</button>}</td>
