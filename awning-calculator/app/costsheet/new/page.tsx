@@ -535,9 +535,48 @@ function CostSheetForm() {
   const pricePerSqFtFinal = totalSqFt > 0 ? totalPriceToClient / totalSqFt : null;
   const pricePerLinFtFinal = totalLinFt > 0 ? totalPriceToClient / totalLinFt : null;
 
+  // Calculate local averages from localStorage as fallback
+  const getLocalAverages = (category: string) => {
+    try {
+      const localData = localStorage.getItem('costSheets');
+      if (!localData) return { avgSqFt: 0, avgLinFt: 0 };
+
+      const costSheets = JSON.parse(localData);
+      const categorySheets = costSheets.filter((s: any) => s.category === category && s.outcome === 'Won');
+
+      if (categorySheets.length === 0) {
+        // If no won sheets, use all sheets for that category
+        const allCategorySheets = costSheets.filter((s: any) => s.category === category);
+        if (allCategorySheets.length === 0) return { avgSqFt: 0, avgLinFt: 0 };
+
+        const sqFtPrices = allCategorySheets.filter((s: any) => s.pricePerSqFtPreDelivery).map((s: any) => s.pricePerSqFtPreDelivery);
+        const linFtPrices = allCategorySheets.filter((s: any) => s.pricePerLinFtPreDelivery).map((s: any) => s.pricePerLinFtPreDelivery);
+
+        return {
+          avgSqFt: sqFtPrices.length > 0 ? sqFtPrices.reduce((a: number, b: number) => a + b, 0) / sqFtPrices.length : 0,
+          avgLinFt: linFtPrices.length > 0 ? linFtPrices.reduce((a: number, b: number) => a + b, 0) / linFtPrices.length : 0,
+        };
+      }
+
+      const sqFtPrices = categorySheets.filter((s: any) => s.pricePerSqFtPreDelivery).map((s: any) => s.pricePerSqFtPreDelivery);
+      const linFtPrices = categorySheets.filter((s: any) => s.pricePerLinFtPreDelivery).map((s: any) => s.pricePerLinFtPreDelivery);
+
+      return {
+        avgSqFt: sqFtPrices.length > 0 ? sqFtPrices.reduce((a: number, b: number) => a + b, 0) / sqFtPrices.length : 0,
+        avgLinFt: linFtPrices.length > 0 ? linFtPrices.reduce((a: number, b: number) => a + b, 0) / linFtPrices.length : 0,
+      };
+    } catch (error) {
+      console.error('Error calculating local averages:', error);
+      return { avgSqFt: 0, avgLinFt: 0 };
+    }
+  };
+
   const categoryAnalytics = analytics?.byCategory.find((c) => c.category === formData.category);
-  const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || 0;
-  const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || 0;
+  const localAvgs = getLocalAverages(formData.category);
+
+  // Use analytics if available, otherwise fall back to local averages
+  const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || localAvgs.avgSqFt;
+  const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
 
   const getGuardrailColor = (currentPrice: number | null, avgPrice: number): string => {
     if (!currentPrice || avgPrice === 0) return 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
