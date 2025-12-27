@@ -727,9 +727,11 @@ function CostSheetForm() {
 
   // Helper function to get error class for People field when hours > 0 but people = 0
   const getPeopleFieldClass = (hours: number, people: number): string => {
-    const hasError = hours > 0 && people === 0;
+    // Check if there are hours but no people (catches 0, null, undefined, NaN)
+    const hasError = hours > 0 && !people;
     if (hasError) {
-      return inputClass + " text-right !border-red-500 dark:!border-red-500 !bg-red-50 dark:!bg-red-900/20";
+      // Error state: red border and background
+      return "w-full border-2 border-red-500 dark:border-red-500 rounded-input px-4 py-3 text-sm bg-red-50 dark:bg-red-900/20 text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted focus:outline-none focus:border-red-600 dark:focus:border-red-400 transition-all duration-200 text-right";
     }
     return inputClass + " text-right";
   };
