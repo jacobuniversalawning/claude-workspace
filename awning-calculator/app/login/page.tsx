@@ -16,8 +16,11 @@ function LoginContent() {
     // Only redirect when fully authenticated and not already redirecting
     if (status === 'authenticated' && !isRedirecting) {
       setIsRedirecting(true);
-      // Use hard navigation to ensure redirect works
-      window.location.href = callbackUrl.startsWith('/') ? callbackUrl : '/';
+      const targetUrl = callbackUrl.startsWith('/') ? callbackUrl : '/';
+      // Use hard navigation with small delay to ensure state is settled
+      setTimeout(() => {
+        window.location.replace(targetUrl);
+      }, 100);
     }
   }, [status, callbackUrl, isRedirecting]);
 
