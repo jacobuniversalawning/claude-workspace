@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/calculations';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 interface CostSheet {
   id: string;
@@ -49,10 +48,13 @@ export default function Home() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedOutcomes, setSelectedOutcomes] = useState<string[]>([]);
   const [showCategoryFilter, setShowCategoryFilter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [storageType, setStorageType] = useState<'database' | 'local' | null>(null);
   const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     fetchCostSheets();
@@ -133,17 +135,73 @@ export default function Home() {
     };
   };
 
-  const filteredCostSheets = costSheets.filter((sheet) => {
-    const matchesSearch =
-      !searchTerm ||
-      sheet.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sheet.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sheet.category?.toLowerCase().includes(searchTerm.toLowerCase());
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
 
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(sheet.category);
+  const toggleOutcome = (outcome: string) => {
+    setSelectedOutcomes(prev =>
+      prev.includes(outcome)
+        ? prev.filter(o => o !== outcome)
+        : [...prev, outcome]
+    );
+  };
 
-    return matchesSearch && matchesCategory;
-  });
+  const filteredAndSortedCostSheets = costSheets
+    .filter((sheet) => {
+      const matchesSearch =
+        !searchTerm ||
+        sheet.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sheet.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sheet.category?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(sheet.category);
+      const matchesOutcome = selectedOutcomes.length === 0 || selectedOutcomes.includes(sheet.outcome || 'Unknown');
+
+      return matchesSearch && matchesCategory && matchesOutcome;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'date':
+          comparison = new Date(a.inquiryDate).getTime() - new Date(b.inquiryDate).getTime();
+          break;
+        case 'category':
+          comparison = (a.category || '').localeCompare(b.category || '');
+          break;
+        case 'customer':
+          comparison = (a.customer || '').localeCompare(b.customer || '');
+          break;
+        case 'project':
+          comparison = (a.project || '').localeCompare(b.project || '');
+          break;
+        case 'estimator':
+          comparison = (a.estimator || '').localeCompare(b.estimator || '');
+          break;
+        case 'total':
+          comparison = a.totalPriceToClient - b.totalPriceToClient;
+          break;
+        case 'sqft':
+          comparison = (a.pricePerSqFtPreDelivery || 0) - (b.pricePerSqFtPreDelivery || 0);
+          break;
+        case 'linft':
+          comparison = (a.pricePerLinFtPreDelivery || 0) - (b.pricePerLinFtPreDelivery || 0);
+          break;
+        case 'outcome':
+          comparison = (a.outcome || 'Unknown').localeCompare(b.outcome || 'Unknown');
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -247,15 +305,12 @@ export default function Home() {
               </h1>
               <p className="text-h2 text-gray-600 dark:text-brand-text-secondary mt-1.5">Cost Sheet Calculator</p>
             </div>
-            <div className="flex items-center gap-3">
-              <DarkModeToggle />
-              <Link
-                href="/costsheet/new"
-                className="bg-blue-600 dark:bg-brand-mint text-white dark:text-brand-deep-black px-5 py-2 rounded-button hover:bg-blue-700 dark:hover:brightness-110 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-brand-mint/20 dark:hover:shadow-brand-mint/30"
-              >
-                + New Cost Sheet
-              </Link>
-            </div>
+            <Link
+              href="/costsheet/new"
+              className="bg-blue-600 dark:bg-brand-google-blue text-white px-6 py-2.5 rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover font-medium transition-all duration-200 hover:shadow-lg"
+            >
+              + New Cost Sheet
+            </Link>
           </div>
         </div>
       </header>
@@ -311,7 +366,7 @@ export default function Home() {
         <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Cost Sheet History</h2>
 
         <div className="bg-white dark:bg-brand-surface-black p-5 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-3 transition-all duration-300">
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex flex-wrap gap-3 items-center mb-3">
             <input
               type="text"
               placeholder="Search customer, project, or category..."
@@ -371,6 +426,50 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          {/* Outcome Filter Buttons */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Filter by Outcome:</span>
+            <button
+              onClick={() => toggleOutcome('Won')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-button transition-all duration-200 ${
+                selectedOutcomes.includes('Won')
+                  ? 'bg-green-600 text-white'
+                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50'
+              }`}
+            >
+              Won
+            </button>
+            <button
+              onClick={() => toggleOutcome('Lost')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-button transition-all duration-200 ${
+                selectedOutcomes.includes('Lost')
+                  ? 'bg-red-600 text-white'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-900/50'
+              }`}
+            >
+              Lost
+            </button>
+            <button
+              onClick={() => toggleOutcome('Unknown')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-button transition-all duration-200 ${
+                selectedOutcomes.includes('Unknown')
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              Unknown
+            </button>
+            {selectedOutcomes.length > 0 && (
+              <button
+                onClick={() => setSelectedOutcomes([])}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline ml-2"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           {selectedCategories.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-brand-border-subtle">
               {selectedCategories.map(cat => (
@@ -395,20 +494,83 @@ export default function Home() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-brand-border-subtle">
             <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
               <tr>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider" style={{ minWidth: '150px' }}>Project</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estimator</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">$/sq ft</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">$/lin ft</th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Outcome</th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('date')}>
+                  <div className="flex items-center gap-1">
+                    Date
+                    <svg className={`w-4 h-4 ${sortBy === 'date' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'date' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('category')}>
+                  <div className="flex items-center gap-1">
+                    Category
+                    <svg className={`w-4 h-4 ${sortBy === 'category' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'category' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('customer')}>
+                  <div className="flex items-center gap-1">
+                    Customer
+                    <svg className={`w-4 h-4 ${sortBy === 'customer' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'customer' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" style={{ minWidth: '150px' }} onClick={() => handleSort('project')}>
+                  <div className="flex items-center gap-1">
+                    Project
+                    <svg className={`w-4 h-4 ${sortBy === 'project' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'project' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('estimator')}>
+                  <div className="flex items-center gap-1">
+                    Estimator
+                    <svg className={`w-4 h-4 ${sortBy === 'estimator' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'estimator' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('total')}>
+                  <div className="flex items-center gap-1">
+                    Total
+                    <svg className={`w-4 h-4 ${sortBy === 'total' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'total' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('sqft')}>
+                  <div className="flex items-center gap-1">
+                    $/sq ft
+                    <svg className={`w-4 h-4 ${sortBy === 'sqft' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'sqft' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('linft')}>
+                  <div className="flex items-center gap-1">
+                    $/lin ft
+                    <svg className={`w-4 h-4 ${sortBy === 'linft' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'linft' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('outcome')}>
+                  <div className="flex items-center gap-1">
+                    Outcome
+                    <svg className={`w-4 h-4 ${sortBy === 'outcome' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'outcome' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                    </svg>
+                  </div>
+                </th>
                 <th className="px-3 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12"></th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-brand-surface-black divide-y divide-gray-200 dark:divide-brand-border-subtle">
-              {filteredCostSheets.map((sheet) => {
+              {filteredAndSortedCostSheets.map((sheet) => {
                 // Use analytics if available, otherwise calculate local averages
                 const categoryStats = analytics?.byCategory.find(c => c.category === sheet.category);
                 const localAvgs = getLocalAverages(sheet.category);
@@ -482,7 +644,7 @@ export default function Home() {
               })}
             </tbody>
           </table>
-          {filteredCostSheets.length === 0 && (
+          {filteredAndSortedCostSheets.length === 0 && (
             <div className="text-center py-16 text-gray-500 dark:text-gray-400">
               No cost sheets found. Create your first one!
             </div>

@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PRODUCT_CATEGORIES, LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 // Interfaces
 interface ProductLine {
@@ -194,6 +193,23 @@ function CostSheetForm() {
   // Track if drive time has been manually edited
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
+
+  // Prevent scroll wheel from changing number inputs - only when focused
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number' && document.activeElement === target) {
+        e.preventDefault();
+      }
+    };
+
+    // Add event listener with passive: false to allow preventDefault
+    document.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   // Fetch analytics
   useEffect(() => {
@@ -518,9 +534,48 @@ function CostSheetForm() {
   const pricePerSqFtFinal = totalSqFt > 0 ? totalPriceToClient / totalSqFt : null;
   const pricePerLinFtFinal = totalLinFt > 0 ? totalPriceToClient / totalLinFt : null;
 
+  // Calculate local averages from localStorage as fallback
+  const getLocalAverages = (category: string) => {
+    try {
+      const localData = localStorage.getItem('costSheets');
+      if (!localData) return { avgSqFt: 0, avgLinFt: 0 };
+
+      const costSheets = JSON.parse(localData);
+      const categorySheets = costSheets.filter((s: any) => s.category === category && s.outcome === 'Won');
+
+      if (categorySheets.length === 0) {
+        // If no won sheets, use all sheets for that category
+        const allCategorySheets = costSheets.filter((s: any) => s.category === category);
+        if (allCategorySheets.length === 0) return { avgSqFt: 0, avgLinFt: 0 };
+
+        const sqFtPrices = allCategorySheets.filter((s: any) => s.pricePerSqFtPreDelivery).map((s: any) => s.pricePerSqFtPreDelivery);
+        const linFtPrices = allCategorySheets.filter((s: any) => s.pricePerLinFtPreDelivery).map((s: any) => s.pricePerLinFtPreDelivery);
+
+        return {
+          avgSqFt: sqFtPrices.length > 0 ? sqFtPrices.reduce((a: number, b: number) => a + b, 0) / sqFtPrices.length : 0,
+          avgLinFt: linFtPrices.length > 0 ? linFtPrices.reduce((a: number, b: number) => a + b, 0) / linFtPrices.length : 0,
+        };
+      }
+
+      const sqFtPrices = categorySheets.filter((s: any) => s.pricePerSqFtPreDelivery).map((s: any) => s.pricePerSqFtPreDelivery);
+      const linFtPrices = categorySheets.filter((s: any) => s.pricePerLinFtPreDelivery).map((s: any) => s.pricePerLinFtPreDelivery);
+
+      return {
+        avgSqFt: sqFtPrices.length > 0 ? sqFtPrices.reduce((a: number, b: number) => a + b, 0) / sqFtPrices.length : 0,
+        avgLinFt: linFtPrices.length > 0 ? linFtPrices.reduce((a: number, b: number) => a + b, 0) / linFtPrices.length : 0,
+      };
+    } catch (error) {
+      console.error('Error calculating local averages:', error);
+      return { avgSqFt: 0, avgLinFt: 0 };
+    }
+  };
+
   const categoryAnalytics = analytics?.byCategory.find((c) => c.category === formData.category);
-  const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || 0;
-  const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || 0;
+  const localAvgs = getLocalAverages(formData.category);
+
+  // Use analytics if available, otherwise fall back to local averages
+  const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || localAvgs.avgSqFt;
+  const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
 
   const getGuardrailColor = (currentPrice: number | null, avgPrice: number): string => {
     if (!currentPrice || avgPrice === 0) return 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
@@ -674,12 +729,9 @@ function CostSheetForm() {
                     <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">Universal Awning & Canopy</h1>
                     <p className="text-h2 text-gray-600 dark:text-brand-text-secondary">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <DarkModeToggle />
-                    <button type="button" onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-brand-text-secondary dark:hover:text-brand-text-primary transition-all duration-200 hover:translate-x-[-2px]">
-                      ← Dashboard
-                    </button>
-                  </div>
+                  <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg">
+                    Go back to Dashboard
+                  </button>
                 </div>
 
                 {/* Row 1: Dates */}
@@ -694,8 +746,8 @@ function CostSheetForm() {
                   </div>
                 </div>
 
-                {/* Row 2: Customer, Sales Rep, Estimator, Project */}
-                <div className="grid grid-cols-4 gap-4 mt-4">
+                {/* Row 2: Customer, Sales Rep, Estimator */}
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Customer</label>
                     <input type="text" value={formData.customer} onChange={(e) => setFormData({ ...formData, customer: e.target.value })} className={inputClass} placeholder="Customer name" />
@@ -708,33 +760,34 @@ function CostSheetForm() {
                     <label className={labelClass}>Estimator</label>
                     <input type="text" value={formData.estimator} onChange={(e) => setFormData({ ...formData, estimator: e.target.value })} className={inputClass} placeholder="Estimator name" />
                   </div>
+                </div>
+
+                {/* Row 3: Project (1/3) and Job Site Address (2/3) */}
+                <div className="grid grid-cols-3 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Project</label>
                     <input type="text" value={formData.project} onChange={(e) => setFormData({ ...formData, project: e.target.value })} className={inputClass} placeholder="Project name" />
                   </div>
-                </div>
-
-                {/* Row 3: Job Site Address (full width) */}
-                <div className="mt-4">
-                  <label className={labelClass}>Job Site Address</label>
-                  <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
+                  <div className="col-span-2">
+                    <label className={labelClass}>Job Site Address</label>
+                    <input type="text" value={formData.jobSite} onChange={(e) => setFormData({ ...formData, jobSite: e.target.value })} className={inputClass} placeholder="Full job site address" />
+                  </div>
                 </div>
               </div>
 
               {/* Products Section */}
               <div className={cardClass}>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Products & Dimensions</h2>
-                  <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
-                </div>
-
-                {/* Category Selection */}
-                <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <label className={labelClass}>Product Category</label>
-                  <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass + " max-w-md"}>
-                    {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This category applies to all products on this cost sheet</p>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Products & Dimensions</h2>
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-700 dark:text-brand-text-secondary">Category:</label>
+                      <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className={inputClass + " max-w-xs"}>
+                        {PRODUCT_CATEGORIES.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                      </select>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Applies to all products</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -775,9 +828,12 @@ function CostSheetForm() {
                   ))}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-8">
-                  <div><span className="text-gray-600 dark:text-gray-400">Total Sq Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalSqFt.toFixed(2)}</span></div>
-                  <div><span className="text-gray-600 dark:text-gray-400">Total Lin Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalLinFt.toFixed(2)}</span></div>
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
+                  <div className="flex gap-8">
+                    <div><span className="text-gray-600 dark:text-gray-400">Total Sq Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalSqFt.toFixed(2)}</span></div>
+                    <div><span className="text-gray-600 dark:text-gray-400">Total Lin Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalLinFt.toFixed(2)}</span></div>
+                  </div>
                 </div>
               </div>
 
@@ -889,36 +945,37 @@ function CostSheetForm() {
               {/* Labor */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabrication Labor</h2>
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">Rate:</label>
-                    <select
-                      value={laborRate === LABOR_RATES.AGGRESSIVE || laborRate === LABOR_RATES.REGULAR || laborRate === LABOR_RATES.PREVAILING_WAGE ? laborRate : 'custom'}
-                      onChange={(e) => {
-                        if (e.target.value === 'custom') return;
-                        setLaborRate(parseFloat(e.target.value));
-                      }}
-                      className={inputClass + " w-32"}
-                    >
-                      <option value={LABOR_RATES.AGGRESSIVE}>Aggressive (${LABOR_RATES.AGGRESSIVE}/hr)</option>
-                      <option value={LABOR_RATES.REGULAR}>Regular (${LABOR_RATES.REGULAR}/hr)</option>
-                      <option value={LABOR_RATES.PREVAILING_WAGE}>Prevailing (${LABOR_RATES.PREVAILING_WAGE}/hr)</option>
-                      <option value="custom">Custom Rate</option>
-                    </select>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">$</span>
-                      <input
-                        type="number"
-                        step="1"
-                        value={laborRate}
-                        onChange={(e) => setLaborRate(parseFloat(e.target.value) || 0)}
-                        className={inputClass + " w-24 text-right"}
-                        placeholder="$/hr"
-                      />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">/hr</span>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabrication Labor</h2>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600 dark:text-gray-400">Rate:</label>
+                      <select
+                        value={laborRate === LABOR_RATES.AGGRESSIVE || laborRate === LABOR_RATES.REGULAR || laborRate === LABOR_RATES.PREVAILING_WAGE ? laborRate : 'custom'}
+                        onChange={(e) => {
+                          if (e.target.value === 'custom') return;
+                          setLaborRate(parseFloat(e.target.value));
+                        }}
+                        className={inputClass + " w-32"}
+                      >
+                        <option value={LABOR_RATES.AGGRESSIVE}>Aggressive (${LABOR_RATES.AGGRESSIVE}/hr)</option>
+                        <option value={LABOR_RATES.REGULAR}>Regular (${LABOR_RATES.REGULAR}/hr)</option>
+                        <option value={LABOR_RATES.PREVAILING_WAGE}>Prevailing (${LABOR_RATES.PREVAILING_WAGE}/hr)</option>
+                        <option value="custom">Custom Rate</option>
+                      </select>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">$</span>
+                        <input
+                          type="number"
+                          step="1"
+                          value={laborRate}
+                          onChange={(e) => setLaborRate(parseFloat(e.target.value) || 0)}
+                          className={inputClass + " w-20 text-right"}
+                          placeholder="$/hr"
+                        />
+                      </div>
                     </div>
-                    <button type="button" onClick={addLabor} className="px-5 py-2 bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover text-white rounded-button text-sm font-medium transition-all duration-200">+ Add Row</button>
                   </div>
+                  <button type="button" onClick={addLabor} className={addBtn}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
@@ -1133,12 +1190,12 @@ function CostSheetForm() {
                 <div className={cardClass}>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Pre-Delivery Pricing</h3>
                   <div className="space-y-3">
-                    <div className={`p-3 rounded border-2 ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice)}`}>
+                    <div className={`p-3 rounded-input border-2 ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice)}`}>
                       <div className="text-xs text-gray-600 dark:text-gray-400">Price per Sq Ft</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{pricePerSqFtPreDelivery ? formatCurrency(pricePerSqFtPreDelivery) : '-'}</div>
                       {avgSqFtPrice > 0 && <div className="text-xs text-gray-600 dark:text-gray-400">Avg: {formatCurrency(avgSqFtPrice)} | {getGuardrailText(pricePerSqFtPreDelivery, avgSqFtPrice)}</div>}
                     </div>
-                    <div className={`p-3 rounded border-2 ${getGuardrailColor(pricePerLinFtPreDelivery, avgLinFtPrice)}`}>
+                    <div className={`p-3 rounded-input border-2 ${getGuardrailColor(pricePerLinFtPreDelivery, avgLinFtPrice)}`}>
                       <div className="text-xs text-gray-600 dark:text-gray-400">Price per Lin Ft</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">{pricePerLinFtPreDelivery ? formatCurrency(pricePerLinFtPreDelivery) : '-'}</div>
                       {avgLinFtPrice > 0 && <div className="text-xs text-gray-600 dark:text-gray-400">Avg: {formatCurrency(avgLinFtPrice)} | {getGuardrailText(pricePerLinFtPreDelivery, avgLinFtPrice)}</div>}
@@ -1155,7 +1212,7 @@ function CostSheetForm() {
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Labor:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalLabor)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Markup ({(markup * 100).toFixed(0)}%):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
-                    <div className="flex justify-between bg-blue-100 dark:bg-blue-900/50 p-2 rounded -mx-2"><span className="font-semibold text-blue-700 dark:text-blue-300">Pre-Delivery:</span><span className="font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalWithMarkup)}</span></div>
+                    <div className={`flex justify-between p-2 rounded-input -mx-2 border ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice).replace('border-2', 'border')}`}><span className="font-semibold text-gray-900 dark:text-white">Pre-Delivery:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalWithMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Other Reqs:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalOtherRequirements)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="font-semibold text-gray-900 dark:text-white">Grand Total:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(grandTotal)}</span></div>
                   </div>
@@ -1170,9 +1227,14 @@ function CostSheetForm() {
                     )}
                   </div>
 
-                  <div className="mt-4 bg-green-100 dark:bg-green-900/50 p-3 rounded border-2 border-green-400 dark:border-green-600">
-                    <div className="text-xs text-green-700 dark:text-green-300">Total Price to Client</div>
-                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(totalPriceToClient)}</div>
+                  <div className={`mt-4 p-3 rounded-input border-2 ${getGuardrailColor(pricePerSqFtFinal, avgSqFtPrice)}`}>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Total Price to Client</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPriceToClient)}</div>
+                    {avgSqFtPrice > 0 && (
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {getGuardrailText(pricePerSqFtFinal, avgSqFtPrice)} • {pricePerSqFtFinal ? formatCurrency(pricePerSqFtFinal) : '-'}/sqft
+                      </div>
+                    )}
                   </div>
                 </div>
 
