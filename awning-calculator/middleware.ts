@@ -26,8 +26,8 @@ export default auth((req) => {
 
   // Protected pages - require login
   if (!isLoggedIn) {
-    // Detect infinite redirect loop (more than 3 redirects in 60 seconds)
-    if (redirectCount >= 3) {
+    // Detect infinite redirect loop (more than 5 redirects in 60 seconds)
+    if (redirectCount >= 5) {
       console.error("[Middleware] Redirect loop detected, breaking loop");
       // Break the loop by going to login with error and clearing cookie
       const url = new URL("/login", req.url);
