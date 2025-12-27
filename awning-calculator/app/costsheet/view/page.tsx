@@ -4,7 +4,22 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatCurrency } from '@/lib/calculations';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
+import ActivityLog from '@/components/ActivityLog';
 import { Suspense } from 'react';
+
+interface ActivityLogEntry {
+  id: string;
+  createdAt: string;
+  action: string;
+  description: string | null;
+  changes: string | null;
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    image: string | null;
+  };
+}
 
 interface CostSheet {
   id: string;
@@ -16,6 +31,7 @@ interface CostSheet {
   salesRep: string;
   project: string;
   jobSite: string;
+  estimator: string | null;
   canopySqFt: number;
   awningLinFt: number;
   totalMaterials: number;
@@ -33,6 +49,11 @@ interface CostSheet {
   pricePerSqFtPreDelivery: number | null;
   pricePerLinFtPreDelivery: number | null;
   outcome: string;
+  user?: {
+    name: string | null;
+    email: string | null;
+  };
+  activityLogs?: ActivityLogEntry[];
   products?: Array<{
     name: string;
     width: number;
@@ -75,15 +96,36 @@ function CostSheetViewContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const data = localStorage.getItem('costSheets');
-      if (data) {
-        const sheets = JSON.parse(data);
-        const found = sheets.find((s: CostSheet) => s.id === id);
-        setCostSheet(found || null);
+    async function fetchCostSheet() {
+      if (id) {
+        try {
+          // Try fetching from API first
+          const response = await fetch(`/api/costsheets/${id}`);
+          if (response.ok) {
+            const data = await response.json();
+            setCostSheet(data);
+          } else {
+            // Fallback to localStorage for backwards compatibility
+            const localData = localStorage.getItem('costSheets');
+            if (localData) {
+              const sheets = JSON.parse(localData);
+              const found = sheets.find((s: CostSheet) => s.id === id);
+              setCostSheet(found || null);
+            }
+          }
+        } catch {
+          // Fallback to localStorage on error
+          const localData = localStorage.getItem('costSheets');
+          if (localData) {
+            const sheets = JSON.parse(localData);
+            const found = sheets.find((s: CostSheet) => s.id === id);
+            setCostSheet(found || null);
+          }
+        }
       }
+      setLoading(false);
     }
-    setLoading(false);
+    fetchCostSheet();
   }, [id]);
 
   if (loading) {
@@ -406,6 +448,30 @@ function CostSheetViewContent() {
               <div className="text-lg font-bold text-gray-900 dark:text-white">
                 {costSheet.pricePerLinFtPreDelivery ? formatCurrency(costSheet.pricePerLinFtPreDelivery) : '-'}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Log */}
+        {costSheet.activityLogs && costSheet.activityLogs.length > 0 && (
+          <ActivityLog logs={costSheet.activityLogs} className="mb-6" />
+        )}
+
+        {/* Created By / Estimator Info */}
+        <div className={cardClass}>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cost Sheet Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className={labelClass}>Estimator</div>
+              <div className={valueClass}>{costSheet.estimator || costSheet.user?.name || '-'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>Created By</div>
+              <div className={valueClass}>{costSheet.user?.name || costSheet.user?.email || '-'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>Created On</div>
+              <div className={valueClass}>{new Date(costSheet.createdAt).toLocaleString()}</div>
             </div>
           </div>
         </div>

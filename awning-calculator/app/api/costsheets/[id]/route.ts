@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import { logActivity } from '@/lib/activityLogger';
 
 // GET /api/costsheets/[id] - Get a single cost sheet
 export async function GET(
@@ -15,7 +17,26 @@ export async function GET(
         fabricLines: true,
         laborLines: true,
         recapLines: true,
+        activityLogs: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
         user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        deletedBy: {
           select: {
             name: true,
             email: true,
@@ -47,8 +68,36 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
     const { id } = await params;
     const body = await request.json();
+
+    // Get user info for logging
+    let userId: string;
+    let userName: string;
+
+    if (session?.user?.id) {
+      userId = session.user.id;
+      userName = session.user.name || session.user.email || 'Unknown';
+    } else {
+      // Fallback for development
+      const tempUser = await prisma.user.findFirst({
+        where: { email: 'temp@universalawning.com' },
+      });
+      userId = tempUser?.id || 'temp-user-1';
+      userName = tempUser?.name || 'Temporary User';
+    }
+
+    // Get original cost sheet for comparison
+    const original = await prisma.costSheet.findUnique({
+      where: { id },
+      select: {
+        customer: true,
+        project: true,
+        category: true,
+        grandTotal: true,
+      },
+    });
 
     // Delete existing related records
     await prisma.materialLine.deleteMany({
@@ -120,6 +169,7 @@ export async function PUT(
         pricePerSqFtPreDelivery: body.pricePerSqFtPreDelivery,
         pricePerLinFtPreDelivery: body.pricePerLinFtPreDelivery,
         outcome: body.outcome,
+        estimator: body.estimator,
         materials: {
           create: body.materials || [],
         },
@@ -141,6 +191,23 @@ export async function PUT(
       },
     });
 
+    // Log the update activity
+    await logActivity({
+      action: 'updated',
+      userId,
+      costSheetId: id,
+      description: `Updated by ${userName}`,
+      changes: {
+        previous: original,
+        updated: {
+          customer: body.customer,
+          project: body.project,
+          category: body.category,
+          grandTotal: body.grandTotal,
+        },
+      },
+    });
+
     return NextResponse.json(costSheet);
   } catch (error) {
     console.error('Error updating cost sheet:', error);
@@ -151,22 +218,123 @@ export async function PUT(
   }
 }
 
-// DELETE /api/costsheets/[id] - Delete a cost sheet
+// DELETE /api/costsheets/[id] - Soft delete a cost sheet (move to trash)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
     const { id } = await params;
-    await prisma.costSheet.delete({
-      where: { id },
-    });
+    const { searchParams } = new URL(request.url);
+    const permanent = searchParams.get('permanent') === 'true';
 
-    return NextResponse.json({ success: true });
+    // Get user info for logging
+    let userId: string;
+    let userName: string;
+
+    if (session?.user?.id) {
+      userId = session.user.id;
+      userName = session.user.name || session.user.email || 'Unknown';
+    } else {
+      const tempUser = await prisma.user.findFirst({
+        where: { email: 'temp@universalawning.com' },
+      });
+      userId = tempUser?.id || 'temp-user-1';
+      userName = tempUser?.name || 'Temporary User';
+    }
+
+    if (permanent) {
+      // Permanent delete - actually remove from database
+      await prisma.costSheet.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({ success: true, permanent: true });
+    } else {
+      // Soft delete - move to trash
+      const costSheet = await prisma.costSheet.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          deletedById: userId,
+        },
+      });
+
+      // Log the deletion activity
+      await logActivity({
+        action: 'deleted',
+        userId,
+        costSheetId: id,
+        description: `Moved to trash by ${userName}`,
+      });
+
+      return NextResponse.json({ success: true, deletedAt: costSheet.deletedAt });
+    }
   } catch (error) {
     console.error('Error deleting cost sheet:', error);
     return NextResponse.json(
       { error: 'Failed to delete cost sheet' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/costsheets/[id] - Restore a cost sheet from trash
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    const { id } = await params;
+    const body = await request.json();
+
+    // Check if this is a restore operation
+    if (body.action === 'restore') {
+      // Get user info for logging
+      let userId: string;
+      let userName: string;
+
+      if (session?.user?.id) {
+        userId = session.user.id;
+        userName = session.user.name || session.user.email || 'Unknown';
+      } else {
+        const tempUser = await prisma.user.findFirst({
+          where: { email: 'temp@universalawning.com' },
+        });
+        userId = tempUser?.id || 'temp-user-1';
+        userName = tempUser?.name || 'Temporary User';
+      }
+
+      // Restore the cost sheet
+      const costSheet = await prisma.costSheet.update({
+        where: { id },
+        data: {
+          deletedAt: null,
+          deletedById: null,
+        },
+      });
+
+      // Log the restore activity
+      await logActivity({
+        action: 'restored',
+        userId,
+        costSheetId: id,
+        description: `Restored from trash by ${userName}`,
+      });
+
+      return NextResponse.json({ success: true, restored: true, costSheet });
+    }
+
+    return NextResponse.json(
+      { error: 'Invalid action' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Error patching cost sheet:', error);
+    return NextResponse.json(
+      { error: 'Failed to patch cost sheet' },
       { status: 500 }
     );
   }

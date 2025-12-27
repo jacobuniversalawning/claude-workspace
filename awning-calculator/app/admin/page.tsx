@@ -15,7 +15,7 @@ import {
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
-type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'data';
+type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'data' | 'trash';
 
 interface User {
   id: string;
@@ -25,6 +25,24 @@ interface User {
   role: string;
   isActive: boolean;
   createdAt: string;
+}
+
+interface DeletedCostSheet {
+  id: string;
+  customer: string | null;
+  project: string | null;
+  category: string;
+  grandTotal: number;
+  deletedAt: string;
+  createdAt: string;
+  deletedBy: {
+    name: string | null;
+    email: string | null;
+  } | null;
+  user: {
+    name: string | null;
+    email: string | null;
+  } | null;
 }
 
 // Modal state types
@@ -49,6 +67,8 @@ export default function AdminPage() {
   const [modal, setModal] = useState<ModalType>({ type: 'none' });
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [deletedCostSheets, setDeletedCostSheets] = useState<DeletedCostSheet[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
   const configFileInputRef = useRef<HTMLInputElement>(null);
   const dataFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,6 +80,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'users') {
       fetchUsers();
+    }
+    if (activeTab === 'trash') {
+      fetchDeletedCostSheets();
     }
   }, [activeTab]);
 
@@ -142,6 +165,93 @@ export default function AdminPage() {
         }
       }
     });
+  };
+
+  // Trash functions
+  const fetchDeletedCostSheets = async () => {
+    setTrashLoading(true);
+    try {
+      const response = await fetch('/api/costsheets?includeDeleted=true');
+      if (response.ok) {
+        const data = await response.json();
+        setDeletedCostSheets(data);
+      }
+    } catch (error) {
+      console.error('Error fetching deleted cost sheets:', error);
+    } finally {
+      setTrashLoading(false);
+    }
+  };
+
+  const restoreCostSheet = async (id: string, name: string) => {
+    try {
+      const response = await fetch(`/api/costsheets/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'restore' }),
+      });
+      if (response.ok) {
+        setDeletedCostSheets(deletedCostSheets.filter(cs => cs.id !== id));
+        showMessage(`"${name}" restored successfully`);
+      } else {
+        const error = await response.json();
+        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to restore cost sheet' });
+      }
+    } catch (error) {
+      console.error('Error restoring cost sheet:', error);
+      setModal({ type: 'alert', title: 'Error', message: 'Failed to restore cost sheet' });
+    }
+  };
+
+  const permanentlyDeleteCostSheet = async (id: string, name: string) => {
+    setModal({
+      type: 'confirm',
+      title: 'Permanently Delete',
+      message: `Are you sure you want to permanently delete "${name}"? This action cannot be undone.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/costsheets/${id}?permanent=true`, {
+            method: 'DELETE',
+          });
+          if (response.ok) {
+            setDeletedCostSheets(deletedCostSheets.filter(cs => cs.id !== id));
+            showMessage('Cost sheet permanently deleted');
+          } else {
+            const error = await response.json();
+            setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to delete cost sheet' });
+          }
+        } catch (error) {
+          console.error('Error deleting cost sheet:', error);
+          setModal({ type: 'alert', title: 'Error', message: 'Failed to delete cost sheet' });
+        }
+      }
+    });
+  };
+
+  const emptyTrash = async () => {
+    setModal({
+      type: 'confirm',
+      title: 'Empty Trash',
+      message: `Are you sure you want to permanently delete all ${deletedCostSheets.length} items in trash? This action cannot be undone.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          for (const cs of deletedCostSheets) {
+            await fetch(`/api/costsheets/${cs.id}?permanent=true`, { method: 'DELETE' });
+          }
+          setDeletedCostSheets([]);
+          showMessage('Trash emptied successfully');
+        } catch (error) {
+          console.error('Error emptying trash:', error);
+          setModal({ type: 'alert', title: 'Error', message: 'Failed to empty trash' });
+        }
+      }
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
   const closeModal = () => setModal({ type: 'none' });
@@ -534,6 +644,7 @@ export default function AdminPage() {
     { id: 'materials', label: 'Materials & Fabric', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { id: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+    { id: 'trash', label: 'Trash', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
     { id: 'data', label: 'Data', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' }
   ];
 
@@ -1343,6 +1454,105 @@ export default function AdminPage() {
                     <p className="text-sm text-blue-700 dark:text-blue-300">
                       <strong>Note:</strong> Users are automatically created when they sign in with Google for the first time.
                       New users default to the &quot;Estimator&quot; role. Deactivated users cannot sign in.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Trash Tab */}
+              {activeTab === 'trash' && (
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Deleted Cost Sheets</h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Cost sheets in trash can be restored or permanently deleted.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={fetchDeletedCostSheets} className={secondaryButtonClass} disabled={trashLoading}>
+                        {trashLoading ? 'Loading...' : 'Refresh'}
+                      </button>
+                      {deletedCostSheets.length > 0 && (
+                        <button onClick={emptyTrash} className={dangerButtonClass}>
+                          Empty Trash
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {trashLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : deletedCostSheets.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-dashed border-gray-300 dark:border-gray-600">
+                      <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <p className="text-gray-500 dark:text-gray-400">Trash is empty</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {deletedCostSheets.map((cs) => {
+                        const displayName = cs.customer || cs.project || 'Untitled Cost Sheet';
+                        const deletedDate = new Date(cs.deletedAt);
+
+                        return (
+                          <div
+                            key={cs.id}
+                            className="flex items-center gap-4 p-4 rounded-lg border bg-gray-50 dark:bg-brand-surface-grey-dark border-gray-200 dark:border-brand-border-subtle"
+                          >
+                            {/* Icon */}
+                            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-gray-900 dark:text-brand-text-primary truncate">
+                                  {displayName}
+                                </p>
+                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                                  {cs.category}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {formatCurrency(cs.grandTotal)} &bull; Deleted {deletedDate.toLocaleDateString()} by {cs.deletedBy?.name || cs.deletedBy?.email || 'Unknown'}
+                              </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => restoreCostSheet(cs.id, displayName)}
+                                className="px-3 py-1.5 text-xs font-medium rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                              >
+                                Restore
+                              </button>
+                              <button
+                                onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
+                                className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                                title="Delete permanently"
+                              >
+                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <strong>Note:</strong> Items in trash are kept indefinitely until manually deleted.
+                      Permanently deleted items cannot be recovered.
                     </p>
                   </div>
                 </div>

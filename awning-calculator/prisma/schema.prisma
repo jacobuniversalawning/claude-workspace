@@ -57,15 +57,22 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts   Account[]
-  sessions   Session[]
-  costSheets CostSheet[]
+  accounts          Account[]
+  sessions          Session[]
+  costSheets        CostSheet[]
+  deletedCostSheets CostSheet[] @relation("DeletedCostSheets")
+  activityLogs      ActivityLog[]
 }
 
 model CostSheet {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Soft delete (trash bin)
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?    @relation("DeletedCostSheets", fields: [deletedById], references: [id])
 
   // Header Information
   inquiryDate  DateTime
@@ -155,6 +162,36 @@ model CostSheet {
   // Relations
   userId         String
   user           User     @relation(fields: [userId], references: [id])
+
+  // Activity logs
+  activityLogs   ActivityLog[]
+}
+
+// Activity log for tracking all changes to cost sheets
+model ActivityLog {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+
+  // Action type: created, updated, deleted, restored
+  action      String
+
+  // Brief description of what changed
+  description String?
+
+  // Store changes as JSON for detailed audit trail
+  changes     String?   @db.Text
+
+  // Who performed the action
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  // Which cost sheet was affected
+  costSheetId String
+  costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
+
+  @@index([costSheetId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model MaterialLine {

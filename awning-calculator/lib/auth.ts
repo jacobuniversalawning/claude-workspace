@@ -16,14 +16,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async session({ session, user }) {
-      if (session.user) {
+      if (session.user && user) {
         session.user.id = user.id;
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { role: true, isActive: true },
-        });
-        session.user.role = dbUser?.role || "estimator";
-        session.user.isActive = dbUser?.isActive ?? true;
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { role: true, isActive: true, name: true, email: true },
+          });
+          if (dbUser) {
+            session.user.role = dbUser.role || "estimator";
+            session.user.isActive = dbUser.isActive ?? true;
+            // Ensure name is available from the database
+            if (dbUser.name) {
+              session.user.name = dbUser.name;
+            }
+          } else {
+            // User not found in DB yet - use defaults
+            session.user.role = "estimator";
+            session.user.isActive = true;
+          }
+        } catch {
+          // Database error - use safe defaults
+          session.user.role = "estimator";
+          session.user.isActive = true;
+        }
       }
       return session;
     },
@@ -31,7 +47,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const email = user.email || "";
       // Only allow @universalawning.com emails
       if (!email.endsWith("@universalawning.com")) {
-        return "/login?error=AccessDenied";
+        // Return false to reject - NextAuth will handle redirect to error page
+        return false;
       }
       return true;
     },
