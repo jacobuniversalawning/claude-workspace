@@ -5,7 +5,12 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isLoginPage = req.nextUrl.pathname === "/login";
 
-  // Allow access to login page always - client handles redirect if authenticated
+  // If user is logged in and on login page, redirect to dashboard
+  if (isLoggedIn && isLoginPage) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // Allow access to login page for unauthenticated users
   if (isLoginPage) {
     return NextResponse.next();
   }
