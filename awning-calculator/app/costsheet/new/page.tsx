@@ -116,6 +116,7 @@ function CostSheetForm() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
 
   // Header Information
   const [formData, setFormData] = useState<FormData>({
@@ -453,6 +454,13 @@ function CostSheetForm() {
   const updateMaterial = (id: string, field: keyof MaterialLine, value: string | number) => {
     setMaterials(materials.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
   };
+  const clearMaterials = () => {
+    setMaterials([
+      { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+      { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+      { id: generateId(), description: 'Miscellaneous', qty: 1, unitPrice: 0, freight: 0 },
+    ]);
+  };
 
   // === FABRIC FUNCTIONS ===
   const addFabric = () => setFabricLines([...fabricLines, { id: generateId(), name: '', yards: 0, pricePerYard: 0, freight: 0 }]);
@@ -460,12 +468,26 @@ function CostSheetForm() {
   const updateFabric = (id: string, field: keyof FabricLine, value: string | number) => {
     setFabricLines(fabricLines.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
   };
+  const clearFabric = () => {
+    setFabricLines([{ id: generateId(), name: '', yards: 0, pricePerYard: 0, freight: 0 }]);
+  };
 
   // === LABOR FUNCTIONS ===
   const addLabor = () => setLaborLines([...laborLines, { id: generateId(), type: 'Custom', description: '', hours: 0, people: 1, rate: laborRate, isFabrication: true }]);
   const removeLabor = (id: string) => { if (laborLines.length > 1) setLaborLines(laborLines.filter((l) => l.id !== id)); };
   const updateLabor = (id: string, field: keyof LaborLine, value: string | number | boolean) => {
     setLaborLines(laborLines.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+  };
+  const clearFabricationLabor = () => {
+    setLaborLines(DEFAULT_LABOR_TYPES.map((lt) => ({
+      id: generateId(),
+      type: lt.type,
+      description: '',
+      hours: 0,
+      people: 1,
+      rate: laborRate,
+      isFabrication: lt.isFabrication,
+    })));
   };
 
   // === INSTALL FUNCTIONS ===
@@ -476,6 +498,9 @@ function CostSheetForm() {
   const removeInstall = (id: string) => { if (installLines.length > 1) setInstallLines(installLines.filter((l) => l.id !== id)); };
   const updateInstall = (id: string, field: keyof LaborLine, value: string | number | boolean) => {
     setInstallLines(installLines.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+  };
+  const clearInstallationLabor = () => {
+    setInstallLines([{ id: generateId(), type: 'Installation 1', description: '', hours: 0, people: 1, rate: laborRate, isFabrication: false }]);
   };
 
   // === DRIVE TIME FUNCTIONS ===
@@ -505,6 +530,15 @@ function CostSheetForm() {
   const removeHotel = (id: string) => { if (hotelLines.length > 1) setHotelLines(hotelLines.filter((h) => h.id !== id)); };
   const updateHotel = (id: string, field: keyof HotelLine, value: string | number) => {
     setHotelLines(hotelLines.map((h) => (h.id === id ? { ...h, [field]: value } : h)));
+  };
+  const clearOtherRequirements = () => {
+    setPermitCost(0);
+    setEngineeringCost(0);
+    setEquipmentCost(0);
+    setFoodCost(0);
+    setDriveTimeLines([{ id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: DEFAULTS.DRIVE_TIME_RATE, description: '' }]);
+    setMileageLines([{ id: generateId(), roundtripMiles: 0, trips: 0, rate: DEFAULTS.MILEAGE_RATE, description: '' }]);
+    setHotelLines([{ id: generateId(), nights: 0, people: 0, rate: 150, description: '' }]);
   };
 
   // === CALCULATIONS ===
@@ -608,6 +642,31 @@ function CostSheetForm() {
     if (diff > 15) return `${diff.toFixed(0)}% HIGH`;
     if (diff < -15) return `${Math.abs(diff).toFixed(0)}% LOW`;
     return 'GOOD';
+  };
+
+  // === CLEAR ALL ===
+  const handleClearAll = () => {
+    // Reset form data
+    setFormData({
+      inquiryDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date().toISOString().split('T')[0],
+      category: PRODUCT_CATEGORIES[0],
+      customer: '',
+      salesRep: '',
+      project: '',
+      jobSite: '',
+      estimator: '',
+    });
+    // Reset all sections
+    setProducts([{ id: generateId(), name: 'Product 1', width: 0, projection: 0, height: 0, valance: 0, sqFt: 0, linFt: 0 }]);
+    clearMaterials();
+    clearFabric();
+    clearFabricationLabor();
+    clearInstallationLabor();
+    setMarkup(DEFAULTS.MARKUP);
+    clearOtherRequirements();
+    setFinalPriceOverride(null);
+    setShowClearAllModal(false);
   };
 
   // === SUBMIT ===
@@ -1006,9 +1065,8 @@ function CostSheetForm() {
                         <td className="px-2 py-1">
                           <input
                             type="number"
-                            value={l.people || ''}
-                            onChange={(e) => updateLabor(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
-                            onBlur={(e) => { if (e.target.value === '') updateLabor(l.id, 'people', 1); }}
+                            value={l.people}
+                            onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 0)}
                             className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
@@ -1057,9 +1115,8 @@ function CostSheetForm() {
                         <td className="px-2 py-1">
                           <input
                             type="number"
-                            value={l.people || ''}
-                            onChange={(e) => updateInstall(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
-                            onBlur={(e) => { if (e.target.value === '') updateInstall(l.id, 'people', 1); }}
+                            value={l.people}
+                            onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 0)}
                             className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
