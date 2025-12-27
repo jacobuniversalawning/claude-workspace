@@ -1,11 +1,13 @@
 // Stateless JWT-based Google OAuth for Vercel serverless
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import type { Express, Request, Response, NextFunction, RequestHandler } from 'express';
 import { authStorage } from './storage';
 
 const ALLOWED_EMAIL_DOMAIN = '@universalawning.com';
 const JWT_EXPIRY = '7d';
+const COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 
 // Environment validation
 function getEnvVar(name: string): string {
@@ -19,6 +21,11 @@ function getEnvVar(name: string): string {
 function isAllowedEmail(email: string | undefined): boolean {
   if (!email) return false;
   return email.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN.toLowerCase());
+}
+
+// Generate cryptographically secure state for CSRF protection
+function generateState(): string {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 // Generate JWT token for authenticated user
@@ -42,35 +49,35 @@ function verifyToken(token: string): { userId: string; email: string } | null {
   }
 }
 
-// Parse auth cookie from request
-function getAuthToken(req: Request): string | null {
+// Parse cookies from request
+function getCookie(req: Request, name: string): string | null {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) return null;
   
   const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
     const [key, value] = cookie.trim().split('=');
-    acc[key] = value;
+    if (key && value) {
+      acc[key] = decodeURIComponent(value);
+    }
     return acc;
   }, {} as Record<string, string>);
   
-  return cookies['auth_token'] || null;
+  return cookies[name] || null;
 }
 
-// Set auth cookie
-function setAuthCookie(res: Response, token: string): void {
+// Set a cookie
+function setCookie(res: Response, name: string, value: string, maxAgeSeconds: number): void {
   const isProduction = process.env.NODE_ENV === 'production';
-  const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-  
-  res.setHeader('Set-Cookie', [
-    `auth_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${isProduction ? '; Secure' : ''}`
-  ]);
+  const existingCookies = res.getHeader('Set-Cookie') as string[] || [];
+  const newCookie = `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${isProduction ? '; Secure' : ''}`;
+  res.setHeader('Set-Cookie', [...existingCookies, newCookie]);
 }
 
-// Clear auth cookie
-function clearAuthCookie(res: Response): void {
-  res.setHeader('Set-Cookie', [
-    'auth_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0'
-  ]);
+// Clear a cookie
+function clearCookie(res: Response, name: string): void {
+  const existingCookies = res.getHeader('Set-Cookie') as string[] || [];
+  const newCookie = `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  res.setHeader('Set-Cookie', [...existingCookies, newCookie]);
 }
 
 export async function setupJWTAuth(app: Express) {
@@ -103,12 +110,18 @@ export async function setupJWTAuth(app: Express) {
   const redirectUri = `${appUrl}/api/auth/google/callback`;
   const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 
-  // Login route - redirect to Google
+  // Login route - redirect to Google with CSRF state
   app.get('/api/login', (req, res) => {
+    const state = generateState();
+    
+    // Store state in a short-lived cookie for verification
+    setCookie(res, 'oauth_state', state, 600); // 10 minutes
+    
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: ['profile', 'email'],
       prompt: 'select_account',
+      state: state,
     });
     res.redirect(authUrl);
   });
@@ -116,6 +129,17 @@ export async function setupJWTAuth(app: Express) {
   // Google OAuth callback
   app.get('/api/auth/google/callback', async (req, res) => {
     const code = req.query.code as string;
+    const returnedState = req.query.state as string;
+    const storedState = getCookie(req, 'oauth_state');
+    
+    // Clear the state cookie
+    clearCookie(res, 'oauth_state');
+    
+    // Verify CSRF state
+    if (!returnedState || !storedState || returnedState !== storedState) {
+      console.error('OAuth state mismatch - possible CSRF attack');
+      return res.redirect('/?error=invalid_state');
+    }
     
     if (!code) {
       console.error('No auth code received');
@@ -164,9 +188,9 @@ export async function setupJWTAuth(app: Express) {
         profileImageUrl: picture,
       });
 
-      // Generate JWT and set cookie
+      // Generate JWT and set cookie (7 days)
       const token = generateToken(user);
-      setAuthCookie(res, token);
+      setCookie(res, 'auth_token', token, COOKIE_MAX_AGE_SECONDS);
 
       console.log(`User logged in: ${email}`);
       return res.redirect('/');
@@ -178,7 +202,7 @@ export async function setupJWTAuth(app: Express) {
 
   // Get current user
   app.get('/api/auth/user', async (req, res) => {
-    const token = getAuthToken(req);
+    const token = getCookie(req, 'auth_token');
     
     if (!token) {
       return res.status(401).json({ message: 'Unauthorized' });
@@ -186,14 +210,14 @@ export async function setupJWTAuth(app: Express) {
 
     const decoded = verifyToken(token);
     if (!decoded) {
-      clearAuthCookie(res);
+      clearCookie(res, 'auth_token');
       return res.status(401).json({ message: 'Invalid token' });
     }
 
     try {
       const user = await authStorage.getUser(decoded.userId);
       if (!user) {
-        clearAuthCookie(res);
+        clearCookie(res, 'auth_token');
         return res.status(401).json({ message: 'User not found' });
       }
 
@@ -206,20 +230,20 @@ export async function setupJWTAuth(app: Express) {
 
   // Logout
   app.get('/api/logout', (req, res) => {
-    clearAuthCookie(res);
+    clearCookie(res, 'auth_token');
     res.redirect('/');
   });
 
   // Also support POST logout for API calls
   app.post('/api/logout', (req, res) => {
-    clearAuthCookie(res);
+    clearCookie(res, 'auth_token');
     res.json({ success: true });
   });
 }
 
 // Middleware to protect routes
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const token = getAuthToken(req);
+  const token = getCookie(req, 'auth_token');
   
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized' });
