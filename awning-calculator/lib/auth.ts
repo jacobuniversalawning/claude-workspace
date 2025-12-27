@@ -15,24 +15,82 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "database",
   },
   callbacks: {
-    async session({ session, user }) {
-      try {
-        if (session.user) {
-          session.user.id = user.id;
-          // Get role from database with error handling
+    async jwt({ token, user, account }) {
+      // On initial sign in, user object is available from the provider
+      if (user) {
+        token.id = user.id;
+        // User object from Google OAuth won't have role/isActive yet
+        // These will be fetched in session callback from database
+      }
+
+      // If we have a user id but no role yet, try to fetch from database
+      if (token.id && !token.role) {
+        try {
           const dbUser = await prisma.user.findUnique({
-            where: { id: user.id },
+            where: { id: token.id as string },
             select: { role: true, isActive: true },
           });
-          session.user.role = dbUser?.role || "estimator";
-          session.user.isActive = dbUser?.isActive ?? true;
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.isActive = dbUser.isActive;
+          } else {
+            // User not yet in database, use defaults
+            token.role = "estimator";
+            token.isActive = true;
+          }
+        } catch (error) {
+          console.error("[Auth] JWT callback error fetching user:", error);
+          // Set defaults on error
+          token.role = "estimator";
+          token.isActive = true;
+        }
+      }
+
+      return token;
+    },
+    async session({ session, token, user }) {
+      try {
+        // Handle both JWT strategy (token) and database strategy (user)
+        const userId = user?.id || (token?.id as string);
+
+        if (!userId) {
+          console.warn("[Auth] Session callback: No user ID available");
+          // Return session with defaults
+          if (session.user) {
+            session.user.role = "estimator";
+            session.user.isActive = true;
+          }
+          return session;
+        }
+
+        if (session.user) {
+          session.user.id = userId;
+
+          // Try to get role from token first (already fetched in jwt callback)
+          if (token?.role) {
+            session.user.role = token.role as string;
+            session.user.isActive = token.isActive as boolean;
+          } else {
+            // Fallback: Get role from database
+            try {
+              const dbUser = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { role: true, isActive: true },
+              });
+              session.user.role = dbUser?.role || "estimator";
+              session.user.isActive = dbUser?.isActive ?? true;
+            } catch (dbError) {
+              console.error("[Auth] Session callback DB error:", dbError);
+              session.user.role = "estimator";
+              session.user.isActive = true;
+            }
+          }
         }
         return session;
       } catch (error) {
         console.error("[Auth] Session callback error:", error);
         // Return session with defaults to prevent redirect loops
         if (session.user) {
-          session.user.id = user.id;
           session.user.role = "estimator";
           session.user.isActive = true;
         }
