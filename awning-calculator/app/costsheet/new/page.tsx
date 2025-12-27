@@ -1008,6 +1008,7 @@ function CostSheetForm() {
                             type="number"
                             value={l.people}
                             onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 0)}
+                            onFocus={(e) => e.target.select()}
                             className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
@@ -1058,6 +1059,7 @@ function CostSheetForm() {
                             type="number"
                             value={l.people}
                             onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 0)}
+                            onFocus={(e) => e.target.select()}
                             className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
