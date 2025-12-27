@@ -25,9 +25,10 @@ export async function PATCH(
     const { role, isActive } = body;
 
     // Validate role if provided
-    if (role && !["admin", "estimator"].includes(role)) {
+    const validRoles = ["admin", "estimator", "sales_rep", "viewer", "pending"];
+    if (role && !validRoles.includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be 'admin' or 'estimator'" },
+        { error: `Invalid role. Must be one of: ${validRoles.join(", ")}` },
         { status: 400 }
       );
     }

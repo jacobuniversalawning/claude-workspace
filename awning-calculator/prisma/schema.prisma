@@ -52,8 +52,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("estimator") // admin, estimator
-  isActive      Boolean   @default(true)
+  role          String    @default("pending") // admin, estimator, sales_rep, viewer, pending
+  isActive      Boolean   @default(false) // New users default to inactive until approved
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -200,6 +200,7 @@ model MaterialLine {
   costSheet   CostSheet @relation(fields: [costSheetId], references: [id], onDelete: Cascade)
 
   description String
+  length      Float?    // Length in feet for materials like tubing, pipe, etc.
   qty         Float
   unitPrice   Float
   salesTax    Float    @default(0.0975)

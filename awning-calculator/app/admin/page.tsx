@@ -15,7 +15,7 @@ import {
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
-type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'data' | 'trash';
+type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
 
 interface User {
   id: string;
@@ -644,6 +644,7 @@ export default function AdminPage() {
     { id: 'materials', label: 'Materials & Fabric', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { id: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+    { id: 'ai', label: 'AI Assistants', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
     { id: 'trash', label: 'Trash', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
     { id: 'data', label: 'Data', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' }
   ];
@@ -1398,6 +1399,11 @@ export default function AdminPage() {
                               <p className="text-sm font-medium text-gray-900 dark:text-brand-text-primary truncate">
                                 {user.name || 'Unknown User'}
                               </p>
+                              {user.role === 'pending' && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">
+                                  Pending
+                                </span>
+                              )}
                               {!user.isActive && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
                                   Inactive
@@ -1417,6 +1423,9 @@ export default function AdminPage() {
                               onChange={(e) => updateUserRole(user.id, e.target.value)}
                               className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
+                              <option value="pending">Pending Approval</option>
+                              <option value="viewer">Viewer</option>
+                              <option value="sales_rep">Sales Rep</option>
                               <option value="estimator">Estimator</option>
                               <option value="admin">Admin</option>
                             </select>
@@ -1453,7 +1462,335 @@ export default function AdminPage() {
                   <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
                     <p className="text-sm text-blue-700 dark:text-blue-300">
                       <strong>Note:</strong> Users are automatically created when they sign in with Google for the first time.
-                      New users default to the &quot;Estimator&quot; role. Deactivated users cannot sign in.
+                      New users default to <strong>Inactive</strong> status with <strong>Pending Approval</strong> role and must be activated by an admin.
+                    </p>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (full access)
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* AI & Integrations Tab */}
+              {activeTab === 'ai' && (
+                <div className="space-y-8">
+                  {/* Default AI Provider */}
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">AI Assistant Settings</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Configure AI providers for smart suggestions, cost estimation, and document generation.
+                    </p>
+
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Default AI Provider
+                      </label>
+                      <select
+                        value={config.defaultAIProvider}
+                        onChange={(e) => updateConfig({ ...config, defaultAIProvider: e.target.value as 'claude' | 'openai' | 'gemini' | 'none' })}
+                        className={inputClass + " max-w-xs"}
+                      >
+                        <option value="none">None (AI features disabled)</option>
+                        <option value="claude" disabled={!config.aiProviders?.claude?.enabled}>Claude (Anthropic)</option>
+                        <option value="openai" disabled={!config.aiProviders?.openai?.enabled}>GPT (OpenAI)</option>
+                        <option value="gemini" disabled={!config.aiProviders?.gemini?.enabled}>Gemini (Google)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Claude Settings */}
+                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                          <span className="text-orange-600 dark:text-orange-400 font-bold text-lg">C</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">Claude (Anthropic)</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Best for detailed analysis and writing</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.claude?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              claude: { ...config.aiProviders.claude, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.claude?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.claude?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                claude: { ...config.aiProviders.claude, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="sk-ant-..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.claude?.model || 'claude-3-5-sonnet-20241022'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  claude: { ...config.aiProviders.claude, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                              <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fast)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.claude?.maxTokens || 4096}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  claude: { ...config.aiProviders.claude, maxTokens: parseInt(e.target.value) || 4096 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* OpenAI Settings */}
+                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                          <span className="text-green-600 dark:text-green-400 font-bold text-lg">G</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">GPT (OpenAI)</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Versatile AI for various tasks</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.openai?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              openai: { ...config.aiProviders.openai, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.openai?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.openai?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                openai: { ...config.aiProviders.openai, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="sk-..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.openai?.model || 'gpt-4o'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  openai: { ...config.aiProviders.openai, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="gpt-4o">GPT-4o (Latest)</option>
+                              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                              <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.openai?.maxTokens || 4096}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  openai: { ...config.aiProviders.openai, maxTokens: parseInt(e.target.value) || 4096 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gemini Settings */}
+                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">G</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">Gemini (Google)</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Google&apos;s multimodal AI</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.gemini?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              gemini: { ...config.aiProviders.gemini, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.gemini?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.gemini?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                gemini: { ...config.aiProviders.gemini, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="AIza..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.gemini?.model || 'gemini-1.5-pro'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  gemini: { ...config.aiProviders.gemini, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
+                              <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.gemini?.maxTokens || 4096}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  gemini: { ...config.aiProviders.gemini, maxTokens: parseInt(e.target.value) || 4096 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HubSpot Integration */}
+                  <div className="pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">CRM Integration</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Connect to HubSpot to auto-populate customer and job site information.
+                    </p>
+
+                    <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M18.164 7.93V5.355a2.18 2.18 0 0 0 1.306-1.988 2.177 2.177 0 1 0-4.354 0c0 .9.553 1.67 1.336 1.988v2.576a5.1 5.1 0 0 0-2.595 1.315L6.94 4.625a2.074 2.074 0 0 0 .138-.737 2.1 2.1 0 1 0-2.1 2.1c.47 0 .9-.157 1.25-.417l6.83 4.576a5.09 5.09 0 0 0-.467 2.12c0 .816.191 1.587.533 2.27l-2.32 2.054a2.515 2.515 0 0 0-1.4-.42 2.527 2.527 0 1 0 2.527 2.527c0-.4-.094-.777-.262-1.113l2.232-1.975a5.1 5.1 0 1 0 4.263-7.68z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">HubSpot</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Pull customer &amp; job site data with autocomplete</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
+                          Coming Soon
+                        </span>
+                      </div>
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-sm text-yellow-800 dark:text-yellow-200">
+                        <strong>Setup Required:</strong> Contact your administrator (Jacob@universalawning.com) to configure the HubSpot OAuth integration. This will enable:
+                        <ul className="list-disc ml-5 mt-2 space-y-1">
+                          <li>Customer name autocomplete from HubSpot contacts</li>
+                          <li>Auto-populate job site address from deal properties</li>
+                          <li>Sync cost sheets back to HubSpot deals</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <strong>Security Note:</strong> API keys are stored locally in your browser. For production use, consider storing keys in environment variables on the server.
                     </p>
                   </div>
                 </div>
