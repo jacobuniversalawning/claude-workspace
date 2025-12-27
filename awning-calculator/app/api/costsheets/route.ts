@@ -1,15 +1,26 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import { logActivity } from '@/lib/activityLogger';
 
-// GET /api/costsheets - Get all cost sheets
+// GET /api/costsheets - Get all cost sheets (excluding deleted)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const outcome = searchParams.get('outcome');
     const search = searchParams.get('search');
+    const includeDeleted = searchParams.get('includeDeleted') === 'true';
 
     const where: Record<string, unknown> = {};
+
+    // Exclude soft-deleted items unless specifically requested
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    } else {
+      // Only show deleted items (for trash view)
+      where.deletedAt = { not: null };
+    }
 
     if (category) {
       where.category = category;
@@ -43,6 +54,12 @@ export async function GET(request: Request) {
             email: true,
           },
         },
+        deletedBy: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
@@ -57,30 +74,43 @@ export async function GET(request: Request) {
 // POST /api/costsheets - Create a new cost sheet
 export async function POST(request: Request) {
   try {
+    const session = await auth();
     const body = await request.json();
 
-    // For now, using a temporary user ID
-    // TODO: Replace with actual authenticated user ID
-    const tempUserId = 'temp-user-1';
+    // Get the authenticated user or create/find a temporary one
+    let userId: string;
+    let userName: string;
 
-    // Check if user exists, create if not
-    let user = await prisma.user.findUnique({
-      where: { id: tempUserId },
-    });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          id: tempUserId,
-          email: 'temp@universalawning.com',
-          name: 'Temporary User',
-        },
+    if (session?.user?.id) {
+      userId = session.user.id;
+      userName = session.user.name || session.user.email || 'Unknown';
+    } else {
+      // Fallback for development/testing - use temp user
+      const tempUserId = 'temp-user-1';
+      let user = await prisma.user.findUnique({
+        where: { id: tempUserId },
       });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            id: tempUserId,
+            email: 'temp@universalawning.com',
+            name: 'Temporary User',
+          },
+        });
+      }
+      userId = user.id;
+      userName = user.name || 'Temporary User';
     }
+
+    // Set the estimator name from the logged-in user if not provided
+    const estimatorName = body.estimator || userName;
 
     const costSheet = await prisma.costSheet.create({
       data: {
-        userId: user.id,
+        userId,
+        estimator: estimatorName,
         inquiryDate: new Date(body.inquiryDate),
         dueDate: new Date(body.dueDate),
         category: body.category,
@@ -151,6 +181,19 @@ export async function POST(request: Request) {
         fabricLines: true,
         laborLines: true,
         recapLines: true,
+      },
+    });
+
+    // Log the creation activity
+    await logActivity({
+      action: 'created',
+      userId,
+      costSheetId: costSheet.id,
+      description: `Created by ${userName}`,
+      changes: {
+        customer: body.customer,
+        project: body.project,
+        category: body.category,
       },
     });
 
