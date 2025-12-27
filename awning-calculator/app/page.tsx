@@ -66,31 +66,33 @@ export default function Home() {
   const fetchCostSheets = async () => {
     try {
       const response = await fetch('/api/costsheets');
-      const data = await response.json();
 
-      // Check if database returned data
-      if (Array.isArray(data) && data.length > 0) {
-        setCostSheets(data);
+      // If API responds successfully, we're using the database
+      if (response.ok) {
+        const data = await response.json();
+        setCostSheets(Array.isArray(data) ? data : []);
         setStorageType('database');
       } else {
-        // Fallback to localStorage
+        // API error - fallback to localStorage
         const localData = localStorage.getItem('costSheets');
         if (localData) {
-          const parsedData = JSON.parse(localData);
-          setCostSheets(parsedData);
+          setCostSheets(JSON.parse(localData));
           setStorageType('local');
         } else {
           setCostSheets([]);
-          setStorageType(null);
+          setStorageType('local');
         }
       }
     } catch (error) {
       console.error('Error fetching cost sheets:', error);
-      // Fallback to localStorage
+      // Network error - fallback to localStorage
       try {
         const localData = localStorage.getItem('costSheets');
         if (localData) {
           setCostSheets(JSON.parse(localData));
+          setStorageType('local');
+        } else {
+          setCostSheets([]);
           setStorageType('local');
         }
       } catch {
@@ -374,7 +376,7 @@ export default function Home() {
       {storageType === 'local' && (
         <div className="max-w-7xl mx-auto px-6 pt-5">
           <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-card p-3.5 text-yellow-800 dark:text-yellow-200 text-sm">
-            Data is stored locally in your browser. To enable cloud storage, configure a PostgreSQL database.
+            ⚠️ Database unavailable - data is stored locally in your browser. Check your database connection.
           </div>
         </div>
       )}
