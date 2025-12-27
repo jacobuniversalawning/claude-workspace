@@ -27,8 +27,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    // Temporarily allow all Google accounts - add domain restriction later
-    async signIn() {
+    async signIn({ user }) {
+      const email = user.email || "";
+      // Only allow @universalawning.com emails
+      if (!email.endsWith("@universalawning.com")) {
+        return "/login?error=AccessDenied";
+      }
       return true;
     },
   },
