@@ -37,9 +37,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async signIn({ user }) {
+      // Only allow @universalawning.com email addresses
+      const email = user.email || "";
+      if (!email.endsWith("@universalawning.com")) {
+        return false;
+      }
+
       // Check if user is active
       const dbUser = await prisma.user.findUnique({
-        where: { email: user.email || "" },
+        where: { email },
         select: { isActive: true },
       });
 
