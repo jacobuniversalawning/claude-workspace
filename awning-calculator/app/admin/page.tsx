@@ -1487,13 +1487,16 @@ export default function AdminPage() {
                       </label>
                       <select
                         value={config.defaultAIProvider}
-                        onChange={(e) => updateConfig({ ...config, defaultAIProvider: e.target.value as 'claude' | 'openai' | 'gemini' | 'none' })}
+                        onChange={(e) => updateConfig({ ...config, defaultAIProvider: e.target.value as 'claude' | 'openai' | 'gemini' | 'grok' | 'kimi' | 'deepseek' | 'none' })}
                         className={inputClass + " max-w-xs"}
                       >
                         <option value="none">None (AI features disabled)</option>
                         <option value="claude" disabled={!config.aiProviders?.claude?.enabled}>Claude (Anthropic)</option>
                         <option value="openai" disabled={!config.aiProviders?.openai?.enabled}>GPT (OpenAI)</option>
                         <option value="gemini" disabled={!config.aiProviders?.gemini?.enabled}>Gemini (Google)</option>
+                        <option value="grok" disabled={!config.aiProviders?.grok?.enabled}>Grok (xAI)</option>
+                        <option value="kimi" disabled={!config.aiProviders?.kimi?.enabled}>Kimi (Moonshot)</option>
+                        <option value="deepseek" disabled={!config.aiProviders?.deepseek?.enabled}>DeepSeek</option>
                       </select>
                     </div>
                   </div>
@@ -1548,7 +1551,7 @@ export default function AdminPage() {
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
                             <select
-                              value={config.aiProviders?.claude?.model || 'claude-3-5-sonnet-20241022'}
+                              value={config.aiProviders?.claude?.model || 'claude-sonnet-4-5-20250514'}
                               onChange={(e) => updateConfig({
                                 ...config,
                                 aiProviders: {
@@ -1558,9 +1561,10 @@ export default function AdminPage() {
                               })}
                               className={inputClass}
                             >
-                              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                              <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fast)</option>
+                              <option value="claude-opus-4-5-20250514">Claude Opus 4.5 (Most Capable)</option>
+                              <option value="claude-sonnet-4-5-20250514">Claude Sonnet 4.5 (Balanced)</option>
+                              <option value="claude-haiku-3-5-20250514">Claude Haiku 3.5 (Fast)</option>
+                              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Legacy)</option>
                             </select>
                           </div>
                           <div>
@@ -1633,7 +1637,7 @@ export default function AdminPage() {
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
                             <select
-                              value={config.aiProviders?.openai?.model || 'gpt-4o'}
+                              value={config.aiProviders?.openai?.model || 'gpt-5.2'}
                               onChange={(e) => updateConfig({
                                 ...config,
                                 aiProviders: {
@@ -1643,7 +1647,8 @@ export default function AdminPage() {
                               })}
                               className={inputClass}
                             >
-                              <option value="gpt-4o">GPT-4o (Latest)</option>
+                              <option value="gpt-5.2">GPT-5.2 (Latest)</option>
+                              <option value="gpt-4o">GPT-4o</option>
                               <option value="gpt-4-turbo">GPT-4 Turbo</option>
                               <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast)</option>
                             </select>
@@ -1718,7 +1723,7 @@ export default function AdminPage() {
                           <div>
                             <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
                             <select
-                              value={config.aiProviders?.gemini?.model || 'gemini-1.5-pro'}
+                              value={config.aiProviders?.gemini?.model || 'gemini-3-pro'}
                               onChange={(e) => updateConfig({
                                 ...config,
                                 aiProviders: {
@@ -1728,9 +1733,10 @@ export default function AdminPage() {
                               })}
                               className={inputClass}
                             >
-                              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast)</option>
-                              <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                              <option value="gemini-3-pro">Gemini 3 Pro (Latest)</option>
+                              <option value="gemini-3-flash">Gemini 3 Flash (Fast)</option>
+                              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                              <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legacy)</option>
                             </select>
                           </div>
                           <div>
@@ -1743,6 +1749,261 @@ export default function AdminPage() {
                                 aiProviders: {
                                   ...config.aiProviders,
                                   gemini: { ...config.aiProviders.gemini, maxTokens: parseInt(e.target.value) || 4096 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grok Settings (xAI) */}
+                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          <span className="text-gray-700 dark:text-gray-300 font-bold text-lg">X</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">Grok (xAI)</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Real-time knowledge AI from xAI</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.grok?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              grok: { ...config.aiProviders.grok, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.grok?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.grok?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                grok: { ...config.aiProviders.grok, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="xai-..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.grok?.model || 'grok-4.1'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  grok: { ...config.aiProviders.grok, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="grok-4.1">Grok 4.1 (Latest)</option>
+                              <option value="grok-3">Grok 3</option>
+                              <option value="grok-2">Grok 2</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.grok?.maxTokens || 8192}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  grok: { ...config.aiProviders.grok, maxTokens: parseInt(e.target.value) || 8192 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Kimi Settings (Moonshot) */}
+                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                          <span className="text-purple-600 dark:text-purple-400 font-bold text-lg">K</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">Kimi (Moonshot)</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Advanced reasoning AI with K2 Thinking</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.kimi?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              kimi: { ...config.aiProviders.kimi, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.kimi?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.kimi?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                kimi: { ...config.aiProviders.kimi, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="moonshot-..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.kimi?.model || 'kimi-k2-thinking'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  kimi: { ...config.aiProviders.kimi, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="kimi-k2-thinking">Kimi K2 Thinking (Latest)</option>
+                              <option value="kimi-k1.5">Kimi K1.5</option>
+                              <option value="moonshot-v1-128k">Moonshot V1 128K</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.kimi?.maxTokens || 8192}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  kimi: { ...config.aiProviders.kimi, maxTokens: parseInt(e.target.value) || 8192 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* DeepSeek Settings */}
+                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                          <span className="text-cyan-600 dark:text-cyan-400 font-bold text-lg">D</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">DeepSeek</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Cost-effective AI with deep reasoning</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.deepseek?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              deepseek: { ...config.aiProviders.deepseek, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.deepseek?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.deepseek?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                deepseek: { ...config.aiProviders.deepseek, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="sk-..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.deepseek?.model || 'deepseek-v3'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  deepseek: { ...config.aiProviders.deepseek, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="deepseek-v3">DeepSeek V3 (Latest)</option>
+                              <option value="deepseek-r1">DeepSeek R1 (Reasoning)</option>
+                              <option value="deepseek-coder-v2">DeepSeek Coder V2</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.deepseek?.maxTokens || 8192}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  deepseek: { ...config.aiProviders.deepseek, maxTokens: parseInt(e.target.value) || 8192 }
                                 }
                               })}
                               className={inputClass}

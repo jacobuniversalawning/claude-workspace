@@ -46,10 +46,13 @@ export interface AdminConfig {
     claude: AIProviderConfig;
     openai: AIProviderConfig;
     gemini: AIProviderConfig;
+    grok: AIProviderConfig;
+    kimi: AIProviderConfig;
+    deepseek: AIProviderConfig;
   };
 
   // Default AI provider to use
-  defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'none';
+  defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'grok' | 'kimi' | 'deepseek' | 'none';
 }
 
 // Default configuration - matches the existing constants
@@ -129,20 +132,38 @@ export const DEFAULT_CONFIG: AdminConfig = {
     claude: {
       enabled: false,
       apiKey: '',
-      model: 'claude-3-5-sonnet-20241022',
-      maxTokens: 4096
+      model: 'claude-sonnet-4-5-20250514',
+      maxTokens: 8192
     },
     openai: {
       enabled: false,
       apiKey: '',
-      model: 'gpt-4o',
-      maxTokens: 4096
+      model: 'gpt-5.2',
+      maxTokens: 8192
     },
     gemini: {
       enabled: false,
       apiKey: '',
-      model: 'gemini-1.5-pro',
-      maxTokens: 4096
+      model: 'gemini-3-pro',
+      maxTokens: 8192
+    },
+    grok: {
+      enabled: false,
+      apiKey: '',
+      model: 'grok-4.1',
+      maxTokens: 8192
+    },
+    kimi: {
+      enabled: false,
+      apiKey: '',
+      model: 'kimi-k2-thinking',
+      maxTokens: 8192
+    },
+    deepseek: {
+      enabled: false,
+      apiKey: '',
+      model: 'deepseek-v3',
+      maxTokens: 8192
     }
   },
   defaultAIProvider: 'none'
@@ -169,6 +190,9 @@ export function getAdminConfig(): AdminConfig {
           claude: { ...DEFAULT_CONFIG.aiProviders.claude, ...parsed.aiProviders?.claude },
           openai: { ...DEFAULT_CONFIG.aiProviders.openai, ...parsed.aiProviders?.openai },
           gemini: { ...DEFAULT_CONFIG.aiProviders.gemini, ...parsed.aiProviders?.gemini },
+          grok: { ...DEFAULT_CONFIG.aiProviders.grok, ...parsed.aiProviders?.grok },
+          kimi: { ...DEFAULT_CONFIG.aiProviders.kimi, ...parsed.aiProviders?.kimi },
+          deepseek: { ...DEFAULT_CONFIG.aiProviders.deepseek, ...parsed.aiProviders?.deepseek },
         },
         defaultAIProvider: parsed.defaultAIProvider || DEFAULT_CONFIG.defaultAIProvider,
       };
