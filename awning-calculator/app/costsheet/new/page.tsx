@@ -1006,10 +1006,9 @@ function CostSheetForm() {
                         <td className="px-2 py-1">
                           <input
                             type="number"
-                            value={l.people}
-                            onChange={(e) => updateLabor(l.id, 'people', parseInt(e.target.value) || 0)}
-                            onFocus={(e) => e.target.select()}
-                            onClick={(e) => e.currentTarget.select()}
+                            value={l.people || ''}
+                            onChange={(e) => updateLabor(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                            onBlur={(e) => { if (e.target.value === '') updateLabor(l.id, 'people', 1); }}
                             className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
@@ -1058,10 +1057,9 @@ function CostSheetForm() {
                         <td className="px-2 py-1">
                           <input
                             type="number"
-                            value={l.people}
-                            onChange={(e) => updateInstall(l.id, 'people', parseInt(e.target.value) || 0)}
-                            onFocus={(e) => e.target.select()}
-                            onClick={(e) => e.currentTarget.select()}
+                            value={l.people || ''}
+                            onChange={(e) => updateInstall(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                            onBlur={(e) => { if (e.target.value === '') updateInstall(l.id, 'people', 1); }}
                             className={`${inputClass} text-right ${l.hours > 0 && l.people <= 0 ? 'people-field-error' : ''}`}
                           />
                         </td>
