@@ -134,8 +134,10 @@ function CostSheetForm() {
     { id: generateId(), name: 'Product 1', width: 0, projection: 0, height: 0, valance: 0, sqFt: 0, linFt: 0 },
   ]);
 
-  // Materials
+  // Materials - Start with 2 blank rows + Miscellaneous
   const [materials, setMaterials] = useState<MaterialLine[]>([
+    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+    { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
     { id: generateId(), description: 'Miscellaneous', qty: 1, unitPrice: 0, freight: 0 },
   ]);
   const [materialsTaxRate, setMaterialsTaxRate] = useState<number>(DEFAULTS.SALES_TAX);
@@ -263,14 +265,18 @@ function CostSheetForm() {
               freight: m.freight || 0,
             })));
           } else if (sheet.miscQty !== undefined || sheet.miscPrice !== undefined) {
-            // Backwards compatibility: migrate old miscQty/miscPrice to materials array
-            setMaterials([{
-              id: generateId(),
-              description: 'Miscellaneous',
-              qty: sheet.miscQty || 1,
-              unitPrice: sheet.miscPrice || 0,
-              freight: 0,
-            }]);
+            // Backwards compatibility: migrate old miscQty/miscPrice to materials array with 2 blank rows
+            setMaterials([
+              { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+              { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 },
+              {
+                id: generateId(),
+                description: 'Miscellaneous',
+                qty: sheet.miscQty || 1,
+                unitPrice: sheet.miscPrice || 0,
+                freight: 0,
+              }
+            ]);
           }
 
           // Load fabric
@@ -443,7 +449,7 @@ function CostSheetForm() {
 
   // === MATERIAL FUNCTIONS ===
   const addMaterial = () => setMaterials([...materials, { id: generateId(), description: '', qty: 0, unitPrice: 0, freight: 0 }]);
-  const removeMaterial = (id: string) => { if (materials.length > 1) setMaterials(materials.filter((m) => m.id !== id)); };
+  const removeMaterial = (id: string) => { if (materials.length > 3) setMaterials(materials.filter((m) => m.id !== id)); };
   const updateMaterial = (id: string, field: keyof MaterialLine, value: string | number) => {
     setMaterials(materials.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
   };
@@ -891,7 +897,7 @@ function CostSheetForm() {
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">{formatCurrency(m.qty * m.unitPrice * materialsTaxRate)}</td>
                         <td className="px-2 py-1"><input type="number" step="0.01" value={m.freight || ''} onChange={(e) => updateMaterial(m.id, 'freight', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcMaterialTotal(m))}</td>
-                        <td className="px-2 py-1 text-center">{materials.length > 1 && <button type="button" onClick={() => removeMaterial(m.id)} className={deleteBtn}>×</button>}</td>
+                        <td className="px-2 py-1 text-center">{materials.length > 3 && <button type="button" onClick={() => removeMaterial(m.id)} className={deleteBtn}>×</button>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1008,7 +1014,16 @@ function CostSheetForm() {
                         <td className="px-2 py-1"><input type="text" value={l.description} onChange={(e) => updateLabor(l.id, 'description', e.target.value)} className={inputClass} placeholder="Notes..." /></td>
                         <td className="px-2 py-1"><input type="number" step="0.5" value={l.hours || ''} onChange={(e) => updateLabor(l.id, 'hours', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-center text-xs text-blue-600 dark:text-blue-400 font-medium">{calculateDays(l.hours)}</td>
-                        <td className="px-2 py-1"><input type="number" value={l.people === 0 ? '' : l.people} onChange={(e) => updateLabor(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} className={getPeopleFieldClass(l.hours, l.people)} placeholder="1" /></td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={l.people === 0 ? '' : l.people}
+                            onChange={(e) => updateLabor(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                            className={getPeopleFieldClass(l.hours, l.people)}
+                            style={l.hours > 0 && l.people <= 0 ? { borderColor: '#ef4444', borderWidth: '2px', backgroundColor: 'rgba(254, 226, 226, 0.5)' } : {}}
+                            placeholder="1"
+                          />
+                        </td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcLaborTotal(l))}</td>
                         <td className="px-2 py-1 text-center">{laborLines.length > 1 && <button type="button" onClick={() => removeLabor(l.id)} className={deleteBtn}>×</button>}</td>
@@ -1051,7 +1066,16 @@ function CostSheetForm() {
                         <td className="px-2 py-1"><input type="text" value={l.description} onChange={(e) => updateInstall(l.id, 'description', e.target.value)} className={inputClass} placeholder="Notes..." /></td>
                         <td className="px-2 py-1"><input type="number" step="0.5" value={l.hours || ''} onChange={(e) => updateInstall(l.id, 'hours', parseFloat(e.target.value) || 0)} className={inputClass + " text-right"} /></td>
                         <td className="px-2 py-1 text-center text-xs text-orange-600 dark:text-orange-400 font-medium">{calculateDays(l.hours)}</td>
-                        <td className="px-2 py-1"><input type="number" value={l.people === 0 ? '' : l.people} onChange={(e) => updateInstall(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} className={getPeopleFieldClass(l.hours, l.people)} placeholder="1" /></td>
+                        <td className="px-2 py-1">
+                          <input
+                            type="number"
+                            value={l.people === 0 ? '' : l.people}
+                            onChange={(e) => updateInstall(l.id, 'people', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                            className={getPeopleFieldClass(l.hours, l.people)}
+                            style={l.hours > 0 && l.people <= 0 ? { borderColor: '#ef4444', borderWidth: '2px', backgroundColor: 'rgba(254, 226, 226, 0.5)' } : {}}
+                            placeholder="1"
+                          />
+                        </td>
                         <td className="px-2 py-1 text-right text-gray-600 dark:text-gray-400">${laborRate}</td>
                         <td className="px-2 py-1 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(calcLaborTotal(l))}</td>
                         <td className="px-2 py-1 text-center">{installLines.length > 1 && <button type="button" onClick={() => removeInstall(l.id)} className={deleteBtn}>×</button>}</td>
