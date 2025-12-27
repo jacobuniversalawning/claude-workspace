@@ -12,8 +12,10 @@ function LoginContent() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      // Use window.location for a hard redirect to ensure session is fully recognized
-      window.location.href = callbackUrl;
+      // Small delay to ensure session is fully written to database before redirect
+      setTimeout(() => {
+        window.location.href = callbackUrl;
+      }, 100);
     }
   }, [status, callbackUrl]);
 
