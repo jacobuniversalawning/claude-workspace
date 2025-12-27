@@ -5,6 +5,12 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isLoginPage = req.nextUrl.pathname === "/login";
   const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
+  const isApiRoute = req.nextUrl.pathname.startsWith("/api");
+
+  // Allow API routes to pass through (they handle their own auth)
+  if (isApiRoute) {
+    return NextResponse.next();
+  }
 
   // Allow access to login page
   if (isLoginPage) {
@@ -36,11 +42,13 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    // Protect these routes
-    "/",
-    "/login",
-    "/costsheet/:path*",
-    "/admin/:path*",
-    "/analytics/:path*",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };
