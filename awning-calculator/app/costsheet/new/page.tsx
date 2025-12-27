@@ -126,6 +126,16 @@ function CostSheetForm() {
     setAdminConfig(getAdminConfig());
   }, []);
 
+  // Fetch users for dropdowns
+  const [users, setUsers] = useState<Array<{ id: string; name: string | null; email: string | null }>>([]);
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch(console.error);
+  }, []);
+
   // Header Information
   const [formData, setFormData] = useState<FormData>({
     inquiryDate: new Date().toISOString().split('T')[0],
@@ -796,11 +806,33 @@ function CostSheetForm() {
                   </div>
                   <div>
                     <label className={labelClass}>Sales Rep</label>
-                    <input type="text" value={formData.salesRep} onChange={(e) => setFormData({ ...formData, salesRep: e.target.value })} className={inputClass} placeholder="Sales rep" />
+                    <select
+                      value={formData.salesRep}
+                      onChange={(e) => setFormData({ ...formData, salesRep: e.target.value })}
+                      className={inputClass}
+                    >
+                      <option value="">Select Sales Rep...</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.name || user.email || ''}>
+                          {user.name || user.email}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className={labelClass}>Estimator</label>
-                    <input type="text" value={formData.estimator} onChange={(e) => setFormData({ ...formData, estimator: e.target.value })} className={inputClass} placeholder="Estimator name" />
+                    <select
+                      value={formData.estimator}
+                      onChange={(e) => setFormData({ ...formData, estimator: e.target.value })}
+                      className={inputClass}
+                    >
+                      <option value="">Select Estimator...</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.name || user.email || ''}>
+                          {user.name || user.email}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
