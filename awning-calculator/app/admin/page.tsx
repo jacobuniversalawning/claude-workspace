@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import {
   AdminConfig,
   getAdminConfig,
@@ -14,6 +15,7 @@ import {
   DEFAULT_CONFIG
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
+import { isSuperAdmin, isAdmin, canChangeRole, getAssignableRoles, type UserRole } from '@/lib/permissions';
 
 type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
 
@@ -54,6 +56,7 @@ type ModalType =
   | { type: 'alert'; title: string; message: string };
 
 export default function AdminPage() {
+  const { data: session } = useSession();
   const [config, setConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<TabType>('categories');
   const [hasChanges, setHasChanges] = useState(false);
@@ -71,6 +74,12 @@ export default function AdminPage() {
   const [trashLoading, setTrashLoading] = useState(false);
   const configFileInputRef = useRef<HTMLInputElement>(null);
   const dataFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Permission checks
+  const currentUserRole = session?.user?.role;
+  const userIsSuperAdmin = isSuperAdmin(currentUserRole);
+  const userIsAdmin = isAdmin(currentUserRole);
+  const assignableRoles = getAssignableRoles(currentUserRole);
 
   useEffect(() => {
     setConfig(getAdminConfig());
@@ -1400,12 +1409,17 @@ export default function AdminPage() {
                               <p className="text-sm font-medium text-[#EDEDED] truncate">
                                 {user.name || 'Unknown User'}
                               </p>
+                              {user.role === 'super_admin' && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded">
+                                  Super Admin
+                                </span>
+                              )}
                               {user.role === 'pending' && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">
                                   Pending
                                 </span>
                               )}
-                              {!user.isActive && (
+                              {!user.isActive && user.role !== 'super_admin' && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
                                   Inactive
                                 </span>
@@ -1419,41 +1433,58 @@ export default function AdminPage() {
                           {/* Role Select */}
                           <div className="flex items-center gap-2">
                             <label className="text-xs text-[#666666]">Role:</label>
-                            <select
-                              value={user.role}
-                              onChange={(e) => updateUserRole(user.id, e.target.value)}
-                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-[#EDEDED] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="pending">Pending Approval</option>
-                              <option value="viewer">Viewer</option>
-                              <option value="sales_rep">Sales Rep</option>
-                              <option value="estimator">Estimator</option>
-                              <option value="admin">Admin</option>
-                            </select>
+                            {/* Show role as text if user can't change this user's role */}
+                            {user.role === 'super_admin' && !userIsSuperAdmin ? (
+                              <span className="text-sm px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded font-medium">
+                                Super Admin
+                              </span>
+                            ) : (
+                              <select
+                                value={user.role}
+                                onChange={(e) => updateUserRole(user.id, e.target.value)}
+                                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-[#EDEDED] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={!canChangeRole(currentUserRole, user.role, user.role)}
+                              >
+                                <option value="pending">Pending Approval</option>
+                                <option value="viewer">Viewer</option>
+                                <option value="sales_rep">Sales Rep</option>
+                                <option value="estimator">Estimator</option>
+                                <option value="admin">Admin</option>
+                                {userIsSuperAdmin && (
+                                  <option value="super_admin">Super Admin</option>
+                                )}
+                              </select>
+                            )}
                           </div>
 
                           {/* Action Buttons */}
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => toggleUserActive(user.id, user.isActive)}
-                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                                user.isActive
-                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-                                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
-                              }`}
-                              title={user.isActive ? 'Deactivate user' : 'Activate user'}
-                            >
-                              {user.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button
-                              onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
-                              className={`${iconButtonClass} hover:bg-red-500/10`}
-                              title="Delete user"
-                            >
-                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                            {/* Don't show activate/deactivate for super_admin users (they're always active) */}
+                            {user.role !== 'super_admin' && (
+                              <button
+                                onClick={() => toggleUserActive(user.id, user.isActive)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                                  user.isActive
+                                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                }`}
+                                title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                              >
+                                {user.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            )}
+                            {/* Only super_admin can delete users, and super_admin users cannot be deleted */}
+                            {userIsSuperAdmin && user.role !== 'super_admin' && (
+                              <button
+                                onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
+                                className={`${iconButtonClass} hover:bg-red-500/10`}
+                                title="Delete user"
+                              >
+                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1466,8 +1497,13 @@ export default function AdminPage() {
                       New users default to <strong>Inactive</strong> status with <strong>Pending Approval</strong> role and must be activated by an admin.
                     </p>
                     <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
-                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (full access)
+                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (full access) → Super Admin (system control)
                     </p>
+                    {!userIsSuperAdmin && (
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
+                        <strong>Permissions:</strong> Only Super Admins can delete users, assign Super Admin roles, and access Danger Zone features.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1811,7 +1847,7 @@ export default function AdminPage() {
                       <button onClick={fetchDeletedCostSheets} className={secondaryButtonClass} disabled={trashLoading}>
                         {trashLoading ? 'Loading...' : 'Refresh'}
                       </button>
-                      {deletedCostSheets.length > 0 && (
+                      {deletedCostSheets.length > 0 && userIsSuperAdmin && (
                         <button onClick={emptyTrash} className={dangerButtonClass}>
                           Empty Trash
                         </button>
@@ -1871,15 +1907,18 @@ export default function AdminPage() {
                               >
                                 Restore
                               </button>
-                              <button
-                                onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
-                                className={`${iconButtonClass} hover:bg-red-500/10`}
-                                title="Delete permanently"
-                              >
-                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
+                              {/* Only super_admin can permanently delete */}
+                              {userIsSuperAdmin && (
+                                <button
+                                  onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
+                                  className={`${iconButtonClass} hover:bg-red-500/10`}
+                                  title="Delete permanently"
+                                >
+                                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
@@ -1890,7 +1929,9 @@ export default function AdminPage() {
                   <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
                       <strong>Note:</strong> Items in trash are kept indefinitely until manually deleted.
-                      Permanently deleted items cannot be recovered.
+                      {userIsSuperAdmin
+                        ? ' Permanently deleted items cannot be recovered.'
+                        : ' Only Super Admins can permanently delete items.'}
                     </p>
                   </div>
                 </div>
@@ -1975,18 +2016,20 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Reset All Data */}
-                  <div className="pt-6 border-t border-[#1F1F1F]">
-                    <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
-                    <p className="text-sm text-[#666666] mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
+                  {/* Reset All Data - Super Admin Only */}
+                  {userIsSuperAdmin && (
+                    <div className="pt-6 border-t border-[#1F1F1F]">
+                      <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
+                      <p className="text-sm text-[#666666] mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
 
-                    <button
-                      onClick={handleDeleteAllData}
-                      className={dangerButtonClass}
-                    >
-                      Delete All Cost Sheet Data
-                    </button>
-                  </div>
+                      <button
+                        onClick={handleDeleteAllData}
+                        className={dangerButtonClass}
+                      >
+                        Delete All Cost Sheet Data
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

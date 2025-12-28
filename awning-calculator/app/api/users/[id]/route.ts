@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import {
+  isValidRole,
+  isAdmin,
+  isSuperAdmin,
+  canChangeRole,
+  canDeleteUser,
+  requireAdmin,
+  requireSuperAdmin,
+  VALID_ROLES,
+} from "@/lib/permissions";
 
 // PATCH /api/users/[id] - Update user role or status
 export async function PATCH(
@@ -15,28 +25,62 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // For now, allow all authenticated users to manage users
-    // Uncomment below to restrict to admin only:
-    // if (session.user.role !== "admin") {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    // Require admin or super_admin to manage users
+    const adminCheck = requireAdmin(session);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+    }
 
     const body = await request.json();
     const { role, isActive } = body;
 
+    // Get the target user's current role
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true, email: true },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Validate role if provided
-    const validRoles = ["admin", "estimator", "sales_rep", "viewer", "pending"];
-    if (role && !validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: `Invalid role. Must be one of: ${validRoles.join(", ")}` },
-        { status: 400 }
-      );
+    if (role !== undefined) {
+      if (!isValidRole(role)) {
+        return NextResponse.json(
+          { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` },
+          { status: 400 }
+        );
+      }
+
+      // Check if actor can change this user's role to the new role
+      if (!canChangeRole(session.user.role, targetUser.role, role)) {
+        // Non-super admins cannot change to/from super_admin
+        if (role === 'super_admin' || targetUser.role === 'super_admin') {
+          return NextResponse.json(
+            { error: "Only Super Admins can modify Super Admin roles" },
+            { status: 403 }
+          );
+        }
+        return NextResponse.json(
+          { error: "Insufficient permissions to change this user's role" },
+          { status: 403 }
+        );
+      }
     }
 
     // Prevent user from deactivating themselves
     if (id === session.user.id && isActive === false) {
       return NextResponse.json(
         { error: "You cannot deactivate your own account" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent user from demoting themselves
+    if (id === session.user.id && role !== undefined && role !== session.user.role) {
+      return NextResponse.json(
+        { error: "You cannot change your own role" },
         { status: 400 }
       );
     }
@@ -70,7 +114,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/users/[id] - Delete a user (admin only)
+// DELETE /api/users/[id] - Delete a user (super_admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -83,17 +127,35 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // For now, allow all authenticated users to delete users
-    // Uncomment below to restrict to admin only:
-    // if (session.user.role !== "admin") {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    // Only super_admin can delete users
+    const superAdminCheck = requireSuperAdmin(session);
+    if (!superAdminCheck.authorized) {
+      return NextResponse.json({ error: superAdminCheck.error }, { status: superAdminCheck.status });
+    }
 
     // Prevent user from deleting themselves
     if (id === session.user.id) {
       return NextResponse.json(
         { error: "You cannot delete your own account" },
         { status: 400 }
+      );
+    }
+
+    // Get the target user to check their role
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true, email: true },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Extra protection: cannot delete a super_admin (even as super_admin)
+    if (targetUser.role === 'super_admin') {
+      return NextResponse.json(
+        { error: "Cannot delete a Super Admin account" },
+        { status: 403 }
       );
     }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { logActivity } from '@/lib/activityLogger';
+import { isSuperAdmin, requireSuperAdmin } from '@/lib/permissions';
 
 // GET /api/costsheets/[id] - Get a single cost sheet
 export async function GET(
@@ -229,6 +230,17 @@ export async function DELETE(
     const { searchParams } = new URL(request.url);
     const permanent = searchParams.get('permanent') === 'true';
 
+    // Permanent delete requires super admin
+    if (permanent) {
+      const superAdminCheck = requireSuperAdmin(session);
+      if (!superAdminCheck.authorized) {
+        return NextResponse.json(
+          { error: superAdminCheck.error },
+          { status: superAdminCheck.status }
+        );
+      }
+    }
+
     // Get user info for logging
     let userId: string;
     let userName: string;
@@ -245,7 +257,7 @@ export async function DELETE(
     }
 
     if (permanent) {
-      // Permanent delete - actually remove from database
+      // Permanent delete - actually remove from database (super admin only)
       await prisma.costSheet.delete({
         where: { id },
       });

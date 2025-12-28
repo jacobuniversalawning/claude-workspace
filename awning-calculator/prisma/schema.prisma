@@ -52,7 +52,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("pending") // admin, estimator, sales_rep, viewer, pending
+  role          String    @default("pending") // super_admin, admin, estimator, sales_rep, viewer, pending
   isActive      Boolean   @default(false) // New users default to inactive until approved
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
