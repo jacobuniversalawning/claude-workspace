@@ -15,19 +15,10 @@ import {
   DEFAULT_CONFIG
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
-import { isSuperAdmin, isAdmin, canChangeRole, getAssignableRoles, type UserRole } from '@/lib/permissions';
+import { isSuperAdmin } from '@/lib/permissions';
+import UserManagement from '@/components/UserManagement';
 
 type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
-
-interface User {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-}
 
 interface DeletedCostSheet {
   id: string;
@@ -68,8 +59,6 @@ export default function AdminPage() {
   const [editingFabric, setEditingFabric] = useState<number | null>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<number | null>(null);
   const [modal, setModal] = useState<ModalType>({ type: 'none' });
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
   const [deletedCostSheets, setDeletedCostSheets] = useState<DeletedCostSheet[]>([]);
   const [trashLoading, setTrashLoading] = useState(false);
   const configFileInputRef = useRef<HTMLInputElement>(null);
@@ -78,103 +67,17 @@ export default function AdminPage() {
   // Permission checks
   const currentUserRole = session?.user?.role;
   const userIsSuperAdmin = isSuperAdmin(currentUserRole);
-  const userIsAdmin = isAdmin(currentUserRole);
-  const assignableRoles = getAssignableRoles(currentUserRole);
 
   useEffect(() => {
     setConfig(getAdminConfig());
   }, []);
 
-  // Fetch users when users tab is active
+  // Fetch deleted cost sheets when trash tab is active
   useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
-    }
     if (activeTab === 'trash') {
       fetchDeletedCostSheets();
     }
   }, [activeTab]);
-
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    try {
-      const response = await fetch('/api/users');
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  const updateUserRole = async (userId: string, newRole: string) => {
-    try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
-      });
-      if (response.ok) {
-        const updatedUser = await response.json();
-        setUsers(users.map(u => u.id === userId ? updatedUser : u));
-        showMessage(`User role updated to ${newRole}`);
-      } else {
-        const error = await response.json();
-        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to update user role' });
-      }
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      setModal({ type: 'alert', title: 'Error', message: 'Failed to update user role' });
-    }
-  };
-
-  const toggleUserActive = async (userId: string, currentStatus: boolean) => {
-    try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
-      if (response.ok) {
-        const updatedUser = await response.json();
-        setUsers(users.map(u => u.id === userId ? updatedUser : u));
-        showMessage(`User ${!currentStatus ? 'activated' : 'deactivated'}`);
-      } else {
-        const error = await response.json();
-        setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to update user status' });
-      }
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      setModal({ type: 'alert', title: 'Error', message: 'Failed to update user status' });
-    }
-  };
-
-  const deleteUser = async (userId: string, userName: string) => {
-    setModal({
-      type: 'confirm',
-      title: 'Delete User',
-      message: `Are you sure you want to delete "${userName}"? This action cannot be undone.`,
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          const response = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
-          if (response.ok) {
-            setUsers(users.filter(u => u.id !== userId));
-            showMessage('User deleted successfully');
-          } else {
-            const error = await response.json();
-            setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to delete user' });
-          }
-        } catch (error) {
-          console.error('Error deleting user:', error);
-          setModal({ type: 'alert', title: 'Error', message: 'Failed to delete user' });
-        }
-      }
-    });
-  };
 
   // Trash functions
   const fetchDeletedCostSheets = async () => {
@@ -1355,157 +1258,10 @@ export default function AdminPage() {
 
               {/* Users Tab */}
               {activeTab === 'users' && (
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h2 className="text-lg font-semibold text-[#EDEDED]">User Management</h2>
-                      <p className="text-sm text-[#666666] mt-1">Manage user access, roles, and permissions.</p>
-                    </div>
-                    <button onClick={fetchUsers} className={secondaryButtonClass} disabled={usersLoading}>
-                      {usersLoading ? 'Loading...' : 'Refresh'}
-                    </button>
-                  </div>
-
-                  {usersLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                  ) : users.length === 0 ? (
-                    <div className="text-center py-12 bg-[#111111] rounded border border-dashed border-gray-300 dark:border-gray-600">
-                      <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      <p className="text-[#666666]">No users found. Users will appear here after they sign in with Google.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {users.map((user) => (
-                        <div
-                          key={user.id}
-                          className={`flex items-center gap-4 p-4 rounded-lg border ${
-                            user.isActive
-                              ? 'bg-white dark:bg-brand-surface-grey-dark border-[#1F1F1F]'
-                              : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 opacity-60'
-                          }`}
-                        >
-                          {/* User Avatar */}
-                          {user.image ? (
-                            <img
-                              src={user.image}
-                              alt={user.name || 'User'}
-                              className="w-10 h-10 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                              <span className="text-blue-600 dark:text-blue-300 font-medium">
-                                {(user.name || user.email || 'U').charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* User Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-[#EDEDED] truncate">
-                                {user.name || 'Unknown User'}
-                              </p>
-                              {user.role === 'super_admin' && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded">
-                                  Super Admin
-                                </span>
-                              )}
-                              {user.role === 'pending' && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">
-                                  Pending
-                                </span>
-                              )}
-                              {!user.isActive && user.role !== 'super_admin' && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
-                                  Inactive
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-[#666666] truncate">
-                              {user.email}
-                            </p>
-                          </div>
-
-                          {/* Role Select */}
-                          <div className="flex items-center gap-2">
-                            <label className="text-xs text-[#666666]">Role:</label>
-                            {/* Show role as text if user can't change this user's role */}
-                            {user.role === 'super_admin' && !userIsSuperAdmin ? (
-                              <span className="text-sm px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded font-medium">
-                                Super Admin
-                              </span>
-                            ) : (
-                              <select
-                                value={user.role}
-                                onChange={(e) => updateUserRole(user.id, e.target.value)}
-                                className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-[#EDEDED] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={!canChangeRole(currentUserRole, user.role, user.role)}
-                              >
-                                <option value="pending">Pending Approval</option>
-                                <option value="viewer">Viewer</option>
-                                <option value="sales_rep">Sales Rep</option>
-                                <option value="estimator">Estimator</option>
-                                <option value="admin">Admin</option>
-                                {userIsSuperAdmin && (
-                                  <option value="super_admin">Super Admin</option>
-                                )}
-                              </select>
-                            )}
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-2">
-                            {/* Don't show activate/deactivate for super_admin users (they're always active) */}
-                            {user.role !== 'super_admin' && (
-                              <button
-                                onClick={() => toggleUserActive(user.id, user.isActive)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                                  user.isActive
-                                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-                                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
-                                }`}
-                                title={user.isActive ? 'Deactivate user' : 'Activate user'}
-                              >
-                                {user.isActive ? 'Deactivate' : 'Activate'}
-                              </button>
-                            )}
-                            {/* Only super_admin can delete users, and super_admin users cannot be deleted */}
-                            {userIsSuperAdmin && user.role !== 'super_admin' && (
-                              <button
-                                onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
-                                className={`${iconButtonClass} hover:bg-red-500/10`}
-                                title="Delete user"
-                              >
-                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      <strong>Note:</strong> Users are automatically created when they sign in with Google for the first time.
-                      New users default to <strong>Inactive</strong> status with <strong>Pending Approval</strong> role and must be activated by an admin.
-                    </p>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
-                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (full access) → Super Admin (system control)
-                    </p>
-                    {!userIsSuperAdmin && (
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
-                        <strong>Permissions:</strong> Only Super Admins can delete users, assign Super Admin roles, and access Danger Zone features.
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <UserManagement
+                  currentUserRole={currentUserRole}
+                  currentUserId={session?.user?.id}
+                />
               )}
 
               {/* AI & Integrations Tab */}

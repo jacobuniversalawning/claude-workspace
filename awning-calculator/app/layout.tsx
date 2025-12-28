@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SessionProvider } from "@/components/SessionProvider";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Universal Awning Cost Sheet Calculator",
@@ -19,6 +20,18 @@ export default function RootLayout({
         <SessionProvider>
           <ThemeProvider>
             {children}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: '#0A0A0A',
+                  border: '1px solid #1F1F1F',
+                  color: '#EDEDED',
+                },
+              }}
+              richColors
+              closeButton
+            />
           </ThemeProvider>
         </SessionProvider>
       </body>
