@@ -39,21 +39,21 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         ref={modalRef}
-        className={`bg-white dark:bg-brand-surface-black rounded-modal ${sizeClasses[size]} w-full shadow-xl border border-gray-200 dark:border-brand-border-subtle animate-scale-in`}
+        className={`bg-[#0A0A0A] rounded-xl ${sizeClasses[size]} w-full border border-[#1F1F1F] animate-scale-in shadow-2xl shadow-black/50`}
       >
-        <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-brand-border-subtle">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">{title}</h3>
+        <div className="flex justify-between items-center p-5 border-b border-[#1F1F1F]">
+          <h3 className="text-lg font-semibold text-[#EDEDED] tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1"
+            className="p-2 text-[#666666] hover:text-[#EDEDED] hover:bg-[#1F1F1F] rounded-lg transition-all duration-150"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -94,20 +94,20 @@ export function ConfirmModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-      <p className="text-gray-600 dark:text-brand-text-secondary mb-6">{message}</p>
+      <p className="text-[#A1A1A1] text-sm mb-6">{message}</p>
       <div className="flex justify-end gap-3">
         <button
           onClick={onClose}
-          className="px-5 py-2.5 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:brightness-110 rounded-button font-medium transition-all duration-200"
+          className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded-full text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
         >
           {cancelText}
         </button>
         <button
           onClick={handleConfirm}
-          className={`px-5 py-2.5 text-white rounded-button font-medium transition-all duration-200 ${
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ${
             variant === 'danger'
-              ? 'bg-red-600 hover:bg-red-700'
-              : 'bg-blue-600 dark:bg-brand-google-blue hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover'
+              ? 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
+              : 'bg-white text-black hover:bg-[#E5E5E5]'
           }`}
         >
           {confirmText}
@@ -163,7 +163,7 @@ export function InputModal({
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <form onSubmit={handleSubmit}>
         {label && (
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-[#A1A1A1] mb-2">
             {label}
           </label>
         )}
@@ -172,19 +172,19 @@ export function InputModal({
           type={inputType}
           defaultValue={defaultValue}
           placeholder={placeholder}
-          className="w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
+          className="w-full bg-[#111111] border border-[#333333] rounded-lg px-4 py-2.5 text-sm text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
         />
         <div className="flex justify-end gap-3 mt-5">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:brightness-110 rounded-button font-medium transition-all duration-200"
+            className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded-full text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-blue-600 dark:bg-brand-google-blue text-white rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover font-medium transition-all duration-200"
+            className="px-4 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
           >
             {submitText}
           </button>
@@ -255,7 +255,7 @@ export function DualInputModal({
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-[#A1A1A1] mb-2">
               {label1}
             </label>
             <input
@@ -263,24 +263,24 @@ export function DualInputModal({
               type={inputType1}
               defaultValue={defaultValue1}
               placeholder={placeholder1}
-              className="w-full border border-gray-300 dark:border-transparent rounded-input px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
+              className="w-full bg-[#111111] border border-[#333333] rounded-lg px-4 py-2.5 text-sm text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-[#A1A1A1] mb-2">
               {label2}
             </label>
             <div className="flex items-center gap-2">
-              {prefix2 && <span className="text-gray-500 dark:text-gray-400">{prefix2}</span>}
+              {prefix2 && <span className="text-[#666666] text-sm">{prefix2}</span>}
               <input
                 ref={input2Ref}
                 type={inputType2}
                 step={inputType2 === 'number' ? '0.01' : undefined}
                 defaultValue={defaultValue2}
                 placeholder={placeholder2}
-                className="flex-1 border border-gray-300 dark:border-transparent rounded-input px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
+                className="flex-1 bg-[#111111] border border-[#333333] rounded-lg px-4 py-2.5 text-sm text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
               />
-              {suffix2 && <span className="text-gray-500 dark:text-gray-400">{suffix2}</span>}
+              {suffix2 && <span className="text-[#666666] text-sm">{suffix2}</span>}
             </div>
           </div>
         </div>
@@ -288,13 +288,13 @@ export function DualInputModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:brightness-110 rounded-button font-medium transition-all duration-200"
+            className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded-full text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-blue-600 dark:bg-brand-google-blue text-white rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover font-medium transition-all duration-200"
+            className="px-4 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
           >
             {submitText}
           </button>
