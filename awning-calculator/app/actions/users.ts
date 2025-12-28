@@ -60,7 +60,7 @@ export async function updateUserPermissions(
       return {
         success: false,
         message: 'Invalid input data',
-        errors: validationResult.error.errors.map((e) => ({
+        errors: validationResult.error.issues.map((e) => ({
           userId: 'unknown',
           error: e.message,
         })),
