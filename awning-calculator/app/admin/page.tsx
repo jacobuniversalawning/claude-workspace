@@ -630,12 +630,13 @@ export default function AdminPage() {
     });
   };
 
-  const inputClass = "w-full border border-gray-300 dark:border-transparent rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary";
-  const buttonClass = "px-4 py-2 text-sm font-medium rounded transition-all duration-200";
-  const primaryButtonClass = `${buttonClass} bg-blue-600 dark:bg-brand-google-blue text-white hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover`;
-  const secondaryButtonClass = `${buttonClass} bg-gray-100 dark:bg-brand-surface-grey-light text-gray-700 dark:text-brand-text-primary hover:bg-gray-200 dark:hover:brightness-110`;
-  const dangerButtonClass = `${buttonClass} bg-red-600 text-white hover:bg-red-700`;
-  const iconButtonClass = "p-1.5 rounded hover:bg-gray-100 dark:hover:bg-brand-surface-grey-light transition-colors";
+  // Vercel-style class definitions
+  const inputClass = "w-full bg-[#111111] border border-[#333333] rounded-lg px-4 py-2.5 text-sm text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150";
+  const buttonClass = "px-4 py-2 text-sm font-medium rounded-full transition-all duration-150";
+  const primaryButtonClass = `${buttonClass} bg-white text-black hover:bg-[#E5E5E5]`;
+  const secondaryButtonClass = `${buttonClass} bg-[#111111] border border-[#333333] text-[#A1A1A1] hover:bg-[#1A1A1A] hover:text-[#EDEDED] hover:border-[#444444]`;
+  const dangerButtonClass = `${buttonClass} bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20`;
+  const iconButtonClass = "p-2 rounded-lg text-[#666666] hover:text-[#EDEDED] hover:bg-[#1F1F1F] transition-all duration-150";
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: 'categories', label: 'Categories', icon: 'M4 6h16M4 12h16M4 18h16' },
@@ -650,7 +651,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-black transition-colors">
       {/* Custom Modals */}
       {modal.type === 'confirm' && (
         <ConfirmModal
@@ -708,35 +709,35 @@ export default function AdminPage() {
       )}
 
       {/* Header */}
-      <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+      <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-[#1F1F1F]">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                className="p-2 text-[#666666] hover:text-[#EDEDED] hover:bg-[#1F1F1F] rounded-lg transition-all duration-150"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </Link>
               <div>
-                <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">
+                <h1 className="text-xl font-bold text-[#EDEDED] tracking-tight">
                   Admin Panel
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-brand-text-secondary mt-1">
+                <p className="text-sm text-[#666666] mt-0.5">
                   Manage categories, rates, and settings
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               {saveMessage && (
-                <span className="text-sm text-green-600 dark:text-green-400 font-medium animate-fade-in">
+                <span className="text-sm text-emerald-400 font-medium animate-fade-in">
                   {saveMessage}
                 </span>
               )}
               {hasChanges && (
-                <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                <span className="text-sm text-yellow-400 font-medium">
                   Unsaved changes
                 </span>
               )}
@@ -758,23 +759,23 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex gap-6">
           {/* Sidebar Navigation */}
           <div className="w-56 flex-shrink-0">
-            <nav className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
+            <nav className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] overflow-hidden">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-150 ${
                     activeTab === tab.id
-                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-l-4 border-blue-600'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark border-l-4 border-transparent'
+                      ? 'bg-[#0070F3]/10 text-[#0070F3] border-l-2 border-[#0070F3]'
+                      : 'text-[#A1A1A1] hover:bg-[#111111] hover:text-[#EDEDED] border-l-2 border-transparent'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={tab.icon} />
                   </svg>
                   {tab.label}
                 </button>
@@ -784,14 +785,14 @@ export default function AdminPage() {
 
           {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-6">
+            <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-6">
               {/* Categories Tab */}
               {activeTab === 'categories' && (
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Product Categories</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage the list of product categories available in cost sheets.</p>
+                      <h2 className="text-lg font-semibold text-[#EDEDED]">Product Categories</h2>
+                      <p className="text-sm text-[#666666] mt-1">Manage the list of product categories available in cost sheets.</p>
                     </div>
                     <button onClick={addCategory} className={primaryButtonClass}>
                       + Add Category
@@ -802,7 +803,7 @@ export default function AdminPage() {
                     {config.categories.map((category, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-gray-200 dark:border-brand-border-subtle group"
+                        className="flex items-center gap-3 p-3 bg-[#111111] rounded border border-[#1F1F1F] group"
                       >
                         <div className="flex flex-col">
                           <button
@@ -824,7 +825,7 @@ export default function AdminPage() {
                             </svg>
                           </button>
                         </div>
-                        <span className="text-gray-400 dark:text-gray-500 text-sm w-6">{index + 1}.</span>
+                        <span className="text-[#666666] text-sm w-6">{index + 1}.</span>
                         {editingCategory === index ? (
                           <input
                             type="text"
@@ -839,7 +840,7 @@ export default function AdminPage() {
                           />
                         ) : (
                           <span
-                            className="flex-1 text-gray-900 dark:text-brand-text-primary cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                            className="flex-1 text-[#EDEDED] cursor-pointer hover:text-[#0070F3]"
                             onClick={() => setEditingCategory(index)}
                           >
                             {category}
@@ -856,7 +857,7 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => deleteCategory(index)}
-                          className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                          className={`${iconButtonClass} hover:bg-red-500/10`}
                           title="Delete"
                         >
                           <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -876,8 +877,8 @@ export default function AdminPage() {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Labor Types</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Types of labor that can be added to cost sheets.</p>
+                        <h2 className="text-lg font-semibold text-[#EDEDED]">Labor Types</h2>
+                        <p className="text-sm text-[#666666] mt-1">Types of labor that can be added to cost sheets.</p>
                       </div>
                       <button onClick={addLaborType} className={primaryButtonClass}>
                         + Add Labor Type
@@ -888,7 +889,7 @@ export default function AdminPage() {
                       {config.laborTypes.map((type, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-gray-200 dark:border-brand-border-subtle"
+                          className="flex items-center gap-2 p-3 bg-[#111111] rounded border border-[#1F1F1F]"
                         >
                           {editingLaborType === index ? (
                             <input
@@ -904,7 +905,7 @@ export default function AdminPage() {
                             />
                           ) : (
                             <span
-                              className="flex-1 text-gray-900 dark:text-brand-text-primary cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                              className="flex-1 text-[#EDEDED] cursor-pointer hover:text-[#0070F3]"
                               onClick={() => setEditingLaborType(index)}
                             >
                               {type}
@@ -920,7 +921,7 @@ export default function AdminPage() {
                           </button>
                           <button
                             onClick={() => deleteLaborType(index)}
-                            className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                            className={`${iconButtonClass} hover:bg-red-500/10`}
                           >
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -932,11 +933,11 @@ export default function AdminPage() {
                   </div>
 
                   {/* Labor Rates */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
+                  <div className="pt-6 border-t border-[#1F1F1F]">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Labor Rates</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Hourly rate options for labor calculations.</p>
+                        <h2 className="text-lg font-semibold text-[#EDEDED]">Labor Rates</h2>
+                        <p className="text-sm text-[#666666] mt-1">Hourly rate options for labor calculations.</p>
                       </div>
                       <button onClick={addLaborRate} className={primaryButtonClass}>
                         + Add Rate
@@ -947,7 +948,7 @@ export default function AdminPage() {
                       {config.laborRates.map((rate, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-gray-200 dark:border-brand-border-subtle"
+                          className="flex items-center gap-4 p-3 bg-[#111111] rounded border border-[#1F1F1F]"
                         >
                           {editingLaborRate === index ? (
                             <>
@@ -969,12 +970,12 @@ export default function AdminPage() {
                                 className={`${inputClass} w-24`}
                                 placeholder="Rate"
                               />
-                              <span className="text-gray-500 dark:text-gray-400">/hr</span>
+                              <span className="text-[#666666]">/hr</span>
                             </>
                           ) : (
                             <>
-                              <span className="flex-1 text-gray-900 dark:text-brand-text-primary font-medium">{rate.name}</span>
-                              <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">${rate.rate.toFixed(2)}/hr</span>
+                              <span className="flex-1 text-[#EDEDED] font-medium">{rate.name}</span>
+                              <span className="text-lg font-semibold text-[#0070F3]">${rate.rate.toFixed(2)}/hr</span>
                             </>
                           )}
                           <button
@@ -987,7 +988,7 @@ export default function AdminPage() {
                           </button>
                           <button
                             onClick={() => deleteLaborRate(index)}
-                            className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                            className={`${iconButtonClass} hover:bg-red-500/10`}
                           >
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1003,12 +1004,12 @@ export default function AdminPage() {
               {/* Defaults Tab */}
               {activeTab === 'defaults' && (
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Default Values</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">These values will be pre-filled when creating new cost sheets.</p>
+                  <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">Default Values</h2>
+                  <p className="text-sm text-[#666666] mb-6">These values will be pre-filled when creating new cost sheets.</p>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Sales Tax Rate (%)
                       </label>
                       <div className="flex items-center gap-2">
@@ -1019,13 +1020,13 @@ export default function AdminPage() {
                           onChange={(e) => updateDefault('salesTax', parseFloat(e.target.value) / 100 || 0)}
                           className={inputClass}
                         />
-                        <span className="text-gray-500 dark:text-gray-400">%</span>
+                        <span className="text-[#666666]">%</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">Current: {(config.defaults.salesTax * 100).toFixed(2)}%</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Markup Rate (%)
                       </label>
                       <div className="flex items-center gap-2">
@@ -1036,17 +1037,17 @@ export default function AdminPage() {
                           onChange={(e) => updateDefault('markup', parseFloat(e.target.value) / 100 || 0)}
                           className={inputClass}
                         />
-                        <span className="text-gray-500 dark:text-gray-400">%</span>
+                        <span className="text-[#666666]">%</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">Applied to materials + fabric + labor</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Default Labor Rate ($/hr)
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">$</span>
+                        <span className="text-[#666666]">$</span>
                         <input
                           type="number"
                           step="1"
@@ -1058,11 +1059,11 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Drive Time Rate ($/hr)
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">$</span>
+                        <span className="text-[#666666]">$</span>
                         <input
                           type="number"
                           step="1"
@@ -1074,11 +1075,11 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Mileage Rate ($/mile)
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">$</span>
+                        <span className="text-[#666666]">$</span>
                         <input
                           type="number"
                           step="0.01"
@@ -1090,11 +1091,11 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Hotel Rate ($/night)
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 dark:text-gray-400">$</span>
+                        <span className="text-[#666666]">$</span>
                         <input
                           type="number"
                           step="1"
@@ -1107,11 +1108,11 @@ export default function AdminPage() {
                   </div>
 
                   {/* Home Base Address */}
-                  <div className="mt-8 pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Company Location</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This address is used to calculate drive time and mileage to job sites.</p>
+                  <div className="mt-8 pt-6 border-t border-[#1F1F1F]">
+                    <h3 className="text-lg font-semibold text-[#EDEDED] mb-2">Company Location</h3>
+                    <p className="text-sm text-[#666666] mb-4">This address is used to calculate drive time and mileage to job sites.</p>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
                         Home Base Address
                       </label>
                       <input
@@ -1134,8 +1135,8 @@ export default function AdminPage() {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Material Presets</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Quick-add materials with preset prices.</p>
+                        <h2 className="text-lg font-semibold text-[#EDEDED]">Material Presets</h2>
+                        <p className="text-sm text-[#666666] mt-1">Quick-add materials with preset prices.</p>
                       </div>
                       <button onClick={addMaterialPreset} className={primaryButtonClass}>
                         + Add Preset
@@ -1146,7 +1147,7 @@ export default function AdminPage() {
                       {config.materialPresets.map((material, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-gray-200 dark:border-brand-border-subtle"
+                          className="flex items-center gap-4 p-3 bg-[#111111] rounded border border-[#1F1F1F]"
                         >
                           {editingMaterial === index ? (
                             <>
@@ -1171,8 +1172,8 @@ export default function AdminPage() {
                             </>
                           ) : (
                             <>
-                              <span className="flex-1 text-gray-900 dark:text-brand-text-primary">{material.description}</span>
-                              <span className="font-semibold text-gray-700 dark:text-gray-300">${material.unitPrice.toFixed(2)}</span>
+                              <span className="flex-1 text-[#EDEDED]">{material.description}</span>
+                              <span className="font-semibold text-[#A1A1A1]">${material.unitPrice.toFixed(2)}</span>
                             </>
                           )}
                           <button
@@ -1185,7 +1186,7 @@ export default function AdminPage() {
                           </button>
                           <button
                             onClick={() => deleteMaterialPreset(index)}
-                            className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                            className={`${iconButtonClass} hover:bg-red-500/10`}
                           >
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1197,11 +1198,11 @@ export default function AdminPage() {
                   </div>
 
                   {/* Fabric Presets */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
+                  <div className="pt-6 border-t border-[#1F1F1F]">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Fabric Presets</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pre-configured fabric types with pricing.</p>
+                        <h2 className="text-lg font-semibold text-[#EDEDED]">Fabric Presets</h2>
+                        <p className="text-sm text-[#666666] mt-1">Pre-configured fabric types with pricing.</p>
                       </div>
                       <button onClick={addFabricPreset} className={primaryButtonClass}>
                         + Add Preset
@@ -1212,7 +1213,7 @@ export default function AdminPage() {
                       {config.fabricPresets.map((fabric, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-gray-200 dark:border-brand-border-subtle"
+                          className="flex items-center gap-4 p-3 bg-[#111111] rounded border border-[#1F1F1F]"
                         >
                           {editingFabric === index ? (
                             <>
@@ -1234,12 +1235,12 @@ export default function AdminPage() {
                                 className={`${inputClass} w-24`}
                                 placeholder="$/yard"
                               />
-                              <span className="text-gray-500 dark:text-gray-400">/yard</span>
+                              <span className="text-[#666666]">/yard</span>
                             </>
                           ) : (
                             <>
-                              <span className="flex-1 text-gray-900 dark:text-brand-text-primary">{fabric.name}</span>
-                              <span className="font-semibold text-gray-700 dark:text-gray-300">${fabric.pricePerYard.toFixed(2)}/yard</span>
+                              <span className="flex-1 text-[#EDEDED]">{fabric.name}</span>
+                              <span className="font-semibold text-[#A1A1A1]">${fabric.pricePerYard.toFixed(2)}/yard</span>
                             </>
                           )}
                           <button
@@ -1252,7 +1253,7 @@ export default function AdminPage() {
                           </button>
                           <button
                             onClick={() => deleteFabricPreset(index)}
-                            className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                            className={`${iconButtonClass} hover:bg-red-500/10`}
                           >
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1270,8 +1271,8 @@ export default function AdminPage() {
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Sales Reps / Estimators</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage the list of sales representatives and estimators.</p>
+                      <h2 className="text-lg font-semibold text-[#EDEDED]">Sales Reps / Estimators</h2>
+                      <p className="text-sm text-[#666666] mt-1">Manage the list of sales representatives and estimators.</p>
                     </div>
                     <button onClick={addSalesRep} className={primaryButtonClass}>
                       + Add Person
@@ -1279,11 +1280,11 @@ export default function AdminPage() {
                   </div>
 
                   {config.salesReps.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-dashed border-gray-300 dark:border-gray-600">
+                    <div className="text-center py-12 bg-[#111111] rounded border border-dashed border-gray-300 dark:border-gray-600">
                       <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <p className="text-gray-500 dark:text-gray-400 mb-4">No sales reps added yet</p>
+                      <p className="text-[#666666] mb-4">No sales reps added yet</p>
                       <button onClick={addSalesRep} className={primaryButtonClass}>
                         Add Your First Sales Rep
                       </button>
@@ -1293,7 +1294,7 @@ export default function AdminPage() {
                       {config.salesReps.map((rep, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-gray-200 dark:border-brand-border-subtle"
+                          className="flex items-center gap-3 p-3 bg-[#111111] rounded border border-[#1F1F1F]"
                         >
                           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                             <span className="text-blue-600 dark:text-blue-300 font-medium text-sm">
@@ -1314,7 +1315,7 @@ export default function AdminPage() {
                             />
                           ) : (
                             <span
-                              className="flex-1 text-gray-900 dark:text-brand-text-primary cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                              className="flex-1 text-[#EDEDED] cursor-pointer hover:text-[#0070F3]"
                               onClick={() => setEditingSalesRep(index)}
                             >
                               {rep}
@@ -1330,7 +1331,7 @@ export default function AdminPage() {
                           </button>
                           <button
                             onClick={() => deleteSalesRep(index)}
-                            className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                            className={`${iconButtonClass} hover:bg-red-500/10`}
                           >
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1348,8 +1349,8 @@ export default function AdminPage() {
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">User Management</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage user access, roles, and permissions.</p>
+                      <h2 className="text-lg font-semibold text-[#EDEDED]">User Management</h2>
+                      <p className="text-sm text-[#666666] mt-1">Manage user access, roles, and permissions.</p>
                     </div>
                     <button onClick={fetchUsers} className={secondaryButtonClass} disabled={usersLoading}>
                       {usersLoading ? 'Loading...' : 'Refresh'}
@@ -1361,11 +1362,11 @@ export default function AdminPage() {
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                   ) : users.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-dashed border-gray-300 dark:border-gray-600">
+                    <div className="text-center py-12 bg-[#111111] rounded border border-dashed border-gray-300 dark:border-gray-600">
                       <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      <p className="text-gray-500 dark:text-gray-400">No users found. Users will appear here after they sign in with Google.</p>
+                      <p className="text-[#666666]">No users found. Users will appear here after they sign in with Google.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1374,7 +1375,7 @@ export default function AdminPage() {
                           key={user.id}
                           className={`flex items-center gap-4 p-4 rounded-lg border ${
                             user.isActive
-                              ? 'bg-white dark:bg-brand-surface-grey-dark border-gray-200 dark:border-brand-border-subtle'
+                              ? 'bg-white dark:bg-brand-surface-grey-dark border-[#1F1F1F]'
                               : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 opacity-60'
                           }`}
                         >
@@ -1396,7 +1397,7 @@ export default function AdminPage() {
                           {/* User Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium text-gray-900 dark:text-brand-text-primary truncate">
+                              <p className="text-sm font-medium text-[#EDEDED] truncate">
                                 {user.name || 'Unknown User'}
                               </p>
                               {user.role === 'pending' && (
@@ -1410,18 +1411,18 @@ export default function AdminPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            <p className="text-sm text-[#666666] truncate">
                               {user.email}
                             </p>
                           </div>
 
                           {/* Role Select */}
                           <div className="flex items-center gap-2">
-                            <label className="text-xs text-gray-500 dark:text-gray-400">Role:</label>
+                            <label className="text-xs text-[#666666]">Role:</label>
                             <select
                               value={user.role}
                               onChange={(e) => updateUserRole(user.id, e.target.value)}
-                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-[#EDEDED] focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                               <option value="pending">Pending Approval</option>
                               <option value="viewer">Viewer</option>
@@ -1446,7 +1447,7 @@ export default function AdminPage() {
                             </button>
                             <button
                               onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
-                              className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                              className={`${iconButtonClass} hover:bg-red-500/10`}
                               title="Delete user"
                             >
                               <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1476,13 +1477,13 @@ export default function AdminPage() {
                 <div className="space-y-8">
                   {/* Default AI Provider */}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">AI Assistant Settings</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">AI Assistant Settings</h2>
+                    <p className="text-sm text-[#666666] mb-4">
                       Configure AI providers for smart suggestions, cost estimation, and document generation.
                     </p>
 
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-[#A1A1A1] mb-2">
                         Default AI Provider
                       </label>
                       <select
@@ -1499,15 +1500,15 @@ export default function AdminPage() {
                   </div>
 
                   {/* Claude Settings */}
-                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                  <div className="p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                           <span className="text-orange-600 dark:text-orange-400 font-bold text-lg">C</span>
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">Claude (Anthropic)</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Best for detailed analysis and writing</p>
+                          <h3 className="font-medium text-[#EDEDED]">Claude (Anthropic)</h3>
+                          <p className="text-xs text-[#666666]">Best for detailed analysis and writing</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1584,15 +1585,15 @@ export default function AdminPage() {
                   </div>
 
                   {/* OpenAI Settings */}
-                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                  <div className="p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                          <span className="text-green-600 dark:text-green-400 font-bold text-lg">G</span>
+                          <span className="text-emerald-400 font-bold text-lg">G</span>
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">GPT (OpenAI)</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Versatile AI for various tasks</p>
+                          <h3 className="font-medium text-[#EDEDED]">GPT (OpenAI)</h3>
+                          <p className="text-xs text-[#666666]">Versatile AI for various tasks</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1669,15 +1670,15 @@ export default function AdminPage() {
                   </div>
 
                   {/* Gemini Settings */}
-                  <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                  <div className="p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                          <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">G</span>
+                          <span className="text-[#0070F3] font-bold text-lg">G</span>
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">Gemini (Google)</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Google&apos;s multimodal AI</p>
+                          <h3 className="font-medium text-[#EDEDED]">Gemini (Google)</h3>
+                          <p className="text-xs text-[#666666]">Google&apos;s multimodal AI</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1754,13 +1755,13 @@ export default function AdminPage() {
                   </div>
 
                   {/* HubSpot Integration */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">CRM Integration</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <div className="pt-6 border-t border-[#1F1F1F]">
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">CRM Integration</h2>
+                    <p className="text-sm text-[#666666] mb-4">
                       Connect to HubSpot to auto-populate customer and job site information.
                     </p>
 
-                    <div className="p-4 bg-gray-50 dark:bg-brand-surface-grey-dark rounded-lg border border-gray-200 dark:border-brand-border-subtle">
+                    <div className="p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
@@ -1769,8 +1770,8 @@ export default function AdminPage() {
                             </svg>
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">HubSpot</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Pull customer &amp; job site data with autocomplete</p>
+                            <h3 className="font-medium text-[#EDEDED]">HubSpot</h3>
+                            <p className="text-xs text-[#666666]">Pull customer &amp; job site data with autocomplete</p>
                           </div>
                         </div>
                         <span className="px-3 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
@@ -1801,8 +1802,8 @@ export default function AdminPage() {
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary">Deleted Cost Sheets</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      <h2 className="text-lg font-semibold text-[#EDEDED]">Deleted Cost Sheets</h2>
+                      <p className="text-sm text-[#666666] mt-1">
                         Cost sheets in trash can be restored or permanently deleted.
                       </p>
                     </div>
@@ -1823,11 +1824,11 @@ export default function AdminPage() {
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     </div>
                   ) : deletedCostSheets.length === 0 ? (
-                    <div className="text-center py-12 bg-gray-50 dark:bg-brand-surface-grey-dark rounded border border-dashed border-gray-300 dark:border-gray-600">
+                    <div className="text-center py-12 bg-[#111111] rounded border border-dashed border-gray-300 dark:border-gray-600">
                       <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      <p className="text-gray-500 dark:text-gray-400">Trash is empty</p>
+                      <p className="text-[#666666]">Trash is empty</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1838,7 +1839,7 @@ export default function AdminPage() {
                         return (
                           <div
                             key={cs.id}
-                            className="flex items-center gap-4 p-4 rounded-lg border bg-gray-50 dark:bg-brand-surface-grey-dark border-gray-200 dark:border-brand-border-subtle"
+                            className="flex items-center gap-4 p-4 rounded-lg border bg-[#111111] border-[#1F1F1F]"
                           >
                             {/* Icon */}
                             <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
@@ -1850,14 +1851,14 @@ export default function AdminPage() {
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium text-gray-900 dark:text-brand-text-primary truncate">
+                                <p className="text-sm font-medium text-[#EDEDED] truncate">
                                   {displayName}
                                 </p>
-                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-[#A1A1A1] rounded">
                                   {cs.category}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                              <p className="text-sm text-[#666666]">
                                 {formatCurrency(cs.grandTotal)} &bull; Deleted {deletedDate.toLocaleDateString()} by {cs.deletedBy?.name || cs.deletedBy?.email || 'Unknown'}
                               </p>
                             </div>
@@ -1872,7 +1873,7 @@ export default function AdminPage() {
                               </button>
                               <button
                                 onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
-                                className={`${iconButtonClass} hover:bg-red-100 dark:hover:bg-red-900/30`}
+                                className={`${iconButtonClass} hover:bg-red-500/10`}
                                 title="Delete permanently"
                               >
                                 <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1900,8 +1901,8 @@ export default function AdminPage() {
                 <div className="space-y-8">
                   {/* Configuration Import/Export */}
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Configuration</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Export or import admin settings (categories, rates, defaults, etc.)</p>
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">Configuration</h2>
+                    <p className="text-sm text-[#666666] mb-4">Export or import admin settings (categories, rates, defaults, etc.)</p>
 
                     <div className="flex gap-3">
                       <button onClick={exportConfig} className={secondaryButtonClass}>
@@ -1934,9 +1935,9 @@ export default function AdminPage() {
                   </div>
 
                   {/* Cost Sheet Data Import/Export */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-2">Cost Sheet Data</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Export all cost sheets for backup, or import from a previous backup.</p>
+                  <div className="pt-6 border-t border-[#1F1F1F]">
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">Cost Sheet Data</h2>
+                    <p className="text-sm text-[#666666] mb-4">Export all cost sheets for backup, or import from a previous backup.</p>
 
                     <div className="flex gap-3">
                       <button onClick={exportCostSheets} className={secondaryButtonClass}>
@@ -1975,9 +1976,9 @@ export default function AdminPage() {
                   </div>
 
                   {/* Reset All Data */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-brand-border-subtle">
+                  <div className="pt-6 border-t border-[#1F1F1F]">
                     <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
+                    <p className="text-sm text-[#666666] mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
 
                     <button
                       onClick={handleDeleteAllData}

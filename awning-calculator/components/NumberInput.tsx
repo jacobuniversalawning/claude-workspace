@@ -39,7 +39,7 @@ export function NumberInput({
   return (
     <div className={`flex flex-col ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-[#A1A1A1] mb-2">
           {label}
         </label>
       )}
@@ -48,9 +48,9 @@ export function NumberInput({
           type="button"
           onClick={handleDecrement}
           disabled={disabled || value <= min}
-          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-l border border-r-0 border-gray-300 text-gray-700 font-bold"
+          className="px-3 py-2.5 bg-[#111111] border border-[#333333] hover:bg-[#1F1F1F] hover:border-[#444444] disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg text-[#EDEDED] font-medium transition-all duration-150"
         >
-          −
+          -
         </button>
         <input
           type="number"
@@ -60,13 +60,13 @@ export function NumberInput({
           max={max}
           step={step}
           disabled={disabled}
-          className="w-full border-t border-b border-gray-300 px-3 py-2 text-center text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-full border-t border-b border-[#333333] px-3 py-2.5 text-center text-[#EDEDED] bg-[#111111] focus:outline-none focus:border-[#0070F3] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all duration-150"
         />
         <button
           type="button"
           onClick={handleIncrement}
           disabled={disabled || value >= max}
-          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-r border border-l-0 border-gray-300 text-gray-700 font-bold"
+          className="px-3 py-2.5 bg-[#111111] border border-[#333333] hover:bg-[#1F1F1F] hover:border-[#444444] disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg text-[#EDEDED] font-medium transition-all duration-150"
         >
           +
         </button>

@@ -50,16 +50,16 @@ function BarChart({
     <div className="space-y-3">
       {data.map((item, index) => (
         <div key={index} className="flex items-center gap-3">
-          <span className="w-32 text-sm text-gray-600 dark:text-gray-300 truncate" title={item.label}>
+          <span className="w-32 text-sm text-[#A1A1A1] truncate" title={item.label}>
             {item.label}
           </span>
-          <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+          <div className="flex-1 h-6 bg-[#1F1F1F] rounded overflow-hidden">
             <div
               className={`h-full ${colorClasses[color]} transition-all duration-500`}
               style={{ width: `${Math.min((item.value / maxValue) * 100, 100)}%` }}
             />
           </div>
-          <span className="w-24 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+          <span className="w-24 text-sm font-medium text-[#EDEDED] text-right">
             {formatCurrency(item.value)}
           </span>
         </div>
@@ -72,7 +72,7 @@ function BarChart({
 function WinRateBar({ winRate }: { winRate: number }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+      <div className="flex-1 h-4 bg-[#1F1F1F] rounded-full overflow-hidden flex">
         <div
           className="h-full bg-green-500"
           style={{ width: `${winRate}%` }}
@@ -84,7 +84,7 @@ function WinRateBar({ winRate }: { winRate: number }) {
           title={`Lost/Unknown: ${(100 - winRate).toFixed(1)}%`}
         />
       </div>
-      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 w-16 text-right">
+      <span className="text-sm font-medium text-[#EDEDED] w-16 text-right">
         {winRate.toFixed(1)}%
       </span>
     </div>
@@ -144,7 +144,7 @@ function DonutChart({
         </svg>
         {centerLabel && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{centerValue}</span>
+            <span className="text-2xl font-bold text-[#EDEDED]">{centerValue}</span>
             <span className="text-sm text-gray-500">{centerLabel}</span>
           </div>
         )}
@@ -153,7 +153,7 @@ function DonutChart({
         {segments.map((seg, idx) => (
           <div key={idx} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} />
-            <span className="text-sm text-gray-600 dark:text-gray-300">
+            <span className="text-sm text-[#A1A1A1]">
               {seg.label} ({seg.percent.toFixed(0)}%)
             </span>
           </div>
@@ -173,7 +173,7 @@ function BubbleChart({
   const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
 
   return (
-    <div className="relative h-80 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 overflow-hidden">
+    <div className="relative h-80 bg-[#111111] rounded-lg p-4 overflow-hidden">
       <div className="absolute inset-4 flex flex-wrap items-center justify-center gap-2">
         {data.map((item, idx) => {
           // Size based on revenue, position based on value
@@ -221,7 +221,7 @@ function ScatterPlot({
   const maxY = Math.max(...data.map(d => d.y), 1);
 
   return (
-    <div className="relative h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <div className="relative h-64 bg-[#111111] rounded-lg">
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300 dark:bg-gray-600" />
       <div className="absolute top-0 bottom-0 left-0 w-px bg-gray-300 dark:bg-gray-600" />
       <div className="absolute bottom-2 right-4 text-xs text-gray-400">Price →</div>
@@ -494,7 +494,7 @@ export default function AnalyticsPage() {
     ).slice(0, 20);
   }, [filteredSheets, searchTerm]);
 
-  const inputClass = "border border-gray-300 dark:border-transparent rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary";
+  const inputClass = "w-full bg-[#111111] border border-[#333333] rounded-lg px-4 py-2.5 text-sm text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150";
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: 'overview', label: 'Overview', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -509,31 +509,31 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-xl text-gray-900 dark:text-white">Loading analytics...</div>
+        <div className="text-xl text-[#EDEDED]">Loading analytics...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-black transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
+      <header className="bg-[#0A0A0A] border-b border-[#1F1F1F]">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                className="text-[#666666] hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </Link>
               <div>
-                <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">
+                <h1 className="text-h1 text-[#EDEDED]">
                   Analytics Dashboard
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-brand-text-secondary mt-1">
+                <p className="text-sm text-[#666666] mt-1">
                   Insights and performance metrics
                 </p>
               </div>
@@ -558,15 +558,15 @@ export default function AnalyticsPage() {
         <div className="flex gap-6">
           {/* Sidebar Navigation */}
           <div className="w-48 flex-shrink-0">
-            <nav className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
+            <nav className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] overflow-hidden">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
                     activeTab === tab.id
-                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-l-4 border-blue-600'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark border-l-4 border-transparent'
+                      ? 'bg-[#0070F3]/10 text-[#0070F3] border-l-2 border-[#0070F3]'
+                      : 'text-[#A1A1A1] hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark border-l-4 border-transparent'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,29 +585,29 @@ export default function AnalyticsPage() {
               <>
                 {/* Key Metrics */}
                 <div className="grid grid-cols-4 gap-4">
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Total Revenue (Won)</div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Total Revenue (Won)</div>
+                    <div className="text-2xl font-bold text-emerald-400 mt-1">
                       {formatCurrency(overviewMetrics.totalRevenue)}
                     </div>
                     <div className="text-xs text-gray-400 mt-2">{overviewMetrics.wonCount} jobs</div>
                   </div>
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Win Rate</div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Win Rate</div>
+                    <div className="text-2xl font-bold text-[#0070F3] mt-1">
                       {overviewMetrics.winRate.toFixed(1)}%
                     </div>
                     <div className="text-xs text-gray-400 mt-2">{overviewMetrics.wonCount} of {overviewMetrics.totalJobs}</div>
                   </div>
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Avg Deal Size</div>
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Avg Deal Size</div>
                     <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
                       {formatCurrency(overviewMetrics.avgDealSize)}
                     </div>
                     <div className="text-xs text-gray-400 mt-2">on won jobs</div>
                   </div>
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Lost Revenue</div>
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Lost Revenue</div>
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                       {formatCurrency(overviewMetrics.lostRevenue)}
                     </div>
@@ -617,29 +617,29 @@ export default function AnalyticsPage() {
 
                 {/* Pricing Metrics */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Avg $/sq ft (Won)</div>
-                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Avg $/sq ft (Won)</div>
+                    <div className="text-xl font-bold text-[#EDEDED] mt-1">
                       {overviewMetrics.avgSqFtPrice > 0 ? formatCurrency(overviewMetrics.avgSqFtPrice) : 'N/A'}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Avg $/lin ft (Won)</div>
-                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Avg $/lin ft (Won)</div>
+                    <div className="text-xl font-bold text-[#EDEDED] mt-1">
                       {overviewMetrics.avgLinFtPrice > 0 ? formatCurrency(overviewMetrics.avgLinFtPrice) : 'N/A'}
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Avg Markup</div>
-                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <div className="text-sm text-[#666666]">Avg Markup</div>
+                    <div className="text-xl font-bold text-[#EDEDED] mt-1">
                       {overviewMetrics.avgMarkup.toFixed(0)}%
                     </div>
                   </div>
                 </div>
 
                 {/* Job Outcome Breakdown */}
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Job Outcomes</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Job Outcomes</h3>
                   <div className="flex items-center gap-6">
                     <div className="flex-1">
                       <WinRateBar winRate={overviewMetrics.winRate} />
@@ -662,8 +662,8 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Top Categories */}
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Top Categories by Revenue</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Top Categories by Revenue</h3>
                   <BarChart
                     data={categoryMetrics.slice(0, 6).map(c => ({
                       label: c.name,
@@ -678,41 +678,41 @@ export default function AnalyticsPage() {
 
             {/* Categories Tab */}
             {activeTab === 'categories' && (
-              <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
-                <div className="p-5 border-b border-gray-200 dark:border-brand-border-subtle">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Category Performance</h3>
+              <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] overflow-hidden">
+                <div className="p-5 border-b border-[#1F1F1F]">
+                  <h3 className="text-lg font-semibold text-[#EDEDED]">Category Performance</h3>
                   <p className="text-sm text-gray-500 mt-1">Detailed breakdown by product category</p>
                 </div>
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
                     <tr>
-                      <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Jobs</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Won</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Win Rate</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Avg $/sq ft</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Avg $/lin ft</th>
+                      <th className="px-5 py-3 text-left text-xs font-medium text-[#666666] uppercase">Category</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Jobs</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Won</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Win Rate</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Revenue</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Avg $/sq ft</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Avg $/lin ft</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-brand-border-subtle">
                     {categoryMetrics.map((cat, idx) => (
                       <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark">
-                        <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{cat.name}</td>
-                        <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">{cat.count}</td>
-                        <td className="px-5 py-3 text-sm text-green-600 dark:text-green-400 text-right">{cat.wonCount}</td>
+                        <td className="px-5 py-3 text-sm font-medium text-[#EDEDED]">{cat.name}</td>
+                        <td className="px-5 py-3 text-sm text-[#A1A1A1] text-right">{cat.count}</td>
+                        <td className="px-5 py-3 text-sm text-emerald-400 text-right">{cat.wonCount}</td>
                         <td className="px-5 py-3 text-sm text-right">
                           <span className={`font-medium ${cat.count > 0 && (cat.wonCount / cat.count) >= 0.5 ? 'text-green-600' : 'text-yellow-600'}`}>
                             {cat.count > 0 ? ((cat.wonCount / cat.count) * 100).toFixed(0) : 0}%
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+                        <td className="px-5 py-3 text-sm font-medium text-[#EDEDED] text-right">
                           {formatCurrency(cat.revenue)}
                         </td>
-                        <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">
+                        <td className="px-5 py-3 text-sm text-[#A1A1A1] text-right">
                           {cat.avgSqFt > 0 ? formatCurrency(cat.avgSqFt) : '-'}
                         </td>
-                        <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">
+                        <td className="px-5 py-3 text-sm text-[#A1A1A1] text-right">
                           {cat.avgLinFt > 0 ? formatCurrency(cat.avgLinFt) : '-'}
                         </td>
                       </tr>
@@ -728,8 +728,8 @@ export default function AnalyticsPage() {
             {/* Trends Tab */}
             {activeTab === 'trends' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Monthly Revenue Trend</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Monthly Revenue Trend</h3>
                   {monthlyTrends.length > 0 ? (
                     <div className="space-y-3">
                       {monthlyTrends.map((month, idx) => {
@@ -739,17 +739,17 @@ export default function AnalyticsPage() {
 
                         return (
                           <div key={idx} className="flex items-center gap-3">
-                            <span className="w-24 text-sm text-gray-600 dark:text-gray-300">{monthName}</span>
-                            <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden relative">
+                            <span className="w-24 text-sm text-[#A1A1A1]">{monthName}</span>
+                            <div className="flex-1 h-8 bg-[#1F1F1F] rounded overflow-hidden relative">
                               <div
                                 className="h-full bg-blue-500 dark:bg-blue-400 transition-all duration-500"
                                 style={{ width: `${(month.revenue / maxRevenue) * 100}%` }}
                               />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-600 dark:text-gray-300">
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[#A1A1A1]">
                                 {month.wonCount} won
                               </span>
                             </div>
-                            <span className="w-28 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+                            <span className="w-28 text-sm font-medium text-[#EDEDED] text-right">
                               {formatCurrency(month.revenue)}
                             </span>
                           </div>
@@ -761,8 +761,8 @@ export default function AnalyticsPage() {
                   )}
                 </div>
 
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Monthly Job Volume</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Monthly Job Volume</h3>
                   {monthlyTrends.length > 0 ? (
                     <div className="space-y-3">
                       {monthlyTrends.map((month, idx) => {
@@ -773,8 +773,8 @@ export default function AnalyticsPage() {
 
                         return (
                           <div key={idx} className="flex items-center gap-3">
-                            <span className="w-24 text-sm text-gray-600 dark:text-gray-300">{monthName}</span>
-                            <div className="flex-1 h-8 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden flex">
+                            <span className="w-24 text-sm text-[#A1A1A1]">{monthName}</span>
+                            <div className="flex-1 h-8 bg-[#1F1F1F] rounded overflow-hidden flex">
                               <div
                                 className="h-full bg-green-500"
                                 style={{ width: `${(month.wonCount / maxCount) * 100}%` }}
@@ -786,7 +786,7 @@ export default function AnalyticsPage() {
                                 title={`Other: ${month.count - month.wonCount}`}
                               />
                             </div>
-                            <span className="w-20 text-sm text-gray-600 dark:text-gray-300 text-right">
+                            <span className="w-20 text-sm text-[#A1A1A1] text-right">
                               {month.count} jobs
                             </span>
                             <span className={`w-16 text-sm font-medium text-right ${winRate >= 50 ? 'text-green-600' : 'text-yellow-600'}`}>
@@ -806,8 +806,8 @@ export default function AnalyticsPage() {
             {/* Win/Loss Tab */}
             {activeTab === 'winloss' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Win Rate by Price Range</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Win Rate by Price Range</h3>
                   <p className="text-sm text-gray-500 mb-6">Analyze which price points have the highest success rate</p>
 
                   {priceRangeAnalysis.length > 0 ? (
@@ -831,8 +831,8 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Average Price - Won vs Lost</h3>
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Average Price - Won vs Lost</h3>
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
@@ -859,20 +859,20 @@ export default function AnalyticsPage() {
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Key Insights</h3>
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Key Insights</h3>
                     <ul className="space-y-3 text-sm">
                       {priceRangeAnalysis.length > 0 && (
                         <>
                           <li className="flex items-start gap-2">
                             <span className="text-green-500 mt-0.5">&#x2713;</span>
-                            <span className="text-gray-600 dark:text-gray-300">
+                            <span className="text-[#A1A1A1]">
                               Best performing range: <strong>{priceRangeAnalysis.reduce((best, current) => current.winRate > best.winRate ? current : best).label}</strong> ({priceRangeAnalysis.reduce((best, current) => current.winRate > best.winRate ? current : best).winRate.toFixed(0)}% win rate)
                             </span>
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-blue-500 mt-0.5">&#x2139;</span>
-                            <span className="text-gray-600 dark:text-gray-300">
+                            <span className="text-[#A1A1A1]">
                               Most active range: <strong>{priceRangeAnalysis.reduce((most, current) => current.total > most.total ? current : most).label}</strong> ({priceRangeAnalysis.reduce((most, current) => current.total > most.total ? current : most).total} jobs)
                             </span>
                           </li>
@@ -880,7 +880,7 @@ export default function AnalyticsPage() {
                       )}
                       <li className="flex items-start gap-2">
                         <span className="text-purple-500 mt-0.5">&#x25CF;</span>
-                        <span className="text-gray-600 dark:text-gray-300">
+                        <span className="text-[#A1A1A1]">
                           Overall win rate: <strong>{overviewMetrics.winRate.toFixed(1)}%</strong>
                         </span>
                       </li>
@@ -892,20 +892,20 @@ export default function AnalyticsPage() {
 
             {/* Sales Reps Tab */}
             {activeTab === 'salesreps' && (
-              <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
-                <div className="p-5 border-b border-gray-200 dark:border-brand-border-subtle">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Sales Rep / Estimator Performance</h3>
+              <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] overflow-hidden">
+                <div className="p-5 border-b border-[#1F1F1F]">
+                  <h3 className="text-lg font-semibold text-[#EDEDED]">Sales Rep / Estimator Performance</h3>
                   <p className="text-sm text-gray-500 mt-1">Performance breakdown by team member</p>
                 </div>
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
                     <tr>
-                      <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Jobs</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Won</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Win Rate</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total Revenue</th>
-                      <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Avg Deal Size</th>
+                      <th className="px-5 py-3 text-left text-xs font-medium text-[#666666] uppercase">Name</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Jobs</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Won</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Win Rate</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Total Revenue</th>
+                      <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Avg Deal Size</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-brand-border-subtle">
@@ -920,20 +920,20 @@ export default function AnalyticsPage() {
                                   {rep.name.charAt(0).toUpperCase()}
                                 </span>
                               </div>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">{rep.name}</span>
+                              <span className="font-medium text-[#EDEDED]">{rep.name}</span>
                             </div>
                           </td>
-                          <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">{rep.count}</td>
-                          <td className="px-5 py-3 text-sm text-green-600 dark:text-green-400 text-right">{rep.wonCount}</td>
+                          <td className="px-5 py-3 text-sm text-[#A1A1A1] text-right">{rep.count}</td>
+                          <td className="px-5 py-3 text-sm text-emerald-400 text-right">{rep.wonCount}</td>
                           <td className="px-5 py-3 text-sm text-right">
                             <span className={`font-medium ${winRate >= 50 ? 'text-green-600' : 'text-yellow-600'}`}>
                               {winRate.toFixed(0)}%
                             </span>
                           </td>
-                          <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+                          <td className="px-5 py-3 text-sm font-medium text-[#EDEDED] text-right">
                             {formatCurrency(rep.revenue)}
                           </td>
-                          <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">
+                          <td className="px-5 py-3 text-sm text-[#A1A1A1] text-right">
                             {formatCurrency(rep.avgDealSize)}
                           </td>
                         </tr>
@@ -951,8 +951,8 @@ export default function AnalyticsPage() {
             {activeTab === 'charts' && (
               <div className="space-y-6">
                 {/* Bubble Chart - Category Distribution */}
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Category Bubble Map</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-2">Category Bubble Map</h3>
                   <p className="text-sm text-gray-500 mb-4">Bubble size represents revenue, opacity represents job count</p>
                   <BubbleChart
                     data={categoryMetrics.slice(0, 12).map((cat, idx) => ({
@@ -969,8 +969,8 @@ export default function AnalyticsPage() {
 
                 <div className="grid grid-cols-2 gap-6">
                   {/* Donut Chart - Outcome Distribution */}
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Job Outcomes</h3>
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Job Outcomes</h3>
                     <DonutChart
                       data={[
                         { label: 'Won', value: overviewMetrics.wonCount, color: '#22c55e' },
@@ -983,8 +983,8 @@ export default function AnalyticsPage() {
                   </div>
 
                   {/* Donut Chart - Revenue by Top Categories */}
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Revenue by Category</h3>
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                    <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Revenue by Category</h3>
                     <DonutChart
                       data={categoryMetrics.slice(0, 5).map((cat, idx) => ({
                         label: cat.name.length > 15 ? cat.name.substring(0, 15) + '...' : cat.name,
@@ -998,8 +998,8 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Scatter Plot - Price vs Size */}
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Price vs Size Analysis</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-2">Price vs Size Analysis</h3>
                   <p className="text-sm text-gray-500 mb-4">Each point represents a job - X axis is price, Y axis is square footage</p>
                   <ScatterPlot
                     data={filteredSheets
@@ -1015,8 +1015,8 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Cost Breakdown Donut */}
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Average Cost Breakdown</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Average Cost Breakdown</h3>
                   <div className="grid grid-cols-2 gap-8">
                     <DonutChart
                       data={(() => {
@@ -1039,11 +1039,11 @@ export default function AnalyticsPage() {
                       )}
                     />
                     <div className="flex flex-col justify-center space-y-4">
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="p-4 bg-[#111111] rounded-lg">
                         <h4 className="text-sm font-medium text-gray-500 mb-2">Cost Insights</h4>
                         <ul className="space-y-2 text-sm">
                           <li className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-300">Avg Materials</span>
+                            <span className="text-[#A1A1A1]">Avg Materials</span>
                             <span className="font-medium text-blue-600">
                               {formatCurrency(
                                 filteredSheets.filter(s => s.outcome === 'Won').length > 0
@@ -1053,7 +1053,7 @@ export default function AnalyticsPage() {
                             </span>
                           </li>
                           <li className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-300">Avg Fabric</span>
+                            <span className="text-[#A1A1A1]">Avg Fabric</span>
                             <span className="font-medium text-green-600">
                               {formatCurrency(
                                 filteredSheets.filter(s => s.outcome === 'Won').length > 0
@@ -1063,7 +1063,7 @@ export default function AnalyticsPage() {
                             </span>
                           </li>
                           <li className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-300">Avg Labor</span>
+                            <span className="text-[#A1A1A1]">Avg Labor</span>
                             <span className="font-medium text-yellow-600">
                               {formatCurrency(
                                 filteredSheets.filter(s => s.outcome === 'Won').length > 0
@@ -1073,7 +1073,7 @@ export default function AnalyticsPage() {
                             </span>
                           </li>
                           <li className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                            <span className="text-gray-600 dark:text-gray-300">Avg Markup</span>
+                            <span className="text-[#A1A1A1]">Avg Markup</span>
                             <span className="font-medium text-purple-600">
                               {overviewMetrics.avgMarkup.toFixed(0)}%
                             </span>
@@ -1089,8 +1089,8 @@ export default function AnalyticsPage() {
             {/* Search Tab */}
             {activeTab === 'search' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-5">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Search Projects</h3>
+                <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                  <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Search Projects</h3>
                   <input
                     type="text"
                     placeholder="Search by customer, project, category, or estimator..."
@@ -1101,20 +1101,20 @@ export default function AnalyticsPage() {
                 </div>
 
                 {searchTerm && (
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 dark:border-brand-border-subtle">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] overflow-hidden">
+                    <div className="p-4 border-b border-[#1F1F1F]">
                       <span className="text-sm text-gray-500">{searchResults.length} results found</span>
                     </div>
                     {searchResults.length > 0 ? (
                       <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
                           <tr>
-                            <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
-                            <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Customer</th>
-                            <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Project</th>
-                            <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Category</th>
-                            <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Price</th>
-                            <th className="px-5 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Outcome</th>
+                            <th className="px-5 py-3 text-left text-xs font-medium text-[#666666] uppercase">Date</th>
+                            <th className="px-5 py-3 text-left text-xs font-medium text-[#666666] uppercase">Customer</th>
+                            <th className="px-5 py-3 text-left text-xs font-medium text-[#666666] uppercase">Project</th>
+                            <th className="px-5 py-3 text-left text-xs font-medium text-[#666666] uppercase">Category</th>
+                            <th className="px-5 py-3 text-right text-xs font-medium text-[#666666] uppercase">Price</th>
+                            <th className="px-5 py-3 text-center text-xs font-medium text-[#666666] uppercase">Outcome</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-brand-border-subtle">
@@ -1124,13 +1124,13 @@ export default function AnalyticsPage() {
                               className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark cursor-pointer"
                               onClick={() => window.location.href = `/costsheet/new?edit=${sheet.id}`}
                             >
-                              <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">
+                              <td className="px-5 py-3 text-sm text-[#A1A1A1]">
                                 {new Date(sheet.inquiryDate).toLocaleDateString()}
                               </td>
-                              <td className="px-5 py-3 text-sm text-gray-900 dark:text-gray-100">{sheet.customer || '-'}</td>
-                              <td className="px-5 py-3 text-sm text-gray-900 dark:text-gray-100">{sheet.project || '-'}</td>
-                              <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-300">{sheet.category}</td>
-                              <td className="px-5 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+                              <td className="px-5 py-3 text-sm text-[#EDEDED]">{sheet.customer || '-'}</td>
+                              <td className="px-5 py-3 text-sm text-[#EDEDED]">{sheet.project || '-'}</td>
+                              <td className="px-5 py-3 text-sm text-[#A1A1A1]">{sheet.category}</td>
+                              <td className="px-5 py-3 text-sm font-medium text-[#EDEDED] text-right">
                                 {formatCurrency(sheet.totalPriceToClient)}
                               </td>
                               <td className="px-5 py-3 text-center">
@@ -1153,11 +1153,11 @@ export default function AnalyticsPage() {
                 )}
 
                 {!searchTerm && (
-                  <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle p-12 text-center">
+                  <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-12 text-center">
                     <svg className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <p className="text-gray-500 dark:text-gray-400">
+                    <p className="text-[#666666]">
                       Enter a search term to find projects, customers, or categories
                     </p>
                   </div>

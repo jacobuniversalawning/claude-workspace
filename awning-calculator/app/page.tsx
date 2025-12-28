@@ -23,11 +23,11 @@ interface CostSheet {
 
 // Helper function to get price guardrail color
 const getPriceColor = (currentPrice: number | undefined, avgPrice: number): string => {
-  if (!currentPrice || avgPrice === 0) return 'text-gray-500 dark:text-gray-400';
+  if (!currentPrice || avgPrice === 0) return 'text-[#666666]';
   const diff = (currentPrice - avgPrice) / avgPrice;
-  if (diff > 0.15) return 'text-red-600 dark:text-red-400 font-semibold';
-  if (diff < -0.15) return 'text-blue-600 dark:text-blue-400 font-semibold';
-  return 'text-green-600 dark:text-green-400 font-semibold';
+  if (diff > 0.15) return 'text-red-400 font-semibold';
+  if (diff < -0.15) return 'text-blue-400 font-semibold';
+  return 'text-emerald-400 font-semibold';
 };
 
 interface Analytics {
@@ -68,12 +68,10 @@ export default function Home() {
       const response = await fetch('/api/costsheets');
       const data = await response.json();
 
-      // Check if database returned data
       if (Array.isArray(data) && data.length > 0) {
         setCostSheets(data);
         setStorageType('database');
       } else {
-        // Fallback to localStorage
         const localData = localStorage.getItem('costSheets');
         if (localData) {
           const parsedData = JSON.parse(localData);
@@ -86,7 +84,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error fetching cost sheets:', error);
-      // Fallback to localStorage
       try {
         const localData = localStorage.getItem('costSheets');
         if (localData) {
@@ -111,11 +108,9 @@ export default function Home() {
     }
   };
 
-  // Calculate local averages by category for price guardrails
   const getLocalAverages = (category: string) => {
     const categorySheets = costSheets.filter(s => s.category === category && s.outcome === 'Won');
     if (categorySheets.length === 0) {
-      // If no won sheets, use all sheets for that category
       const allCategorySheets = costSheets.filter(s => s.category === category);
       if (allCategorySheets.length === 0) return { avgSqFt: 0, avgLinFt: 0 };
 
@@ -218,7 +213,6 @@ export default function Home() {
   };
 
   const updateOutcome = async (id: string, outcome: string) => {
-    // Update in localStorage if using local storage
     if (storageType === 'local') {
       const updatedSheets = costSheets.map((s) =>
         s.id === id ? { ...s, outcome } : s
@@ -228,7 +222,6 @@ export default function Home() {
       return;
     }
 
-    // Otherwise try database
     try {
       const sheet = costSheets.find((s) => s.id === id);
       if (!sheet) return;
@@ -256,7 +249,6 @@ export default function Home() {
   };
 
   const handleRowClick = (id: string, e: React.MouseEvent) => {
-    // Don't navigate if clicking on interactive elements
     const target = e.target as HTMLElement;
     if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION') {
       return;
@@ -266,30 +258,34 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:150ms]" />
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse [animation-delay:300ms]" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-black">
       {/* Delete Confirmation Modal */}
       {deleteModalId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white dark:bg-brand-surface-black rounded-modal p-6 max-w-sm mx-4 shadow-xl border border-gray-200 dark:border-brand-border-subtle animate-scale-in">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-brand-text-primary mb-4">Delete Cost Sheet?</h3>
-            <p className="text-gray-600 dark:text-brand-text-secondary mb-6">This action cannot be undone.</p>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-[#0A0A0A] rounded-xl p-6 max-w-sm mx-4 border border-[#333333] animate-scale-in">
+            <h3 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-3">Delete Cost Sheet?</h3>
+            <p className="text-[#A1A1A1] text-sm mb-6">This action cannot be undone.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteModalId(null)}
-                className="px-6 py-2.5 text-gray-700 dark:text-brand-text-primary bg-gray-100 dark:bg-brand-surface-grey-light hover:bg-gray-200 dark:hover:brightness-110 rounded-button font-medium transition-all duration-200 hover:shadow-lg"
+                className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded-full text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
               >
                 Cancel
               </button>
               <button
                 onClick={() => confirmDelete(deleteModalId)}
-                className="px-6 py-2.5 bg-red-600 text-white rounded-button hover:bg-red-700 font-medium transition-all duration-200 hover:shadow-lg hover:shadow-red-500/20"
+                className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-sm font-medium hover:bg-red-500/20 transition-all duration-150"
               >
                 Delete
               </button>
@@ -298,70 +294,74 @@ export default function Home() {
         </div>
       )}
 
-      <header className="bg-white dark:bg-brand-surface-black border-b border-gray-200 dark:border-brand-border-subtle">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-[#1F1F1F]">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-h1 text-gray-900 dark:text-brand-text-primary">
+              <h1 className="text-xl font-bold text-[#EDEDED] tracking-tight">
                 Universal Awning & Canopy
               </h1>
-              <p className="text-h2 text-gray-600 dark:text-brand-text-secondary mt-1.5">Cost Sheet Calculator</p>
+              <p className="text-sm text-[#666666] mt-0.5">Cost Sheet Calculator</p>
             </div>
             <div className="flex items-center gap-3">
               <Link
                 href="/analytics"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-brand-border-subtle rounded-button hover:bg-gray-50 dark:hover:bg-brand-surface-grey-light transition-all duration-200"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded-full hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 Analytics
               </Link>
               <Link
                 href="/admin"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-brand-border-subtle rounded-button hover:bg-gray-50 dark:hover:bg-brand-surface-grey-light transition-all duration-200"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded-full hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 Admin
               </Link>
               <Link
                 href="/costsheet/new"
-                className="bg-blue-600 dark:bg-brand-google-blue text-white px-6 py-2.5 rounded-button hover:bg-blue-700 dark:hover:bg-brand-google-blue-hover font-medium transition-all duration-200 hover:shadow-lg"
+                className="flex items-center gap-2 px-5 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
               >
-                + New Cost Sheet
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                New Cost Sheet
               </Link>
 
               {/* User Menu */}
               {session?.user && (
-                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-300 dark:border-brand-border-subtle">
+                <div className="flex items-center gap-3 ml-3 pl-3 border-l border-[#333333]">
                   <div className="flex items-center gap-2">
                     {session.user.image ? (
                       <img
                         src={session.user.image}
                         alt={session.user.name || 'User'}
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full ring-1 ring-[#333333]"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                        <span className="text-blue-600 dark:text-blue-300 font-medium text-sm">
+                      <div className="w-8 h-8 rounded-full bg-[#111111] border border-[#333333] flex items-center justify-center">
+                        <span className="text-[#EDEDED] font-medium text-sm">
                           {(session.user.name || session.user.email || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
-                    <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:inline">
+                    <span className="text-sm text-[#A1A1A1] hidden sm:inline">
                       {session.user.name || session.user.email}
                     </span>
                   </div>
                   <button
                     onClick={() => signOut({ callbackUrl: '/login' })}
-                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    className="p-2 text-[#666666] hover:text-[#EDEDED] hover:bg-[#111111] rounded-full transition-all duration-150"
                     title="Sign out"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                   </button>
                 </div>
@@ -371,342 +371,312 @@ export default function Home() {
         </div>
       </header>
 
-      {storageType === 'local' && (
-        <div className="max-w-7xl mx-auto px-6 pt-5">
-          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-card p-3.5 text-yellow-800 dark:text-yellow-200 text-sm">
-            Data is stored locally in your browser. To enable cloud storage, configure a PostgreSQL database.
-          </div>
-        </div>
-      )}
-
-      {analytics && analytics.byCategory && analytics.byCategory.length > 0 && (
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Average Pricing by Product</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {analytics.byCategory.slice(0, 6).map((cat) => (
-              <div key={cat.category} className="bg-white dark:bg-brand-surface-black p-5 rounded-card border border-gray-200 dark:border-brand-border-subtle hover-lift hover:border-brand-border-subtle dark:hover:border-brand-text-muted transition-all duration-300">
-                <h3 className="font-medium text-gray-900 dark:text-brand-text-primary">{cat.category}</h3>
-                <div className="mt-2 text-sm text-gray-600 dark:text-brand-text-secondary">
-                  <div className="flex justify-between">
-                    <span>Total Sheets:</span>
-                    <span className="font-medium text-gray-900 dark:text-brand-text-primary">{cat.count}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Won:</span>
-                    <span className="font-medium text-green-600 dark:text-green-400">{cat.wonCount}</span>
-                  </div>
-                  {cat.wonAvgPricePerSqFt > 0 && (
-                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200 dark:border-brand-border-subtle">
-                      <span>Avg $/sq ft (Weighted):</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">
-                        {formatCurrency(cat.wonAvgPricePerSqFt)}
-                      </span>
-                    </div>
-                  )}
-                  {cat.wonAvgPricePerLinFt > 0 && (
-                    <div className="flex justify-between">
-                      <span>Avg $/lin ft (Weighted):</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">
-                        {formatCurrency(cat.wonAvgPricePerLinFt)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <h2 className="text-h2 mb-4 text-gray-900 dark:text-brand-text-primary">Cost Sheet History</h2>
-
-        <div className="bg-white dark:bg-brand-surface-black p-5 rounded-card border border-gray-200 dark:border-brand-border-subtle mb-3 transition-all duration-300">
-          <div className="flex flex-wrap gap-3 items-center mb-3">
-            <input
-              type="text"
-              placeholder="Search customer, project, or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-[200px] border border-gray-300 dark:border-transparent rounded-input px-3.5 py-2.5 text-sm focus:outline-none focus:border-blue-500 dark:focus:border-brand-mint bg-white dark:bg-brand-surface-grey-dark text-gray-900 dark:text-brand-text-primary placeholder-gray-400 dark:placeholder-brand-text-muted transition-all duration-200"
-            />
-            <div className="relative">
-              <button
-                onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm border rounded-button transition-all duration-200 font-medium hover:shadow-lg ${
-                  selectedCategories.length > 0
-                    ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 shadow-blue-500/10'
-                    : 'bg-white dark:bg-brand-surface-grey-light border-gray-300 dark:border-brand-border-subtle text-gray-700 dark:text-brand-text-primary hover:brightness-110'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                Filter
-                {selectedCategories.length > 0 && (
-                  <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
-                    {selectedCategories.length}
-                  </span>
-                )}
-              </button>
-              {showCategoryFilter && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-brand-surface-black border border-gray-300 dark:border-brand-border-subtle rounded-input shadow-lg z-50 max-h-80 overflow-y-auto animate-slide-in">
-                  <div className="p-2 border-b border-gray-200 dark:border-brand-border-subtle flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700 dark:text-brand-text-primary">Categories</span>
-                    {selectedCategories.length > 0 && (
-                      <button
-                        onClick={clearCategoryFilter}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Clear all
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-2">
-                    {PRODUCT_CATEGORIES.map((category) => (
-                      <label
-                        key={category}
-                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category)}
-                          onChange={() => toggleCategory(category)}
-                          className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{category}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {storageType === 'local' && (
+          <div className="mb-6">
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-yellow-200 text-sm">
+              <span className="font-medium">Local Storage Mode:</span> Data is stored locally in your browser. Configure PostgreSQL for cloud storage.
             </div>
           </div>
+        )}
 
-          {/* Outcome Filter Buttons */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Filter by Outcome:</span>
-            <button
-              onClick={() => toggleOutcome('Won')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-button transition-all duration-200 ${
-                selectedOutcomes.includes('Won')
-                  ? 'bg-green-600 text-white'
-                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-900/50'
-              }`}
-            >
-              Won
-            </button>
-            <button
-              onClick={() => toggleOutcome('Lost')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-button transition-all duration-200 ${
-                selectedOutcomes.includes('Lost')
-                  ? 'bg-red-600 text-white'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-900/50'
-              }`}
-            >
-              Lost
-            </button>
-            <button
-              onClick={() => toggleOutcome('Unknown')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-button transition-all duration-200 ${
-                selectedOutcomes.includes('Unknown')
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Unknown
-            </button>
-            {selectedOutcomes.length > 0 && (
+        {/* Analytics Cards */}
+        {analytics && analytics.byCategory && analytics.byCategory.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-4">Average Pricing by Product</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {analytics.byCategory.slice(0, 6).map((cat, index) => (
+                <div
+                  key={cat.category}
+                  className="group bg-[#0A0A0A] border border-[#1F1F1F] rounded-xl p-5 hover:border-[#333333] hover:bg-[#111111] transition-all duration-200 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <h3 className="font-medium text-[#EDEDED] text-sm tracking-tight">{cat.category}</h3>
+                  <div className="mt-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Total Sheets</span>
+                      <span className="text-[#EDEDED] font-medium tabular-nums">{cat.count}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Won</span>
+                      <span className="text-emerald-400 font-medium tabular-nums">{cat.wonCount}</span>
+                    </div>
+                    {cat.wonAvgPricePerSqFt > 0 && (
+                      <div className="flex justify-between pt-2 mt-2 border-t border-[#1F1F1F]">
+                        <span className="text-[#666666]">Avg $/sq ft</span>
+                        <span className="text-[#0070F3] font-semibold tabular-nums">
+                          {formatCurrency(cat.wonAvgPricePerSqFt)}
+                        </span>
+                      </div>
+                    )}
+                    {cat.wonAvgPricePerLinFt > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-[#666666]">Avg $/lin ft</span>
+                        <span className="text-[#0070F3] font-semibold tabular-nums">
+                          {formatCurrency(cat.wonAvgPricePerLinFt)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Cost Sheet History */}
+        <section>
+          <h2 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-4">Cost Sheet History</h2>
+
+          {/* Filters */}
+          <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-xl p-5 mb-4">
+            <div className="flex flex-wrap gap-3 items-center mb-4">
+              <div className="flex-1 min-w-[200px]">
+                <input
+                  type="text"
+                  placeholder="Search customer, project, or category..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-[#111111] border border-[#333333] rounded-lg px-4 py-2.5 text-sm text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
+                />
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm border rounded-lg transition-all duration-150 font-medium ${
+                    selectedCategories.length > 0
+                      ? 'bg-[#0070F3]/10 border-[#0070F3]/30 text-[#0070F3]'
+                      : 'bg-[#111111] border-[#333333] text-[#A1A1A1] hover:bg-[#1A1A1A] hover:text-[#EDEDED]'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  Filter
+                  {selectedCategories.length > 0 && (
+                    <span className="bg-[#0070F3] text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {selectedCategories.length}
+                    </span>
+                  )}
+                </button>
+                {showCategoryFilter && (
+                  <div className="absolute right-0 mt-2 w-64 bg-[#0A0A0A] border border-[#333333] rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto animate-fade-in">
+                    <div className="p-3 border-b border-[#1F1F1F] flex justify-between items-center">
+                      <span className="text-sm font-medium text-[#EDEDED]">Categories</span>
+                      {selectedCategories.length > 0 && (
+                        <button
+                          onClick={clearCategoryFilter}
+                          className="text-xs text-[#0070F3] hover:underline"
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      {PRODUCT_CATEGORIES.map((category) => (
+                        <label
+                          key={category}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-[#111111] rounded-lg cursor-pointer transition-colors duration-150"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(category)}
+                            onChange={() => toggleCategory(category)}
+                            className="w-4 h-4 rounded border-[#333333] bg-[#111111] text-[#0070F3] focus:ring-[#0070F3]/20 focus:ring-offset-0"
+                          />
+                          <span className="text-sm text-[#A1A1A1]">{category}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Outcome Filter Buttons */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-[#666666] font-medium">Outcome:</span>
               <button
-                onClick={() => setSelectedOutcomes([])}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline ml-2"
+                onClick={() => toggleOutcome('Won')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 ${
+                  selectedOutcomes.includes('Won')
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                }`}
               >
-                Clear
+                Won
               </button>
+              <button
+                onClick={() => toggleOutcome('Lost')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 ${
+                  selectedOutcomes.includes('Lost')
+                    ? 'bg-red-500 text-white'
+                    : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
+                }`}
+              >
+                Lost
+              </button>
+              <button
+                onClick={() => toggleOutcome('Unknown')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-150 ${
+                  selectedOutcomes.includes('Unknown')
+                    ? 'bg-[#666666] text-white'
+                    : 'bg-[#333333]/50 text-[#A1A1A1] border border-[#333333] hover:bg-[#333333]'
+                }`}
+              >
+                Unknown
+              </button>
+              {selectedOutcomes.length > 0 && (
+                <button
+                  onClick={() => setSelectedOutcomes([])}
+                  className="text-xs text-[#0070F3] hover:underline ml-2"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {selectedCategories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#1F1F1F]">
+                {selectedCategories.map(cat => (
+                  <span
+                    key={cat}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0070F3]/10 text-[#0070F3] text-sm rounded-full font-medium"
+                  >
+                    {cat}
+                    <button
+                      onClick={() => toggleCategory(cat)}
+                      className="hover:text-white ml-0.5"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
 
-          {selectedCategories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-brand-border-subtle">
-              {selectedCategories.map(cat => (
-                <span
-                  key={cat}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-sm rounded-button font-medium"
-                >
-                  {cat}
-                  <button
-                    onClick={() => toggleCategory(cat)}
-                    className="hover:text-blue-900 dark:hover:text-blue-100 ml-0.5"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white dark:bg-brand-surface-black rounded-card border border-gray-200 dark:border-brand-border-subtle overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-brand-border-subtle">
-            <thead className="bg-gray-50 dark:bg-brand-surface-grey-dark">
-              <tr>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('date')}>
-                  <div className="flex items-center gap-1">
-                    Date
-                    <svg className={`w-4 h-4 ${sortBy === 'date' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'date' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('category')}>
-                  <div className="flex items-center gap-1">
-                    Category
-                    <svg className={`w-4 h-4 ${sortBy === 'category' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'category' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('customer')}>
-                  <div className="flex items-center gap-1">
-                    Customer
-                    <svg className={`w-4 h-4 ${sortBy === 'customer' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'customer' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" style={{ minWidth: '150px' }} onClick={() => handleSort('project')}>
-                  <div className="flex items-center gap-1">
-                    Project
-                    <svg className={`w-4 h-4 ${sortBy === 'project' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'project' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('estimator')}>
-                  <div className="flex items-center gap-1">
-                    Estimator
-                    <svg className={`w-4 h-4 ${sortBy === 'estimator' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'estimator' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('total')}>
-                  <div className="flex items-center gap-1">
-                    Total
-                    <svg className={`w-4 h-4 ${sortBy === 'total' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'total' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('sqft')}>
-                  <div className="flex items-center gap-1">
-                    $/sq ft
-                    <svg className={`w-4 h-4 ${sortBy === 'sqft' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'sqft' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('linft')}>
-                  <div className="flex items-center gap-1">
-                    $/lin ft
-                    <svg className={`w-4 h-4 ${sortBy === 'linft' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'linft' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" onClick={() => handleSort('outcome')}>
-                  <div className="flex items-center gap-1">
-                    Outcome
-                    <svg className={`w-4 h-4 ${sortBy === 'outcome' ? 'opacity-100' : 'opacity-30'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === 'outcome' && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-3 py-3.5 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-brand-surface-black divide-y divide-gray-200 dark:divide-brand-border-subtle">
-              {filteredAndSortedCostSheets.map((sheet) => {
-                // Use analytics if available, otherwise calculate local averages
-                const categoryStats = analytics?.byCategory.find(c => c.category === sheet.category);
-                const localAvgs = getLocalAverages(sheet.category);
-                const avgSqFt = categoryStats?.wonAvgPricePerSqFt || localAvgs.avgSqFt;
-                const avgLinFt = categoryStats?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
-
-                return (
-                  <tr
-                    key={sheet.id}
-                    className="hover:bg-gray-50 dark:hover:bg-brand-surface-grey-dark cursor-pointer transition-all duration-200"
-                    onClick={(e) => handleRowClick(sheet.id, e)}
-                  >
-                    <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(sheet.inquiryDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
-                      <span className="block max-w-[120px] truncate" title={sheet.category || '-'}>{sheet.category || '-'}</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
-                      <span className="block max-w-[100px] truncate" title={sheet.customer || '-'}>{sheet.customer || '-'}</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
-                      <span className="block max-w-[150px] truncate" title={sheet.project || '-'}>{sheet.project || '-'}</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-gray-900 dark:text-white">
-                      <span className="block max-w-[80px] truncate" title={sheet.estimator || '-'}>{sheet.estimator || '-'}</span>
-                    </td>
-                    <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                      {formatCurrency(sheet.totalPriceToClient)}
-                    </td>
-                    <td className={`px-5 py-3.5 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerSqFtPreDelivery, avgSqFt)}`}>
-                      {sheet.pricePerSqFtPreDelivery ? formatCurrency(sheet.pricePerSqFtPreDelivery) : '-'}
-                    </td>
-                    <td className={`px-5 py-3.5 whitespace-nowrap text-sm ${getPriceColor(sheet.pricePerLinFtPreDelivery, avgLinFt)}`}>
-                      {sheet.pricePerLinFtPreDelivery ? formatCurrency(sheet.pricePerLinFtPreDelivery) : '-'}
-                    </td>
-                    <td className="px-5 py-3.5 whitespace-nowrap text-sm">
-                      <select
-                        value={sheet.outcome || 'Unknown'}
-                        onChange={(e) => updateOutcome(sheet.id, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`rounded-button px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ${
-                          sheet.outcome === 'Won'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : sheet.outcome === 'Lost'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                        }`}
+          {/* Data Table */}
+          <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#1F1F1F]">
+                    {[
+                      { key: 'date', label: 'Date' },
+                      { key: 'category', label: 'Category' },
+                      { key: 'customer', label: 'Customer' },
+                      { key: 'project', label: 'Project' },
+                      { key: 'estimator', label: 'Estimator' },
+                      { key: 'total', label: 'Total' },
+                      { key: 'sqft', label: '$/sq ft' },
+                      { key: 'linft', label: '$/lin ft' },
+                      { key: 'outcome', label: 'Outcome' },
+                    ].map((col) => (
+                      <th
+                        key={col.key}
+                        onClick={() => handleSort(col.key)}
+                        className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase tracking-wider cursor-pointer hover:text-[#A1A1A1] transition-colors duration-150 bg-[#111111]"
                       >
-                        <option value="Unknown">Unknown</option>
-                        <option value="Won">Won</option>
-                        <option value="Lost">Lost</option>
-                      </select>
-                    </td>
-                    <td className="px-3 py-3.5 text-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteModalId(sheet.id);
-                        }}
-                        className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1"
-                        title="Delete"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </td>
+                        <div className="flex items-center gap-1">
+                          {col.label}
+                          <svg className={`w-3.5 h-3.5 ${sortBy === col.key ? 'text-[#EDEDED]' : 'text-[#333333]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={sortBy === col.key && sortDirection === 'desc' ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                          </svg>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="px-3 py-3 w-12 bg-[#111111]"></th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {filteredAndSortedCostSheets.length === 0 && (
-            <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-              No cost sheets found. Create your first one!
+                </thead>
+                <tbody className="divide-y divide-[#1F1F1F]">
+                  {filteredAndSortedCostSheets.map((sheet) => {
+                    const categoryStats = analytics?.byCategory.find(c => c.category === sheet.category);
+                    const localAvgs = getLocalAverages(sheet.category);
+                    const avgSqFt = categoryStats?.wonAvgPricePerSqFt || localAvgs.avgSqFt;
+                    const avgLinFt = categoryStats?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
+
+                    return (
+                      <tr
+                        key={sheet.id}
+                        className="hover:bg-[#111111] cursor-pointer transition-colors duration-150 group"
+                        onClick={(e) => handleRowClick(sheet.id, e)}
+                      >
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-[#EDEDED] tabular-nums">
+                          {new Date(sheet.inquiryDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#EDEDED]">
+                          <span className="block max-w-[120px] truncate" title={sheet.category || '-'}>{sheet.category || '-'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#A1A1A1]">
+                          <span className="block max-w-[100px] truncate" title={sheet.customer || '-'}>{sheet.customer || '-'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#A1A1A1]">
+                          <span className="block max-w-[150px] truncate" title={sheet.project || '-'}>{sheet.project || '-'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-[#A1A1A1]">
+                          <span className="block max-w-[80px] truncate" title={sheet.estimator || '-'}>{sheet.estimator || '-'}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-[#EDEDED] font-medium tabular-nums">
+                          {formatCurrency(sheet.totalPriceToClient)}
+                        </td>
+                        <td className={`px-4 py-3 whitespace-nowrap text-sm tabular-nums ${getPriceColor(sheet.pricePerSqFtPreDelivery, avgSqFt)}`}>
+                          {sheet.pricePerSqFtPreDelivery ? formatCurrency(sheet.pricePerSqFtPreDelivery) : '-'}
+                        </td>
+                        <td className={`px-4 py-3 whitespace-nowrap text-sm tabular-nums ${getPriceColor(sheet.pricePerLinFtPreDelivery, avgLinFt)}`}>
+                          {sheet.pricePerLinFtPreDelivery ? formatCurrency(sheet.pricePerLinFtPreDelivery) : '-'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                          <select
+                            value={sheet.outcome || 'Unknown'}
+                            onChange={(e) => updateOutcome(sheet.id, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`rounded-full px-3 py-1 text-xs font-medium transition-all duration-150 cursor-pointer border-0 focus:ring-0 ${
+                              sheet.outcome === 'Won'
+                                ? 'bg-emerald-500/10 text-emerald-400'
+                                : sheet.outcome === 'Lost'
+                                ? 'bg-red-500/10 text-red-400'
+                                : 'bg-[#1F1F1F] text-[#666666]'
+                            }`}
+                          >
+                            <option value="Unknown">Unknown</option>
+                            <option value="Won">Won</option>
+                            <option value="Lost">Lost</option>
+                          </select>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteModalId(sheet.id);
+                            }}
+                            className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-150 opacity-0 group-hover:opacity-100"
+                            title="Delete"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-      </div>
+            {filteredAndSortedCostSheets.length === 0 && (
+              <div className="text-center py-16 text-[#666666]">
+                <svg className="w-12 h-12 mx-auto mb-4 text-[#333333]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                No cost sheets found. Create your first one!
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
