@@ -164,6 +164,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return false;
         }
 
+        // Auto-upgrade jacob@universalawning.com to super_admin and activate
+        if (email === "jacob@universalawning.com") {
+          try {
+            const existingUser = await prisma.user.findUnique({
+              where: { email: email },
+            });
+            if (existingUser && (existingUser.role !== "super_admin" || !existingUser.isActive)) {
+              await prisma.user.update({
+                where: { email: email },
+                data: { role: "super_admin", isActive: true },
+              });
+              console.log("[Auth] Upgraded jacob@universalawning.com to super_admin");
+            }
+          } catch (upgradeError) {
+            console.error("[Auth] Error upgrading super admin:", upgradeError);
+          }
+        }
+
         console.log("[Auth] SignIn successful for:", email);
         return true;
       } catch (error) {

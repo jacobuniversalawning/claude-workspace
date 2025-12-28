@@ -295,26 +295,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
    Dark Mode Color Overrides (Vercel Style)
    ============================================ */
 
-/* Backgrounds */
-.dark .bg-white {
-  background-color: #0a0a0a !important;
-}
-
-.dark .bg-gray-50 {
-  background-color: #000000 !important;
-}
-
-.dark .bg-gray-100 {
-  background-color: #111111 !important;
-}
-
-.dark .bg-gray-800 {
-  background-color: #0a0a0a !important;
-}
-
-.dark .bg-gray-900 {
-  background-color: #000000 !important;
-}
+/* Note: Background overrides removed - use Tailwind dark: variants directly
+   instead of overriding utility classes to avoid build conflicts.
+   Example: dark:bg-black instead of .dark .bg-white */
 
 /* Text colors */
 .dark .text-gray-900 {

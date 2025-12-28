@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
   AdminConfig,
@@ -11,9 +11,11 @@ import {
   importConfig,
   exportCostSheets,
   importCostSheets,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
+  SalesRep
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
 
@@ -378,6 +380,22 @@ export default function AdminPage() {
     updateConfig({ ...config, categories: updated });
   };
 
+  // Handle drag end for categories
+  const handleCategoryDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+
+    if (sourceIndex === destIndex) return;
+
+    const updated = Array.from(config.categories);
+    const [removed] = updated.splice(sourceIndex, 1);
+    updated.splice(destIndex, 0, removed);
+
+    updateConfig({ ...config, categories: updated });
+  }, [config]);
+
   // Labor type management
   const addLaborType = () => {
     setModal({
@@ -564,31 +582,34 @@ export default function AdminPage() {
   // Sales rep management
   const addSalesRep = () => {
     setModal({
-      type: 'input',
+      type: 'dual',
       title: 'Add Sales Rep / Estimator',
-      label: 'Name',
-      placeholder: 'Enter name...',
-      onSubmit: (name) => {
+      label1: 'Name',
+      label2: 'Email (optional)',
+      placeholder1: 'Enter name...',
+      placeholder2: 'email@example.com',
+      onSubmit: (name, email) => {
         updateConfig({
           ...config,
-          salesReps: [...config.salesReps, name]
+          salesReps: [...config.salesReps, { name, email: email || '' }]
         });
       }
     });
   };
 
-  const updateSalesRep = (index: number, newName: string) => {
+  const updateSalesRep = (index: number, field: 'name' | 'email', value: string) => {
     const updated = [...config.salesReps];
-    updated[index] = newName;
+    updated[index] = { ...updated[index], [field]: value };
     updateConfig({ ...config, salesReps: updated });
-    setEditingSalesRep(null);
+    if (field === 'name') setEditingSalesRep(null);
   };
 
   const deleteSalesRep = (index: number) => {
+    const rep = config.salesReps[index];
     setModal({
       type: 'confirm',
       title: 'Remove Sales Rep',
-      message: `Remove "${config.salesReps[index]}" from sales reps list?`,
+      message: `Remove "${rep?.name || 'this person'}" from sales reps list?`,
       variant: 'danger',
       onConfirm: () => {
         updateConfig({
@@ -607,25 +628,30 @@ export default function AdminPage() {
     });
   };
 
-  // Delete all data
-  const handleDeleteAllData = () => {
+  // Move all cost sheets to trash (soft delete)
+  const handleMoveAllToTrash = async () => {
     setModal({
       type: 'confirm',
-      title: 'Delete All Cost Sheet Data',
-      message: 'Are you absolutely sure? All cost sheet data will be permanently deleted. This cannot be undone.',
+      title: 'Move All Cost Sheets to Trash',
+      message: 'This will move all cost sheets to the trash. You can restore them later from the Trash tab.',
       variant: 'danger',
-      onConfirm: () => {
-        // Second confirmation
-        setModal({
-          type: 'confirm',
-          title: 'Final Confirmation',
-          message: 'This is your last chance. All data will be permanently deleted.',
-          variant: 'danger',
-          onConfirm: () => {
-            localStorage.removeItem('costSheets');
-            showMessage('All cost sheet data has been deleted.');
+      onConfirm: async () => {
+        try {
+          // Fetch all non-deleted cost sheets
+          const response = await fetch('/api/costsheets');
+          if (!response.ok) throw new Error('Failed to fetch cost sheets');
+          const costSheets = await response.json();
+
+          // Soft delete each cost sheet
+          for (const cs of costSheets) {
+            await fetch(`/api/costsheets/${cs.id}`, { method: 'DELETE' });
           }
-        });
+
+          showMessage(`${costSheets.length} cost sheets moved to trash. You can restore them from the Trash tab.`, 5000);
+        } catch (error) {
+          console.error('Error moving cost sheets to trash:', error);
+          setModal({ type: 'alert', title: 'Error', message: 'Failed to move cost sheets to trash' });
+        }
       }
     });
   };
@@ -792,81 +818,91 @@ export default function AdminPage() {
                   <div className="flex justify-between items-center mb-6">
                     <div>
                       <h2 className="text-lg font-semibold text-[#EDEDED]">Product Categories</h2>
-                      <p className="text-sm text-[#666666] mt-1">Manage the list of product categories available in cost sheets.</p>
+                      <p className="text-sm text-[#666666] mt-1">Drag and drop to reorder categories. Changes are saved when you click Save Changes.</p>
                     </div>
                     <button onClick={addCategory} className={primaryButtonClass}>
                       + Add Category
                     </button>
                   </div>
 
-                  <div className="space-y-2">
-                    {config.categories.map((category, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-3 bg-[#111111] rounded border border-[#1F1F1F] group"
-                      >
-                        <div className="flex flex-col">
-                          <button
-                            onClick={() => moveCategory(index, 'up')}
-                            disabled={index === 0}
-                            className={`${iconButtonClass} ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => moveCategory(index, 'down')}
-                            disabled={index === config.categories.length - 1}
-                            className={`${iconButtonClass} ${index === config.categories.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
+                  <DragDropContext onDragEnd={handleCategoryDragEnd}>
+                    <Droppable droppableId="categories">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-2"
+                        >
+                          {config.categories.map((category, index) => (
+                            <Draggable key={`category-${index}`} draggableId={`category-${index}`} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`flex items-center gap-3 p-3 bg-[#111111] rounded border ${
+                                    snapshot.isDragging
+                                      ? 'border-[#0070F3] shadow-lg shadow-[#0070F3]/20'
+                                      : 'border-[#1F1F1F]'
+                                  } group`}
+                                >
+                                  {/* Drag Handle */}
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-[#1F1F1F] rounded transition-colors"
+                                    title="Drag to reorder"
+                                  >
+                                    <svg className="w-5 h-5 text-[#666666]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                    </svg>
+                                  </div>
+                                  <span className="text-[#666666] text-sm w-6">{index + 1}.</span>
+                                  {editingCategory === index ? (
+                                    <input
+                                      type="text"
+                                      defaultValue={category}
+                                      onBlur={(e) => updateCategory(index, e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') updateCategory(index, e.currentTarget.value);
+                                        if (e.key === 'Escape') setEditingCategory(null);
+                                      }}
+                                      autoFocus
+                                      className={`${inputClass} flex-1`}
+                                    />
+                                  ) : (
+                                    <span
+                                      className="flex-1 text-[#EDEDED] cursor-pointer hover:text-[#0070F3]"
+                                      onClick={() => setEditingCategory(index)}
+                                    >
+                                      {category}
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={() => setEditingCategory(index)}
+                                    className={iconButtonClass}
+                                    title="Edit"
+                                  >
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => deleteCategory(index)}
+                                    className={`${iconButtonClass} hover:bg-red-500/10`}
+                                    title="Delete"
+                                  >
+                                    <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
                         </div>
-                        <span className="text-[#666666] text-sm w-6">{index + 1}.</span>
-                        {editingCategory === index ? (
-                          <input
-                            type="text"
-                            defaultValue={category}
-                            onBlur={(e) => updateCategory(index, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') updateCategory(index, e.currentTarget.value);
-                              if (e.key === 'Escape') setEditingCategory(null);
-                            }}
-                            autoFocus
-                            className={`${inputClass} flex-1`}
-                          />
-                        ) : (
-                          <span
-                            className="flex-1 text-[#EDEDED] cursor-pointer hover:text-[#0070F3]"
-                            onClick={() => setEditingCategory(index)}
-                          >
-                            {category}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setEditingCategory(index)}
-                          className={iconButtonClass}
-                          title="Edit"
-                        >
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => deleteCategory(index)}
-                          className={`${iconButtonClass} hover:bg-red-500/10`}
-                          title="Delete"
-                        >
-                          <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 </div>
               )}
 
@@ -1290,40 +1326,55 @@ export default function AdminPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-3">
                       {config.salesReps.map((rep, index) => (
                         <div
                           key={index}
-                          className="flex items-center gap-3 p-3 bg-[#111111] rounded border border-[#1F1F1F]"
+                          className="flex items-center gap-4 p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]"
                         >
-                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
                             <span className="text-blue-600 dark:text-blue-300 font-medium text-sm">
-                              {rep.charAt(0).toUpperCase()}
+                              {(rep.name || 'U').charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          {editingSalesRep === index ? (
-                            <input
-                              type="text"
-                              defaultValue={rep}
-                              onBlur={(e) => updateSalesRep(index, e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') updateSalesRep(index, e.currentTarget.value);
-                                if (e.key === 'Escape') setEditingSalesRep(null);
-                              }}
-                              autoFocus
-                              className={`${inputClass} flex-1`}
-                            />
-                          ) : (
-                            <span
-                              className="flex-1 text-[#EDEDED] cursor-pointer hover:text-[#0070F3]"
-                              onClick={() => setEditingSalesRep(index)}
-                            >
-                              {rep}
-                            </span>
-                          )}
+                          <div className="flex-1 min-w-0">
+                            {editingSalesRep === index ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  defaultValue={rep.name}
+                                  onBlur={(e) => updateSalesRep(index, 'name', e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') updateSalesRep(index, 'name', e.currentTarget.value);
+                                    if (e.key === 'Escape') setEditingSalesRep(null);
+                                  }}
+                                  autoFocus
+                                  placeholder="Name"
+                                  className={inputClass}
+                                />
+                                <input
+                                  type="email"
+                                  defaultValue={rep.email}
+                                  onBlur={(e) => updateSalesRep(index, 'email', e.target.value)}
+                                  placeholder="Email (optional)"
+                                  className={inputClass}
+                                />
+                              </div>
+                            ) : (
+                              <div onClick={() => setEditingSalesRep(index)} className="cursor-pointer">
+                                <p className="text-[#EDEDED] font-medium hover:text-[#0070F3] transition-colors">
+                                  {rep.name || 'Unnamed'}
+                                </p>
+                                {rep.email && (
+                                  <p className="text-sm text-[#666666]">{rep.email}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           <button
                             onClick={() => setEditingSalesRep(index)}
                             className={iconButtonClass}
+                            title="Edit"
                           >
                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -1332,6 +1383,7 @@ export default function AdminPage() {
                           <button
                             onClick={() => deleteSalesRep(index)}
                             className={`${iconButtonClass} hover:bg-red-500/10`}
+                            title="Delete"
                           >
                             <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1429,6 +1481,7 @@ export default function AdminPage() {
                               <option value="sales_rep">Sales Rep</option>
                               <option value="estimator">Estimator</option>
                               <option value="admin">Admin</option>
+                              <option value="super_admin">Super Admin</option>
                             </select>
                           </div>
 
@@ -1466,7 +1519,7 @@ export default function AdminPage() {
                       New users default to <strong>Inactive</strong> status with <strong>Pending Approval</strong> role and must be activated by an admin.
                     </p>
                     <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
-                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (full access)
+                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (manage users) → Super Admin (full system access)
                     </p>
                   </div>
                 </div>
@@ -1488,13 +1541,14 @@ export default function AdminPage() {
                       </label>
                       <select
                         value={config.defaultAIProvider}
-                        onChange={(e) => updateConfig({ ...config, defaultAIProvider: e.target.value as 'claude' | 'openai' | 'gemini' | 'none' })}
+                        onChange={(e) => updateConfig({ ...config, defaultAIProvider: e.target.value as 'claude' | 'openai' | 'gemini' | 'perplexity' | 'none' })}
                         className={inputClass + " max-w-xs"}
                       >
                         <option value="none">None (AI features disabled)</option>
                         <option value="claude" disabled={!config.aiProviders?.claude?.enabled}>Claude (Anthropic)</option>
                         <option value="openai" disabled={!config.aiProviders?.openai?.enabled}>GPT (OpenAI)</option>
                         <option value="gemini" disabled={!config.aiProviders?.gemini?.enabled}>Gemini (Google)</option>
+                        <option value="perplexity" disabled={!config.aiProviders?.perplexity?.enabled}>Perplexity AI</option>
                       </select>
                     </div>
                   </div>
@@ -1754,6 +1808,93 @@ export default function AdminPage() {
                     )}
                   </div>
 
+                  {/* Perplexity Settings */}
+                  <div className="p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                          <span className="text-purple-600 dark:text-purple-400 font-bold text-lg">P</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-[#EDEDED]">Perplexity AI</h3>
+                          <p className="text-xs text-[#666666]">Real-time web search with AI answers</p>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={config.aiProviders?.perplexity?.enabled || false}
+                          onChange={(e) => updateConfig({
+                            ...config,
+                            aiProviders: {
+                              ...config.aiProviders,
+                              perplexity: { ...config.aiProviders.perplexity, enabled: e.target.checked }
+                            }
+                          })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    {config.aiProviders?.perplexity?.enabled && (
+                      <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">API Key</label>
+                          <input
+                            type="password"
+                            value={config.aiProviders?.perplexity?.apiKey || ''}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              aiProviders: {
+                                ...config.aiProviders,
+                                perplexity: { ...config.aiProviders.perplexity, apiKey: e.target.value }
+                              }
+                            })}
+                            className={inputClass}
+                            placeholder="pplx-..."
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Model</label>
+                            <select
+                              value={config.aiProviders?.perplexity?.model || 'llama-3.1-sonar-large-128k-online'}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  perplexity: { ...config.aiProviders.perplexity, model: e.target.value }
+                                }
+                              })}
+                              className={inputClass}
+                            >
+                              <option value="llama-3.1-sonar-small-128k-online">Sonar Small (8B, Online)</option>
+                              <option value="llama-3.1-sonar-large-128k-online">Sonar Large (70B, Online)</option>
+                              <option value="llama-3.1-sonar-huge-128k-online">Sonar Huge (405B, Online)</option>
+                              <option value="llama-3.1-sonar-small-128k-chat">Sonar Small (8B, Chat)</option>
+                              <option value="llama-3.1-sonar-large-128k-chat">Sonar Large (70B, Chat)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Max Tokens</label>
+                            <input
+                              type="number"
+                              value={config.aiProviders?.perplexity?.maxTokens || 4096}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                aiProviders: {
+                                  ...config.aiProviders,
+                                  perplexity: { ...config.aiProviders.perplexity, maxTokens: parseInt(e.target.value) || 4096 }
+                                }
+                              })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* HubSpot Integration */}
                   <div className="pt-6 border-t border-[#1F1F1F]">
                     <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">CRM Integration</h2>
@@ -1774,18 +1915,128 @@ export default function AdminPage() {
                             <p className="text-xs text-[#666666]">Pull customer &amp; job site data with autocomplete</p>
                           </div>
                         </div>
-                        <span className="px-3 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
-                          Coming Soon
-                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={config.hubspot?.enabled || false}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              hubspot: { ...config.hubspot, enabled: e.target.checked }
+                            })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
                       </div>
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>Setup Required:</strong> Contact your administrator (Jacob@universalawning.com) to configure the HubSpot OAuth integration. This will enable:
-                        <ul className="list-disc ml-5 mt-2 space-y-1">
-                          <li>Customer name autocomplete from HubSpot contacts</li>
-                          <li>Auto-populate job site address from deal properties</li>
-                          <li>Sync cost sheets back to HubSpot deals</li>
-                        </ul>
+                      {config.hubspot?.enabled ? (
+                        <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Private App Access Token</label>
+                            <input
+                              type="password"
+                              value={config.hubspot?.accessToken || ''}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                hubspot: { ...config.hubspot, accessToken: e.target.value }
+                              })}
+                              className={inputClass}
+                              placeholder="pat-..."
+                            />
+                            <p className="text-xs text-[#666666] mt-1">Create a private app in HubSpot to get this token</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Portal ID</label>
+                            <input
+                              type="text"
+                              value={config.hubspot?.portalId || ''}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                hubspot: { ...config.hubspot, portalId: e.target.value }
+                              })}
+                              className={inputClass}
+                              placeholder="Your HubSpot Portal ID"
+                            />
+                          </div>
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-sm text-blue-800 dark:text-blue-200">
+                            <strong>Features when connected:</strong>
+                            <ul className="list-disc ml-5 mt-2 space-y-1">
+                              <li>Customer name autocomplete from HubSpot contacts</li>
+                              <li>Auto-populate job site address from deal properties</li>
+                              <li>Sync cost sheets back to HubSpot deals</li>
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-400">
+                          Enable HubSpot integration to connect your CRM data with cost sheets.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Google Maps Integration */}
+                  <div className="pt-6 border-t border-[#1F1F1F]">
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-2">Location Services</h2>
+                    <p className="text-sm text-[#666666] mb-4">
+                      Connect to Google Maps for address autocomplete and drive time calculations.
+                    </p>
+
+                    <div className="p-4 bg-[#111111] rounded-lg border border-[#1F1F1F]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-[#EDEDED]">Google Maps</h3>
+                            <p className="text-xs text-[#666666]">Address autocomplete &amp; drive time calculations</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={config.googleMaps?.enabled || false}
+                            onChange={(e) => updateConfig({
+                              ...config,
+                              googleMaps: { ...config.googleMaps, enabled: e.target.checked }
+                            })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
                       </div>
+                      {config.googleMaps?.enabled ? (
+                        <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                          <div>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Google Maps API Key</label>
+                            <input
+                              type="password"
+                              value={config.googleMaps?.apiKey || ''}
+                              onChange={(e) => updateConfig({
+                                ...config,
+                                googleMaps: { ...config.googleMaps, apiKey: e.target.value }
+                              })}
+                              className={inputClass}
+                              placeholder="AIza..."
+                            />
+                            <p className="text-xs text-[#666666] mt-1">Enable Places API, Directions API, and Distance Matrix API in Google Cloud Console</p>
+                          </div>
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-sm text-blue-800 dark:text-blue-200">
+                            <strong>Features when connected:</strong>
+                            <ul className="list-disc ml-5 mt-2 space-y-1">
+                              <li>Address autocomplete for job site fields</li>
+                              <li>Auto-calculate drive time from home base to job site</li>
+                              <li>Auto-calculate mileage for cost estimation</li>
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-400">
+                          Enable Google Maps integration for address autocomplete and automatic drive time calculations.
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1975,17 +2226,20 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Reset All Data */}
+                  {/* Danger Zone */}
                   <div className="pt-6 border-t border-[#1F1F1F]">
                     <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
-                    <p className="text-sm text-[#666666] mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
+                    <p className="text-sm text-[#666666] mb-4">Move all cost sheets to trash. Items can be restored from the Trash tab.</p>
 
                     <button
-                      onClick={handleDeleteAllData}
+                      onClick={handleMoveAllToTrash}
                       className={dangerButtonClass}
                     >
-                      Delete All Cost Sheet Data
+                      Move All Cost Sheets to Trash
                     </button>
+                    <p className="text-xs text-[#666666] mt-2">
+                      Only Super Admins and Admins can perform this action. Items in trash can be permanently deleted from the Trash tab.
+                    </p>
                   </div>
                 </div>
               )}

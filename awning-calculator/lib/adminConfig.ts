@@ -9,6 +9,25 @@ export interface AIProviderConfig {
   maxTokens: number;
 }
 
+// Sales Rep with email
+export interface SalesRep {
+  name: string;
+  email: string;
+}
+
+// HubSpot Integration configuration
+export interface HubSpotConfig {
+  enabled: boolean;
+  accessToken: string;
+  portalId: string;
+}
+
+// Google Maps configuration
+export interface GoogleMapsConfig {
+  enabled: boolean;
+  apiKey: string;
+}
+
 export interface AdminConfig {
   // Product categories
   categories: string[];
@@ -32,8 +51,8 @@ export interface AdminConfig {
   // Material presets for quick add
   materialPresets: { description: string; unitPrice: number }[];
 
-  // Sales rep / estimator list
-  salesReps: string[];
+  // Sales rep / estimator list (now with name and email)
+  salesReps: SalesRep[];
 
   // Fabric presets
   fabricPresets: { name: string; pricePerYard: number }[];
@@ -46,10 +65,17 @@ export interface AdminConfig {
     claude: AIProviderConfig;
     openai: AIProviderConfig;
     gemini: AIProviderConfig;
+    perplexity: AIProviderConfig;
   };
 
   // Default AI provider to use
-  defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'none';
+  defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'perplexity' | 'none';
+
+  // HubSpot Integration
+  hubspot: HubSpotConfig;
+
+  // Google Maps Integration
+  googleMaps: GoogleMapsConfig;
 }
 
 // Default configuration - matches the existing constants
@@ -143,12 +169,38 @@ export const DEFAULT_CONFIG: AdminConfig = {
       apiKey: '',
       model: 'gemini-1.5-pro',
       maxTokens: 4096
+    },
+    perplexity: {
+      enabled: false,
+      apiKey: '',
+      model: 'llama-3.1-sonar-large-128k-online',
+      maxTokens: 4096
     }
   },
-  defaultAIProvider: 'none'
+  defaultAIProvider: 'none',
+  hubspot: {
+    enabled: false,
+    accessToken: '',
+    portalId: ''
+  },
+  googleMaps: {
+    enabled: false,
+    apiKey: ''
+  }
 };
 
 const ADMIN_CONFIG_KEY = 'adminConfig';
+
+// Migrate old string[] salesReps to new SalesRep[] format
+function migrateSalesReps(salesReps: (string | SalesRep)[]): SalesRep[] {
+  if (!salesReps || !Array.isArray(salesReps)) return [];
+  return salesReps.map(rep => {
+    if (typeof rep === 'string') {
+      return { name: rep, email: '' };
+    }
+    return rep;
+  });
+}
 
 // Get admin configuration from localStorage
 export function getAdminConfig(): AdminConfig {
@@ -169,8 +221,12 @@ export function getAdminConfig(): AdminConfig {
           claude: { ...DEFAULT_CONFIG.aiProviders.claude, ...parsed.aiProviders?.claude },
           openai: { ...DEFAULT_CONFIG.aiProviders.openai, ...parsed.aiProviders?.openai },
           gemini: { ...DEFAULT_CONFIG.aiProviders.gemini, ...parsed.aiProviders?.gemini },
+          perplexity: { ...DEFAULT_CONFIG.aiProviders.perplexity, ...parsed.aiProviders?.perplexity },
         },
         defaultAIProvider: parsed.defaultAIProvider || DEFAULT_CONFIG.defaultAIProvider,
+        hubspot: { ...DEFAULT_CONFIG.hubspot, ...parsed.hubspot },
+        googleMaps: { ...DEFAULT_CONFIG.googleMaps, ...parsed.googleMaps },
+        salesReps: migrateSalesReps(parsed.salesReps || []),
       };
     }
   } catch (error) {
