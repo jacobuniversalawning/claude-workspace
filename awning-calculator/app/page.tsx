@@ -279,13 +279,13 @@ export default function Home() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteModalId(null)}
-                className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded-full text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
+                className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
               >
                 Cancel
               </button>
               <button
                 onClick={() => confirmDelete(deleteModalId)}
-                className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-sm font-medium hover:bg-red-500/20 transition-all duration-150"
+                className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded text-sm font-medium hover:bg-red-500/20 transition-all duration-150"
               >
                 Delete
               </button>
@@ -306,8 +306,17 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-3">
               <Link
+                href="/quickcalc"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Quick Calc
+              </Link>
+              <Link
                 href="/analytics"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded-full hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -316,7 +325,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/admin"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded-full hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#A1A1A1] border border-[#333333] rounded hover:bg-[#111111] hover:text-[#EDEDED] hover:border-[#444444] transition-all duration-150"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -326,7 +335,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/costsheet/new"
-                className="flex items-center gap-2 px-5 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
+                className="flex items-center gap-2 px-5 py-2 bg-white text-black rounded text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -378,50 +387,6 @@ export default function Home() {
               <span className="font-medium">Local Storage Mode:</span> Data is stored locally in your browser. Configure PostgreSQL for cloud storage.
             </div>
           </div>
-        )}
-
-        {/* Analytics Cards */}
-        {analytics && analytics.byCategory && analytics.byCategory.length > 0 && (
-          <section className="mb-10">
-            <h2 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-4">Average Pricing by Product</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analytics.byCategory.slice(0, 6).map((cat, index) => (
-                <div
-                  key={cat.category}
-                  className="group bg-[#0A0A0A] border border-[#1F1F1F] rounded-xl p-5 hover:border-[#333333] hover:bg-[#111111] transition-all duration-200 animate-fade-in-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <h3 className="font-medium text-[#EDEDED] text-sm tracking-tight">{cat.category}</h3>
-                  <div className="mt-4 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-[#666666]">Total Sheets</span>
-                      <span className="text-[#EDEDED] font-medium tabular-nums">{cat.count}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#666666]">Won</span>
-                      <span className="text-emerald-400 font-medium tabular-nums">{cat.wonCount}</span>
-                    </div>
-                    {cat.wonAvgPricePerSqFt > 0 && (
-                      <div className="flex justify-between pt-2 mt-2 border-t border-[#1F1F1F]">
-                        <span className="text-[#666666]">Avg $/sq ft</span>
-                        <span className="text-[#0070F3] font-semibold tabular-nums">
-                          {formatCurrency(cat.wonAvgPricePerSqFt)}
-                        </span>
-                      </div>
-                    )}
-                    {cat.wonAvgPricePerLinFt > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-[#666666]">Avg $/lin ft</span>
-                        <span className="text-[#0070F3] font-semibold tabular-nums">
-                          {formatCurrency(cat.wonAvgPricePerLinFt)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         )}
 
         {/* Cost Sheet History */}

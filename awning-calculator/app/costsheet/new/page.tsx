@@ -124,8 +124,23 @@ function CostSheetForm() {
 
   // Load admin config on mount
   useEffect(() => {
-    setAdminConfig(getAdminConfig());
-  }, []);
+    const config = getAdminConfig();
+    setAdminConfig(config);
+
+    // Apply admin config defaults for new cost sheets only (not when editing)
+    if (!editId) {
+      setMarkup(config.defaults.markup);
+      setMaterialsTaxRate(config.defaults.salesTax);
+      setFabricTaxRate(config.defaults.salesTax);
+      setLaborRate(config.defaults.laborRate);
+      setDriveTimeLines([{ id: generateId(), trips: 0, hoursPerTrip: 0, people: 0, rate: config.defaults.driveTimeRate, description: '' }]);
+      setMileageLines([{ id: generateId(), roundtripMiles: 0, trips: 0, rate: config.defaults.mileageRate, description: '' }]);
+      setHotelLines([{ id: generateId(), nights: 0, people: 0, rate: config.defaults.hotelRate, description: '' }]);
+      // Update labor lines with the admin config rate
+      setLaborLines(prev => prev.map(l => ({ ...l, rate: config.defaults.laborRate })));
+      setInstallLines(prev => prev.map(l => ({ ...l, rate: config.defaults.laborRate })));
+    }
+  }, [editId]);
 
   // Fetch users for dropdowns
   const [users, setUsers] = useState<Array<{ id: string; name: string | null; email: string | null }>>([]);
@@ -633,11 +648,11 @@ function CostSheetForm() {
   const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
 
   const getGuardrailColor = (currentPrice: number | null, avgPrice: number): string => {
-    if (!currentPrice || avgPrice === 0) return 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
+    if (!currentPrice || avgPrice === 0) return 'bg-gray-100 dark:bg-[#111111] border-gray-300 dark:border-[#333333]';
     const diff = (currentPrice - avgPrice) / avgPrice;
-    if (diff > 0.15) return 'bg-red-100 dark:bg-red-900/50 border-red-400 dark:border-red-600';
-    if (diff < -0.15) return 'bg-blue-100 dark:bg-blue-900/50 border-blue-400 dark:border-blue-600';
-    return 'bg-green-100 dark:bg-green-900/50 border-green-400 dark:border-green-600';
+    if (diff > 0.15) return 'bg-red-100 dark:bg-red-900/20 border-red-400 dark:border-red-700';
+    if (diff < -0.15) return 'bg-blue-100 dark:bg-[#0070F3]/10 border-blue-400 dark:border-[#0070F3]/50';
+    return 'bg-green-100 dark:bg-emerald-900/20 border-green-400 dark:border-emerald-700';
   };
 
   const getGuardrailText = (currentPrice: number | null, avgPrice: number): string => {
@@ -1161,25 +1176,25 @@ function CostSheetForm() {
               <div className={cardClass}>
                 <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-[#EDEDED]">Subtotal & Markup</h2>
                 <div className="grid grid-cols-4 gap-4">
-                  <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">Subtotal</label>
+                  <div className="bg-gray-100 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F]">
+                    <label className="text-sm text-gray-600 dark:text-[#A1A1A1]">Subtotal</label>
                     <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Materials + Fabric + Labor</div>
+                    <div className="text-xs text-gray-500 dark:text-[#666666] mt-1">Materials + Fabric + Labor</div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700">
+                  <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F]">
                     <label className={labelClass}>Markup %</label>
                     <div className="flex items-center gap-2">
                       <input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)} className={inputClass + " w-24"} />
-                      <span className="text-gray-600 dark:text-gray-400 text-sm">= {(markup * 100).toFixed(0)}%</span>
+                      <span className="text-gray-600 dark:text-[#666666] text-sm">= {(markup * 100).toFixed(0)}%</span>
                     </div>
                   </div>
-                  <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded border border-yellow-300 dark:border-yellow-700">
-                    <label className="text-sm text-yellow-700 dark:text-yellow-300">Markup Value</label>
-                    <div className="text-xl font-bold text-yellow-700 dark:text-yellow-300">{formatCurrency(markupAmount)}</div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded border border-yellow-300 dark:border-yellow-800">
+                    <label className="text-sm text-yellow-700 dark:text-yellow-400">Markup Value</label>
+                    <div className="text-xl font-bold text-yellow-700 dark:text-yellow-400">{formatCurrency(markupAmount)}</div>
                   </div>
-                  <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded border-2 border-blue-300 dark:border-blue-600">
-                    <label className="text-sm text-blue-700 dark:text-blue-300">Total with Markup</label>
-                    <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalWithMarkup)}</div>
+                  <div className="bg-blue-100 dark:bg-[#0070F3]/10 p-4 rounded border-2 border-blue-300 dark:border-[#0070F3]/30">
+                    <label className="text-sm text-blue-700 dark:text-[#0070F3]">Total with Markup</label>
+                    <div className="text-xl font-bold text-blue-700 dark:text-[#0070F3]">{formatCurrency(totalWithMarkup)}</div>
                   </div>
                 </div>
               </div>
@@ -1197,10 +1212,10 @@ function CostSheetForm() {
                 </div>
 
                 {/* Drive Time */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded mb-4">
+                <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F] mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">Drive Time</span>
-                    <button type="button" onClick={addDriveTime} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">+ Add</button>
+                    <button type="button" onClick={addDriveTime} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3]">+ Add</button>
                   </div>
                   {driveTimeLines.map((d) => (
                     <div key={d.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
@@ -1220,10 +1235,10 @@ function CostSheetForm() {
                 </div>
 
                 {/* Mileage */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded mb-4">
+                <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F] mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">Mileage</span>
-                    <button type="button" onClick={addMileage} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">+ Add</button>
+                    <button type="button" onClick={addMileage} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3]">+ Add</button>
                   </div>
                   {mileageLines.map((m) => (
                     <div key={m.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
@@ -1242,10 +1257,10 @@ function CostSheetForm() {
                 </div>
 
                 {/* Hotel */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded mb-4">
+                <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F] mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">Hotel</span>
-                    <button type="button" onClick={addHotel} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">+ Add</button>
+                    <button type="button" onClick={addHotel} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3]">+ Add</button>
                   </div>
                   {hotelLines.map((h) => (
                     <div key={h.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">

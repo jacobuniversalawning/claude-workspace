@@ -65,10 +65,10 @@ module.exports = {
         mono: ['Geist Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'monospace'],
       },
       borderRadius: {
-        'card': '8px',
-        'input': '6px',
-        'button': '6px',
-        'modal': '12px',
+        'card': '6px',
+        'input': '4px',
+        'button': '4px',
+        'modal': '8px',
         'pill': '9999px',
       },
       fontSize: {
