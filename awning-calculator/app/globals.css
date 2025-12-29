@@ -458,14 +458,15 @@ input[type="number"] {
     color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    font-size: 10px !important;
   }
 
   /* Neutralize dark mode class for print */
   .dark,
   .dark * {
-    background-color: #ffffff !important;
+    background-color: transparent !important;
     color: #000000 !important;
-    border-color: #e5e5e5 !important;
+    border-color: #cccccc !important;
   }
 
   /* Override dark mode text colors */
@@ -500,9 +501,7 @@ input[type="number"] {
   .no-print,
   nav,
   header button,
-  .dark-mode-toggle,
-  [class*="hover:"],
-  .sticky {
+  .dark-mode-toggle {
     display: none !important;
   }
 
@@ -538,22 +537,37 @@ input[type="number"] {
     color: transparent !important;
   }
 
-  /* Table styling for print */
-  table {
+  /* Compact table styling for print - preserve inline styles */
+  .print\\:block table {
     border-collapse: collapse !important;
     width: 100% !important;
+    font-size: inherit !important;
   }
 
-  th, td {
-    border: 1px solid #e5e5e5 !important;
-    padding: 8px !important;
-    background-color: #ffffff !important;
+  .print\\:block th,
+  .print\\:block td {
+    background-color: inherit !important;
     color: #000000 !important;
   }
 
-  th {
-    background-color: #f5f5f5 !important;
-    font-weight: 600 !important;
+  /* Preserve section header backgrounds */
+  .print\\:block .bg-gray-200,
+  .print\\:block .bg-gray-100 {
+    background-color: #e5e5e5 !important;
+  }
+
+  .print\\:block .bg-blue-50,
+  .print\\:block .bg-blue-100 {
+    background-color: #dbeafe !important;
+  }
+
+  .print\\:block .bg-orange-100 {
+    background-color: #ffedd5 !important;
+  }
+
+  .print\\:block .bg-green-100,
+  .print\\:block .bg-green-200 {
+    background-color: #dcfce7 !important;
   }
 
   /* Prevent page breaks inside important elements */
@@ -565,42 +579,9 @@ input[type="number"] {
     page-break-inside: avoid !important;
   }
 
-  /* Cards should have visible borders */
-  [class*="rounded-card"],
-  .vercel-card {
-    border: 1px solid #e5e5e5 !important;
-    box-shadow: none !important;
-    padding: 16px !important;
-    margin-bottom: 16px !important;
-  }
-
-  /* Ensure summary sections are clearly visible */
-  .bg-blue-50,
-  .bg-green-100,
-  .bg-orange-100,
-  .bg-yellow-100,
-  [class*="bg-blue-900"],
-  [class*="bg-green-900"],
-  [class*="bg-orange-900"],
-  [class*="bg-yellow-900"] {
-    background-color: #f9f9f9 !important;
-    border: 1px solid #cccccc !important;
-  }
-
-  /* Important totals should stand out */
-  .text-blue-700,
-  .text-green-700,
-  .text-orange-700,
-  [class*="text-blue-300"],
-  [class*="text-green-300"],
-  [class*="text-orange-300"] {
-    color: #000000 !important;
-    font-weight: 700 !important;
-  }
-
-  /* Page setup */
+  /* Page setup - slightly smaller margins for more content */
   @page {
-    margin: 0.5in;
+    margin: 0.35in;
     size: letter;
   }
 
@@ -625,20 +606,31 @@ input[type="number"] {
     padding-right: 0 !important;
   }
 
-  /* Grid adjustments for print - make sidebar content stack */
-  .lg\\:col-span-3,
-  .lg\\:col-span-4 {
-    grid-column: span 4 / span 4 !important;
+  /* Grid adjustments for print - maintain 2-column grid for compact layout */
+  .print\\:block .grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
   }
 
-  .lg\\:col-span-1 {
-    grid-column: span 4 / span 4 !important;
-    margin-top: 20px !important;
+  .print\\:block .grid-cols-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
   }
 
   /* Remove sticky positioning for print */
   .sticky {
     position: relative !important;
     top: auto !important;
+  }
+
+  /* Ensure the print wrapper has no extra padding from parent */
+  .print\\:p-4 {
+    padding: 0.25in !important;
+    background: white !important;
+  }
+
+  /* Make sure hidden class is respected but print:block overrides it */
+  .hidden.print\\:block {
+    display: block !important;
   }
 }
