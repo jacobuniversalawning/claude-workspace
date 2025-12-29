@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useReactToPrint } from 'react-to-print';
 import { LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
 import { getAdminConfig, AdminConfig, DEFAULT_CONFIG } from '@/lib/adminConfig';
@@ -122,6 +123,9 @@ function CostSheetForm() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [adminConfig, setAdminConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
 
+  // Ref for printable content
+  const printContentRef = useRef<HTMLDivElement>(null);
+
   // Load admin config on mount
   useEffect(() => {
     const config = getAdminConfig();
@@ -162,6 +166,12 @@ function CostSheetForm() {
     project: '',
     jobSite: '',
     estimator: '',
+  });
+
+  // Print handler
+  const handlePrint = useReactToPrint({
+    contentRef: printContentRef,
+    documentTitle: `CostSheet-${formData.customer || formData.project || 'Draft'}`,
   });
 
   // Auto-populate estimator from session when creating new cost sheet
@@ -796,7 +806,9 @@ function CostSheetForm() {
     <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors">
       <div className="max-w-7xl mx-auto px-4">
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Printable content wrapper */}
+          <div ref={printContentRef}>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Form */}
             <div className="lg:col-span-3 space-y-6">
               {/* Header */}
@@ -891,7 +903,7 @@ function CostSheetForm() {
 
                 <div className="space-y-4">
                   {products.map((product) => (
-                    <div key={product.id} className="border border-gray-200 dark:border-[#1F1F1F] rounded-input p-4 bg-gray-50 dark:bg-[#111111] transition-all duration-200 hover:border-brand-text-muted">
+                    <div key={product.id} className="border border-gray-200 dark:border-[#1F1F1F] rounded-input p-4 bg-gray-50 dark:bg-[#111111] transition-all duration-200 hover:border-brand-text-muted print:break-inside-avoid print:bg-white print:border-gray-300">
                       <div className="flex justify-between items-center mb-3">
                         <input type="text" value={product.name} onChange={(e) => updateProduct(product.id, 'name', e.target.value)} className={inputClass + " w-48 pl-4 pr-3"} placeholder="Product name" />
                         {products.length > 1 && <button type="button" onClick={() => removeProduct(product.id)} className={deleteBtn + " ml-2"}>×</button>}
@@ -928,7 +940,7 @@ function CostSheetForm() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <button type="button" onClick={addProduct} className={addBtn}>+ Add Product</button>
+                  <button type="button" onClick={addProduct} className={addBtn + " print:hidden"}>+ Add Product</button>
                   <div className="flex gap-8">
                     <div><span className="text-gray-600 dark:text-gray-400">Total Sq Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalSqFt.toFixed(2)}</span></div>
                     <div><span className="text-gray-600 dark:text-gray-400">Total Lin Ft: </span><span className="font-bold text-gray-900 dark:text-white">{totalLinFt.toFixed(2)}</span></div>
@@ -947,7 +959,7 @@ function CostSheetForm() {
                       <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
                   </div>
-                  <button type="button" onClick={addMaterial} className={addBtn}>+ Add Row</button>
+                  <button type="button" onClick={addMaterial} className={addBtn + " print:hidden"}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
@@ -997,7 +1009,7 @@ function CostSheetForm() {
                       <span className="text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
                   </div>
-                  <button type="button" onClick={addFabric} className={addBtn}>+ Add Row</button>
+                  <button type="button" onClick={addFabric} className={addBtn + " print:hidden"}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
@@ -1067,7 +1079,7 @@ function CostSheetForm() {
                       </div>
                     </div>
                   </div>
-                  <button type="button" onClick={addLabor} className={addBtn}>+ Add Row</button>
+                  <button type="button" onClick={addLabor} className={addBtn + " print:hidden"}>+ Add Row</button>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-gray-700">
@@ -1119,7 +1131,7 @@ function CostSheetForm() {
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Installation Labor</h2>
-                  <button type="button" onClick={addInstall} className={addBtn}>+ Add Install</button>
+                  <button type="button" onClick={addInstall} className={addBtn + " print:hidden"}>+ Add Install</button>
                 </div>
                 <table className="w-full text-sm">
                   <thead className="bg-orange-100 dark:bg-orange-900/30">
@@ -1215,7 +1227,7 @@ function CostSheetForm() {
                 <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F] mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">Drive Time</span>
-                    <button type="button" onClick={addDriveTime} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3]">+ Add</button>
+                    <button type="button" onClick={addDriveTime} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3] print:hidden">+ Add</button>
                   </div>
                   {driveTimeLines.map((d) => (
                     <div key={d.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
@@ -1238,7 +1250,7 @@ function CostSheetForm() {
                 <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F] mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">Mileage</span>
-                    <button type="button" onClick={addMileage} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3]">+ Add</button>
+                    <button type="button" onClick={addMileage} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3] print:hidden">+ Add</button>
                   </div>
                   {mileageLines.map((m) => (
                     <div key={m.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
@@ -1260,7 +1272,7 @@ function CostSheetForm() {
                 <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F] mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium text-gray-900 dark:text-white">Hotel</span>
-                    <button type="button" onClick={addHotel} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3]">+ Add</button>
+                    <button type="button" onClick={addHotel} className="text-sm text-blue-600 hover:text-blue-800 dark:text-[#0070F3] print:hidden">+ Add</button>
                   </div>
                   {hotelLines.map((h) => (
                     <div key={h.id} className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700 last:border-0 last:mb-0 last:pb-0">
@@ -1285,8 +1297,18 @@ function CostSheetForm() {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex justify-end gap-4">
+              <div className="flex justify-end gap-4 print:hidden">
                 <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 border border-gray-300 dark:border-[#1F1F1F] bg-white dark:bg-[#1F1F1F] rounded-button hover:bg-gray-100 dark:hover:brightness-110 text-gray-700 dark:text-[#EDEDED] font-medium transition-all duration-200 hover:shadow-lg">Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => handlePrint()}
+                  className="px-6 py-2.5 bg-gray-600 dark:bg-gray-700 text-white rounded-button hover:bg-gray-700 dark:hover:bg-gray-600 font-medium transition-all duration-200 hover:shadow-lg flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Print / PDF
+                </button>
                 <button type="submit" disabled={saving} className="px-8 py-2.5 bg-blue-600 dark:bg-[#0070F3] text-white rounded-button hover:bg-blue-700 dark:hover:bg-[#0060D3] disabled:opacity-50 font-medium transition-all duration-200 hover:shadow-lg">
                   {saving ? 'Saving...' : (isEditing ? 'Update Cost Sheet' : 'Save Cost Sheet')}
                 </button>
@@ -1360,6 +1382,7 @@ function CostSheetForm() {
               </div>
             </div>
           </div>
+          </div>{/* End printable content wrapper */}
         </form>
       </div>
     </div>

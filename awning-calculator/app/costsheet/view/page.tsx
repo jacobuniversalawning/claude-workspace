@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useReactToPrint } from 'react-to-print';
 import { formatCurrency } from '@/lib/calculations';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
 import ActivityLog from '@/components/ActivityLog';
@@ -91,9 +92,19 @@ function CostSheetViewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+  const autoPrint = searchParams.get('autoPrint') === 'true';
 
   const [costSheet, setCostSheet] = useState<CostSheet | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Ref for printable content
+  const printContentRef = useRef<HTMLDivElement>(null);
+
+  // Print handler
+  const handlePrint = useReactToPrint({
+    contentRef: printContentRef,
+    documentTitle: costSheet ? `CostSheet-${costSheet.customer || costSheet.project || costSheet.id}` : 'CostSheet',
+  });
 
   useEffect(() => {
     async function fetchCostSheet() {
@@ -128,6 +139,17 @@ function CostSheetViewContent() {
     fetchCostSheet();
   }, [id]);
 
+  // Auto-print when autoPrint param is true
+  useEffect(() => {
+    if (autoPrint && costSheet && !loading) {
+      // Small delay to ensure content is rendered
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [autoPrint, costSheet, loading, handlePrint]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -156,20 +178,22 @@ function CostSheetViewContent() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 transition-colors">
       <div className="max-w-5xl mx-auto px-4">
-        {/* Header */}
-        <div className={cardClass}>
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Cost Sheet Details</h1>
-              <p className="text-gray-600 dark:text-gray-400">{costSheet.category}</p>
+        {/* Printable Content Wrapper */}
+        <div ref={printContentRef}>
+          {/* Header */}
+          <div className={cardClass}>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Cost Sheet Details</h1>
+                <p className="text-gray-600 dark:text-gray-400">{costSheet.category}</p>
+              </div>
+              <div className="flex items-center gap-4 print:hidden">
+                <DarkModeToggle />
+                <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                  ← Dashboard
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <DarkModeToggle />
-              <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                ← Dashboard
-              </button>
-            </div>
-          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
@@ -476,14 +500,24 @@ function CostSheetViewContent() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-center gap-4 mt-6">
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
-          >
-            ← Back to Dashboard
-          </button>
+          {/* Actions - inside printable wrapper but hidden on print */}
+          <div className="flex justify-center gap-4 mt-6 print:hidden">
+            <button
+              onClick={() => router.push('/')}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+            >
+              ← Back to Dashboard
+            </button>
+            <button
+              onClick={() => handlePrint()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print / PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>

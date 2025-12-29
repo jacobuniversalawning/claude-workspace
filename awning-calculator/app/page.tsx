@@ -612,18 +612,33 @@ export default function Home() {
                           </select>
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteModalId(sheet.id);
-                            }}
-                            className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-150 opacity-0 group-hover:opacity-100"
-                            title="Delete"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/costsheet/view?id=${sheet.id}&autoPrint=true`);
+                              }}
+                              className="p-1.5 text-[#666666] hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all duration-150 opacity-0 group-hover:opacity-100"
+                              title="Export PDF"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 9h1M9 13h6M9 17h6" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteModalId(sheet.id);
+                              }}
+                              className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-150 opacity-0 group-hover:opacity-100"
+                              title="Delete"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
