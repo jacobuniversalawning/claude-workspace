@@ -451,6 +451,11 @@ input[type="number"] {
    Print Styles
    ============================================ */
 
+/* Utility class for hiding elements during print */
+.no-print {
+  @apply print:hidden;
+}
+
 @media print {
   /* Force white background and black text, regardless of dark mode */
   html, body {
@@ -459,6 +464,8 @@ input[type="number"] {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     font-size: 10px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Neutralize dark mode class for print */
@@ -494,14 +501,19 @@ input[type="number"] {
 
   /* Hide interactive elements for printing */
   .print\\:hidden,
-  button:not(.print\\:block),
+  .no-print,
+  button:not(.print\\:block):not(.print-visible),
   select,
   [type="checkbox"],
   [type="radio"],
-  .no-print,
   nav,
-  header button,
-  .dark-mode-toggle {
+  header:not(.print-header),
+  footer:not(.print-footer),
+  aside,
+  .dark-mode-toggle,
+  .sidebar,
+  .navbar,
+  [data-no-print] {
     display: none !important;
   }
 
@@ -550,33 +562,97 @@ input[type="number"] {
     color: #000000 !important;
   }
 
-  /* Preserve section header backgrounds */
-  .print\\:block .bg-gray-200,
-  .print\\:block .bg-gray-100 {
-    background-color: #e5e5e5 !important;
-  }
-
-  .print\\:block .bg-blue-50,
-  .print\\:block .bg-blue-100 {
-    background-color: #dbeafe !important;
-  }
-
-  .print\\:block .bg-orange-100 {
-    background-color: #ffedd5 !important;
-  }
-
-  .print\\:block .bg-green-100,
-  .print\\:block .bg-green-200 {
-    background-color: #dcfce7 !important;
-  }
-
   /* Prevent page breaks inside important elements */
   .print\\:break-inside-avoid,
   tr,
   .card,
-  [class*="cardClass"] {
+  [class*="cardClass"],
+  table {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  /* Preserve section header backgrounds */
+  .print\\:block .bg-gray-200,
+  .print\\:block .bg-gray-100,
+  .bg-gray-200,
+  .bg-gray-100 {
+    background-color: #e5e5e5 !important;
+  }
+
+  .print\\:block .bg-gray-300,
+  .bg-gray-300 {
+    background-color: #d1d5db !important;
+  }
+
+  .print\\:block .bg-gray-800,
+  .bg-gray-800 {
+    background-color: #1f2937 !important;
+    color: #ffffff !important;
+  }
+
+  .print\\:block .bg-blue-50,
+  .print\\:block .bg-blue-100,
+  .bg-blue-50,
+  .bg-blue-100 {
+    background-color: #dbeafe !important;
+  }
+
+  .print\\:block .bg-blue-200,
+  .bg-blue-200 {
+    background-color: #bfdbfe !important;
+  }
+
+  .print\\:block .bg-purple-100,
+  .bg-purple-100 {
+    background-color: #f3e8ff !important;
+  }
+
+  .print\\:block .bg-purple-200,
+  .bg-purple-200 {
+    background-color: #e9d5ff !important;
+  }
+
+  .print\\:block .bg-orange-100,
+  .bg-orange-100 {
+    background-color: #ffedd5 !important;
+  }
+
+  .print\\:block .bg-orange-200,
+  .bg-orange-200 {
+    background-color: #fed7aa !important;
+  }
+
+  .print\\:block .bg-orange-300,
+  .bg-orange-300 {
+    background-color: #fdba74 !important;
+  }
+
+  .print\\:block .bg-yellow-50,
+  .bg-yellow-50 {
+    background-color: #fefce8 !important;
+  }
+
+  .print\\:block .bg-yellow-100,
+  .bg-yellow-100 {
+    background-color: #fef9c3 !important;
+  }
+
+  .print\\:block .bg-yellow-200,
+  .bg-yellow-200 {
+    background-color: #fef08a !important;
+  }
+
+  .print\\:block .bg-green-100,
+  .print\\:block .bg-green-200,
+  .bg-green-100,
+  .bg-green-200 {
+    background-color: #dcfce7 !important;
+  }
+
+  .print\\:block .bg-green-400,
+  .bg-green-400 {
+    background-color: #4ade80 !important;
   }
 
   /* Page setup - slightly smaller margins for more content */
@@ -602,6 +678,7 @@ input[type="number"] {
   .container {
     max-width: 100% !important;
     width: 100% !important;
+    margin: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
@@ -615,6 +692,11 @@ input[type="number"] {
   .print\\:block .grid-cols-4 {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .print\\:block .grid-cols-6 {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
   }
 
   /* Remove sticky positioning for print */
@@ -632,5 +714,28 @@ input[type="number"] {
   /* Make sure hidden class is respected but print:block overrides it */
   .hidden.print\\:block {
     display: block !important;
+  }
+
+  /* Print header styling */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+
+  /* Ensure text is visible in gray backgrounds */
+  .text-gray-500 {
+    color: #6b7280 !important;
+  }
+
+  /* Border visibility for Excel-style tables */
+  .border-black {
+    border-color: #000000 !important;
+  }
+
+  .border-gray-400 {
+    border-color: #9ca3af !important;
   }
 }

@@ -802,13 +802,371 @@ function CostSheetForm() {
     return inputClass + " text-right";
   };
 
+  // Helper function to render the print layout (Excel-style, same as view page)
+  function renderPrintLayout() {
+    const TAX_RATE = materialsTaxRate;
+    const DEFAULT_LABOR_RATE = laborRate;
+
+    const fabricationLaborTypes = ['Survey', 'Shop Drawings', 'Sewing', 'Graphics', 'Assembly', 'Welding', 'Paint Labor'];
+    const installationLaborTypes = ['Installation', 'Site Prep', 'Removal'];
+
+    const getLaborLine = (type: string, isFabrication: boolean) => {
+      const allLabor = isFabrication ? laborLines : installLines;
+      const found = allLabor.find(
+        l => l.type.toLowerCase() === type.toLowerCase()
+      );
+      if (found) {
+        return { type: found.type, hours: found.hours, people: found.people, rate: found.rate, total: calcLaborTotal(found) };
+      }
+      return { type, hours: 0, people: 0, rate: DEFAULT_LABOR_RATE, total: 0 };
+    };
+
+    const fabLaborLines = fabricationLaborTypes.map(t => getLaborLine(t, true));
+    const installLaborLines = installationLaborTypes.map(t => getLaborLine(t, false));
+
+    // Include custom labor types not in standard list
+    const customFabLabor = laborLines.filter(
+      l => !fabricationLaborTypes.some(t => t.toLowerCase() === l.type.toLowerCase())
+    ).map(l => ({ type: l.type, hours: l.hours, people: l.people, rate: l.rate, total: calcLaborTotal(l) }));
+
+    const customInstallLabor = installLines.filter(
+      l => !installationLaborTypes.some(t => t.toLowerCase() === l.type.toLowerCase())
+    ).map(l => ({ type: l.type, hours: l.hours, people: l.people, rate: l.rate, total: calcLaborTotal(l) }));
+
+    const allFabLabor = [...fabLaborLines, ...customFabLabor];
+    const allInstallLabor = [...installLaborLines, ...customInstallLabor];
+
+    // Calculate drive time, mileage, hotel totals
+    const driveTimeTotal = driveTimeLines.reduce((sum, d) => sum + (d.trips * d.hoursPerTrip * d.people * d.rate), 0);
+    const mileageTotal = mileageLines.reduce((sum, m) => sum + (m.roundtripMiles * m.trips * m.rate), 0);
+    const hotelTotal = hotelLines.reduce((sum, h) => sum + (h.nights * h.people * h.rate), 0);
+
+    return (
+      <div className="text-[9px]">
+        {/* Print Header - Excel Style */}
+        <div className="border-2 border-black mb-2">
+          <div className="bg-gray-800 text-white px-2 py-1 text-center">
+            <h1 className="text-sm font-bold">UNIVERSAL AWNING & CANOPY - COST SHEET</h1>
+          </div>
+          <div className="grid grid-cols-6 border-t border-black text-[8px]">
+            <div className="border-r border-black px-1 py-0.5">
+              <span className="font-semibold">Inquiry Date:</span><br/>
+              {formData.inquiryDate ? new Date(formData.inquiryDate).toLocaleDateString() : '-'}
+            </div>
+            <div className="border-r border-black px-1 py-0.5">
+              <span className="font-semibold">Due Date:</span><br/>
+              {formData.dueDate ? new Date(formData.dueDate).toLocaleDateString() : '-'}
+            </div>
+            <div className="border-r border-black px-1 py-0.5 col-span-2">
+              <span className="font-semibold">Customer:</span><br/>
+              {formData.customer || '-'}
+            </div>
+            <div className="border-r border-black px-1 py-0.5">
+              <span className="font-semibold">Category:</span><br/>
+              {formData.category}
+            </div>
+            <div className="px-1 py-0.5">
+              <span className="font-semibold">Sales Rep:</span><br/>
+              {formData.salesRep || '-'}
+            </div>
+          </div>
+          <div className="grid grid-cols-4 border-t border-black text-[8px]">
+            <div className="border-r border-black px-1 py-0.5 col-span-2">
+              <span className="font-semibold">Project:</span> {formData.project || '-'}
+            </div>
+            <div className="border-r border-black px-1 py-0.5">
+              <span className="font-semibold">Estimator:</span> {formData.estimator || '-'}
+            </div>
+            <div className="px-1 py-0.5">
+              <span className="font-semibold">Job Site:</span> {formData.jobSite || '-'}
+            </div>
+          </div>
+        </div>
+
+        {/* Dimensions Row */}
+        <div className="border-2 border-black mb-2">
+          <div className="bg-blue-100 px-1 py-0.5 font-bold border-b border-black text-[8px]">DIMENSIONS</div>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-400 px-1 py-0.5 text-center">Product</th>
+                <th className="border border-gray-400 px-1 py-0.5 text-center">Width</th>
+                <th className="border border-gray-400 px-1 py-0.5 text-center">Projection</th>
+                <th className="border border-gray-400 px-1 py-0.5 text-center">Height</th>
+                <th className="border border-gray-400 px-1 py-0.5 text-center">Valance</th>
+                <th className="border border-gray-400 px-1 py-0.5 text-center bg-yellow-100">Sq Ft</th>
+                <th className="border border-gray-400 px-1 py-0.5 text-center bg-yellow-100">Lin Ft</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((p, i) => (
+                <tr key={i}>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center">{p.name}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center">{p.width || 0}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center">{p.projection || 0}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center">{p.height || 0}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center">{p.valance || 0}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center bg-yellow-50">{p.sqFt.toFixed(2)}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-center bg-yellow-50">{p.linFt.toFixed(2)}</td>
+                </tr>
+              ))}
+              <tr className="bg-gray-200 font-semibold">
+                <td colSpan={5} className="border border-gray-400 px-1 py-0.5 text-right">TOTALS:</td>
+                <td className="border border-gray-400 px-1 py-0.5 text-center bg-yellow-200">{totalSqFt.toFixed(2)}</td>
+                <td className="border border-gray-400 px-1 py-0.5 text-center bg-yellow-200">{totalLinFt.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Materials & Fabric Side by Side */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="border-2 border-black">
+            <div className="bg-blue-100 px-1 py-0.5 font-bold border-b border-black text-[8px]">MATERIALS</div>
+            <table className="w-full border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-400 px-1 py-0.5 text-left">Description</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">Qty</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Unit $</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Tax ({(TAX_RATE * 100).toFixed(2)}%)</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">Freight</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.filter(m => m.description || m.qty > 0).map((m, i) => {
+                  const subtotal = m.qty * m.unitPrice;
+                  const tax = subtotal * TAX_RATE;
+                  return (
+                    <tr key={i}>
+                      <td className="border border-gray-400 px-1 py-0.5">{m.description || '-'}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{m.qty}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(m.unitPrice)}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(tax)}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(m.freight)}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right font-medium">{formatCurrency(calcMaterialTotal(m))}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-blue-200 font-bold">
+                  <td colSpan={5} className="border border-gray-400 px-1 py-0.5 text-right">TOTAL MATERIALS:</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalMaterials)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="border-2 border-black">
+            <div className="bg-purple-100 px-1 py-0.5 font-bold border-b border-black text-[8px]">FABRIC</div>
+            <table className="w-full border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-400 px-1 py-0.5 text-left">Name</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">Yards</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-14">$/Yard</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-14">Tax ({(fabricTaxRate * 100).toFixed(2)}%)</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">Freight</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fabricLines.filter(f => f.name || f.yards > 0).map((f, i) => {
+                  const subtotal = f.yards * f.pricePerYard;
+                  const tax = subtotal * fabricTaxRate;
+                  return (
+                    <tr key={i}>
+                      <td className="border border-gray-400 px-1 py-0.5">{f.name || '-'}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{f.yards}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(f.pricePerYard)}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(tax)}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(f.freight)}</td>
+                      <td className="border border-gray-400 px-1 py-0.5 text-right font-medium">{formatCurrency(calcFabricTotal(f))}</td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-purple-200 font-bold">
+                  <td colSpan={5} className="border border-gray-400 px-1 py-0.5 text-right">TOTAL FABRIC:</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalFabric)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Labor Tables */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="border-2 border-black">
+            <div className="bg-gray-300 px-1 py-0.5 font-bold border-b border-black text-[8px]">FABRICATION LABOR HOURS</div>
+            <table className="w-full border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-400 px-1 py-0.5 text-left">Type</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">Hours</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">People</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Rate</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allFabLabor.map((l, i) => (
+                  <tr key={i} className={l.hours === 0 ? 'text-gray-500' : ''}>
+                    <td className="border border-gray-400 px-1 py-0.5">{l.type}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{l.hours}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{l.people}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(l.rate)}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(l.total)}</td>
+                  </tr>
+                ))}
+                <tr className="bg-gray-300 font-bold">
+                  <td colSpan={4} className="border border-gray-400 px-1 py-0.5 text-right">FABRICATION TOTAL:</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalFabricationLabor)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="border-2 border-black">
+            <div className="bg-orange-200 px-1 py-0.5 font-bold border-b border-black text-[8px]">INSTALLATION LABOR HOURS</div>
+            <table className="w-full border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-400 px-1 py-0.5 text-left">Type</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">Hours</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-12">People</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Rate</th>
+                  <th className="border border-gray-400 px-1 py-0.5 text-right w-16">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allInstallLabor.map((l, i) => (
+                  <tr key={i} className={l.hours === 0 ? 'text-gray-500' : ''}>
+                    <td className="border border-gray-400 px-1 py-0.5">{l.type}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{l.hours}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{l.people}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(l.rate)}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(l.total)}</td>
+                  </tr>
+                ))}
+                <tr className="bg-orange-300 font-bold">
+                  <td colSpan={4} className="border border-gray-400 px-1 py-0.5 text-right">INSTALLATION TOTAL:</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalInstallationLabor)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Other Requirements & Pricing Summary */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="border-2 border-black">
+            <div className="bg-orange-100 px-1 py-0.5 font-bold border-b border-black text-[8px]">OTHER REQUIREMENTS</div>
+            <table className="w-full border-collapse text-[8px]">
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Permit</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(permitCost)}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Engineering</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(engineeringCost)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Equipment</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(equipmentCost)}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Food</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(foodCost)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Drive Time</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right" colSpan={3}>{formatCurrency(driveTimeTotal)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Mileage</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right" colSpan={3}>{formatCurrency(mileageTotal)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100 font-medium">Hotel</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right" colSpan={3}>{formatCurrency(hotelTotal)}</td>
+                </tr>
+                <tr className="bg-orange-200 font-bold">
+                  <td colSpan={3} className="border border-gray-400 px-1 py-0.5 text-right">TOTAL OTHER:</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalOtherRequirements)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="border-2 border-black">
+            <div className="bg-green-200 px-1 py-0.5 font-bold border-b border-black text-[8px]">PRICING SUMMARY</div>
+            <table className="w-full border-collapse text-[8px]">
+              <tbody>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-blue-50">Materials</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalMaterials)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-purple-50">Fabric</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalFabric)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-gray-100">Fabrication Labor</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalFabricationLabor)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-orange-50">Installation Labor</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalInstallationLabor)}</td>
+                </tr>
+                <tr className="bg-gray-200 font-semibold">
+                  <td className="border border-gray-400 px-1 py-0.5">Before Markup</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(subtotalBeforeMarkup)}</td>
+                </tr>
+                <tr className="bg-yellow-100">
+                  <td className="border border-gray-400 px-1 py-0.5">Markup ({markup.toFixed(2)})</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(markupAmount)}</td>
+                </tr>
+                <tr className="bg-blue-200 font-bold">
+                  <td className="border border-gray-400 px-1 py-0.5">Including Markup</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalWithMarkup)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-1 py-0.5 bg-orange-50">Other Requirements</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-right">{formatCurrency(totalOtherRequirements)}</td>
+                </tr>
+                <tr className="bg-green-400 font-bold text-[10px]">
+                  <td className="border-2 border-black px-1 py-1">GRAND TOTAL</td>
+                  <td className="border-2 border-black px-1 py-1 text-right">{formatCurrency(totalPriceToClient)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="grid grid-cols-2 gap-0 text-[7px] mt-1">
+              <div className="border border-gray-400 px-1 py-0.5 text-center">
+                $/Sq Ft: {pricePerSqFtPreDelivery ? formatCurrency(pricePerSqFtPreDelivery) : '-'}
+              </div>
+              <div className="border border-gray-400 px-1 py-0.5 text-center">
+                $/Lin Ft: {pricePerLinFtPreDelivery ? formatCurrency(pricePerLinFtPreDelivery) : '-'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t-2 border-black pt-1 text-[7px] text-gray-600 flex justify-between">
+          <span>Universal Awning & Canopy | Cost Sheet (Draft)</span>
+          <span>Printed: {new Date().toLocaleDateString()}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-brand-deep-black py-8 transition-colors print:bg-white print:py-0">
+      <div className="max-w-7xl mx-auto px-4 print:max-w-none print:px-0">
         <form onSubmit={handleSubmit}>
           {/* Printable content wrapper */}
-          <div ref={printContentRef}>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div ref={printContentRef} className="print:p-4">
+            {/* Print-only Excel-style layout */}
+            <div className="hidden print:block">
+              {renderPrintLayout()}
+            </div>
+
+            {/* Screen-only form layout */}
+            <div className="print:hidden grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Form */}
             <div className="lg:col-span-3 space-y-6">
               {/* Header */}
