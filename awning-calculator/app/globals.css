@@ -446,3 +446,191 @@ input[type="number"] {
     background-position: -200% 0;
   }
 }
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+  /* Force white background and black text, regardless of dark mode */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-size: 10px !important;
+  }
+
+  /* Neutralize dark mode class for print */
+  .dark,
+  .dark * {
+    background-color: transparent !important;
+    color: #000000 !important;
+    border-color: #cccccc !important;
+  }
+
+  /* Override dark mode text colors */
+  .dark .text-gray-900,
+  .dark .text-white,
+  .dark [class*="text-[#EDEDED]"],
+  .dark [class*="text-[#A1A1A1]"],
+  .dark .text-gray-400,
+  .dark .text-gray-600,
+  .dark .text-gray-300,
+  .dark .text-gray-700 {
+    color: #000000 !important;
+  }
+
+  /* Override dark mode backgrounds */
+  .dark .bg-black,
+  .dark [class*="bg-[#0A0A0A]"],
+  .dark [class*="bg-[#111111]"],
+  .dark [class*="bg-[#1F1F1F]"],
+  .dark .bg-gray-800,
+  .dark .bg-gray-900,
+  .dark .bg-gray-700 {
+    background-color: #ffffff !important;
+  }
+
+  /* Hide interactive elements for printing */
+  .print\\:hidden,
+  button:not(.print\\:block),
+  select,
+  [type="checkbox"],
+  [type="radio"],
+  .no-print,
+  nav,
+  header button,
+  .dark-mode-toggle {
+    display: none !important;
+  }
+
+  /* Ensure print:block elements are shown */
+  .print\\:block {
+    display: block !important;
+  }
+
+  /* Make inputs look like static text for print */
+  input, textarea {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    color: #000000 !important;
+  }
+
+  /* Style inputs to look like underlined fields */
+  input.print-field,
+  .print-underline input,
+  [class*="print:border-b"] input {
+    border-bottom: 1px solid #000000 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* Hide placeholders in print */
+  input::placeholder,
+  textarea::placeholder {
+    color: transparent !important;
+  }
+
+  /* Compact table styling for print - preserve inline styles */
+  .print\\:block table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: inherit !important;
+  }
+
+  .print\\:block th,
+  .print\\:block td {
+    background-color: inherit !important;
+    color: #000000 !important;
+  }
+
+  /* Preserve section header backgrounds */
+  .print\\:block .bg-gray-200,
+  .print\\:block .bg-gray-100 {
+    background-color: #e5e5e5 !important;
+  }
+
+  .print\\:block .bg-blue-50,
+  .print\\:block .bg-blue-100 {
+    background-color: #dbeafe !important;
+  }
+
+  .print\\:block .bg-orange-100 {
+    background-color: #ffedd5 !important;
+  }
+
+  .print\\:block .bg-green-100,
+  .print\\:block .bg-green-200 {
+    background-color: #dcfce7 !important;
+  }
+
+  /* Prevent page breaks inside important elements */
+  .print\\:break-inside-avoid,
+  tr,
+  .card,
+  [class*="cardClass"] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Page setup - slightly smaller margins for more content */
+  @page {
+    margin: 0.35in;
+    size: letter;
+  }
+
+  /* Hide scrollbars for print */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Override any transition effects */
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure full width for print content */
+  .max-w-7xl,
+  .max-w-5xl,
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Grid adjustments for print - maintain 2-column grid for compact layout */
+  .print\\:block .grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .print\\:block .grid-cols-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  /* Remove sticky positioning for print */
+  .sticky {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* Ensure the print wrapper has no extra padding from parent */
+  .print\\:p-4 {
+    padding: 0.25in !important;
+    background: white !important;
+  }
+
+  /* Make sure hidden class is respected but print:block overrides it */
+  .hidden.print\\:block {
+    display: block !important;
+  }
+}
