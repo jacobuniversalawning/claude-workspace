@@ -268,19 +268,23 @@ export default function AdminPage() {
   const emptyTrash = async () => {
     setModal({
       type: 'confirm',
-      title: 'Empty Trash',
-      message: `Are you sure you want to permanently delete all ${deletedCostSheets.length} items in trash? This action cannot be undone.`,
+      title: 'Empty Recycle Bin',
+      message: `Are you sure you want to permanently delete all ${deletedCostSheets.length} items in the recycle bin? This action cannot be undone.`,
       variant: 'danger',
       onConfirm: async () => {
         try {
-          for (const cs of deletedCostSheets) {
-            await fetch(`/api/costsheets/${cs.id}?permanent=true`, { method: 'DELETE' });
+          // Use bulk delete API
+          const response = await fetch('/api/costsheets/trash', { method: 'DELETE' });
+          if (response.ok) {
+            setDeletedCostSheets([]);
+            showMessage('Recycle bin emptied successfully');
+          } else {
+            const error = await response.json();
+            setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to empty recycle bin' });
           }
-          setDeletedCostSheets([]);
-          showMessage('Trash emptied successfully');
         } catch (error) {
           console.error('Error emptying trash:', error);
-          setModal({ type: 'alert', title: 'Error', message: 'Failed to empty trash' });
+          setModal({ type: 'alert', title: 'Error', message: 'Failed to empty recycle bin' });
         }
       }
     });
@@ -657,9 +661,24 @@ export default function AdminPage() {
           title: 'Final Confirmation',
           message: 'This is your last chance. All data will be permanently deleted.',
           variant: 'danger',
-          onConfirm: () => {
-            localStorage.removeItem('costSheets');
-            showMessage('All cost sheet data has been deleted.');
+          onConfirm: async () => {
+            try {
+              // Delete from database via API
+              const response = await fetch('/api/costsheets/all', { method: 'DELETE' });
+              if (response.ok) {
+                // Also clear local storage
+                localStorage.removeItem('costSheets');
+                showMessage('All cost sheet data has been deleted.');
+              } else {
+                const error = await response.json();
+                setModal({ type: 'alert', title: 'Error', message: error.error || 'Failed to delete all data' });
+              }
+            } catch (error) {
+              console.error('Error deleting all data:', error);
+              // Fallback to local storage deletion
+              localStorage.removeItem('costSheets');
+              showMessage('Local cost sheet data has been deleted.');
+            }
           }
         });
       }
@@ -682,7 +701,7 @@ export default function AdminPage() {
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { id: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     { id: 'ai', label: 'AI Assistants', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-    { id: 'trash', label: 'Trash', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
+    { id: 'trash', label: 'Recycle Bin', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
     { id: 'data', label: 'Data', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' }
   ];
 
@@ -1862,19 +1881,19 @@ export default function AdminPage() {
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h2 className="text-lg font-semibold text-[#EDEDED]">Deleted Cost Sheets</h2>
+                      <h2 className="text-lg font-semibold text-[#EDEDED]">Recycle Bin</h2>
                       <p className="text-sm text-[#666666] mt-1">
-                        Cost sheets in trash can be restored{isSuperAdmin(currentUserRole) ? ' or permanently deleted' : ''}.
+                        Cost sheets in trash can be restored{isAdmin(currentUserRole) ? ' or permanently deleted' : ''}.
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={fetchDeletedCostSheets} className={secondaryButtonClass} disabled={trashLoading}>
                         {trashLoading ? 'Loading...' : 'Refresh'}
                       </button>
-                      {/* Only Super Admins can empty trash (permanent delete) */}
-                      {deletedCostSheets.length > 0 && isSuperAdmin(currentUserRole) && (
+                      {/* Super Admins and Admins can empty recycle bin (permanent delete) */}
+                      {deletedCostSheets.length > 0 && isAdmin(currentUserRole) && (
                         <button onClick={emptyTrash} className={dangerButtonClass}>
-                          Empty Trash
+                          Empty Recycle Bin
                         </button>
                       )}
                     </div>
@@ -1889,7 +1908,7 @@ export default function AdminPage() {
                       <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      <p className="text-[#666666]">Trash is empty</p>
+                      <p className="text-[#666666]">Recycle bin is empty</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1935,8 +1954,8 @@ export default function AdminPage() {
                                   Restore
                                 </button>
                               )}
-                              {/* Only Super Admins can permanently delete */}
-                              {isSuperAdmin(currentUserRole) && (
+                              {/* Super Admins and Admins can permanently delete */}
+                              {isAdmin(currentUserRole) && (
                                 <button
                                   onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
                                   className={`${iconButtonClass} hover:bg-red-500/10`}
@@ -1957,9 +1976,9 @@ export default function AdminPage() {
                   <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
                       <strong>Note:</strong> Items in trash are kept indefinitely until manually deleted.
-                      {isSuperAdmin(currentUserRole)
+                      {isAdmin(currentUserRole)
                         ? ' Permanently deleted items cannot be recovered.'
-                        : ' Only Super Admins can permanently delete items.'}
+                        : ' Only Super Admins and Admins can permanently delete items.'}
                     </p>
                   </div>
                 </div>
@@ -2044,18 +2063,20 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Reset All Data */}
-                  <div className="pt-6 border-t border-[#1F1F1F]">
-                    <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
-                    <p className="text-sm text-[#666666] mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
+                  {/* Reset All Data - Only visible to Admins */}
+                  {isAdmin(currentUserRole) && (
+                    <div className="pt-6 border-t border-[#1F1F1F]">
+                      <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
+                      <p className="text-sm text-[#666666] mb-4">Permanently delete all cost sheet data. This cannot be undone.</p>
 
-                    <button
-                      onClick={handleDeleteAllData}
-                      className={dangerButtonClass}
-                    >
-                      Delete All Cost Sheet Data
-                    </button>
-                  </div>
+                      <button
+                        onClick={handleDeleteAllData}
+                        className={dangerButtonClass}
+                      >
+                        Delete All Cost Sheet Data
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

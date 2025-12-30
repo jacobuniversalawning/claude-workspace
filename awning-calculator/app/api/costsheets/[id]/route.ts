@@ -267,10 +267,10 @@ export async function DELETE(
     }
 
     if (permanent) {
-      // Only SUPER_ADMIN can permanently delete
-      if (userRole !== 'SUPER_ADMIN') {
+      // Only SUPER_ADMIN and ADMIN can permanently delete
+      if (userRole !== 'SUPER_ADMIN' && userRole !== 'ADMIN') {
         return NextResponse.json(
-          { error: 'Only Super Admins can permanently delete cost sheets' },
+          { error: 'Only Super Admins and Admins can permanently delete cost sheets' },
           { status: 403 }
         );
       }
