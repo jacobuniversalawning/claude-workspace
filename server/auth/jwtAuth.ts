@@ -86,7 +86,6 @@ export async function setupJWTAuth(app: Express) {
   // Check environment variables
   const requiredVars = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SESSION_SECRET'];
   if (process.env.NODE_ENV === 'production') {
-    requiredVars.push('APP_URL');
   }
   
   const missing = requiredVars.filter(v => !process.env[v]);
@@ -103,16 +102,16 @@ export async function setupJWTAuth(app: Express) {
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
-  const appUrl = process.env.NODE_ENV === 'production' 
-    ? process.env.APP_URL! 
-    : 'http://localhost:5000';
-  
-  const redirectUri = `${appUrl}/api/auth/google/callback`;
-  const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
 
   // Login route - redirect to Google with CSRF state
   app.get('/api/login', (req, res) => {
     const state = generateState();
+
+        // Dynamic URL detection for preview deployments
+        const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+        const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
     
     // Store state in a short-lived cookie for verification
     setCookie(res, 'oauth_state', state, 600); // 10 minutes
@@ -128,6 +127,12 @@ export async function setupJWTAuth(app: Express) {
 
   // Google OAuth callback
   app.get('/api/auth/google/callback', async (req, res) => {
+        // Dynamic URL detection for preview deployments
+        const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+        const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUri);
+    
     const code = req.query.code as string;
     const returnedState = req.query.state as string;
     const storedState = getCookie(req, 'oauth_state');
