@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import { formatCurrency } from '@/lib/calculations';
 import { DarkModeToggle } from '@/components/DarkModeToggle';
+import ActivityLog from '@/components/ActivityLog';
 import { Suspense } from 'react';
 
 interface ActivityLogEntry {
@@ -855,31 +856,7 @@ function CostSheetViewContent() {
           </div>
 
           {/* Activity Log - Screen View */}
-          {costSheet.activityLogs && costSheet.activityLogs.length > 0 && (
-            <div className={cardClass}>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Activity Log</h2>
-              <div className="space-y-3">
-                {costSheet.activityLogs.map((log, i) => (
-                  <div key={i} className="flex items-start gap-3 text-sm border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0">
-                    <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                        {(log.user?.name || log.user?.email || 'U').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 dark:text-white">{log.user?.name || log.user?.email || 'Unknown'}</span>
-                        <span className="text-gray-500 dark:text-gray-400">•</span>
-                        <span className="text-gray-500 dark:text-gray-400">{new Date(log.createdAt).toLocaleString()}</span>
-                      </div>
-                      <div className="text-gray-600 dark:text-gray-300">{log.action}</div>
-                      {log.description && <div className="text-gray-500 dark:text-gray-400 text-xs mt-1">{log.description}</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <ActivityLog logs={costSheet.activityLogs || []} className="mb-6 print:hidden" />
 
           {/* Created By / Estimator Info */}
           <div className={cardClass}>
