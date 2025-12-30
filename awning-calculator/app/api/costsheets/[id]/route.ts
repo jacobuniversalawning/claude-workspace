@@ -218,7 +218,10 @@ export async function PUT(
   }
 }
 
-// DELETE /api/costsheets/[id] - Soft delete a cost sheet (move to trash)
+// DELETE /api/costsheets/[id] - Delete a cost sheet (role-based permissions)
+// SUPER_ADMIN: Can permanent delete
+// ADMIN, SALES_REP, ESTIMATOR: Can only soft delete (move to trash)
+// VIEWER: Cannot delete
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -232,19 +235,46 @@ export async function DELETE(
     // Get user info for logging
     let userId: string;
     let userName: string;
+    let userRole: string;
 
     if (session?.user?.id) {
       userId = session.user.id;
       userName = session.user.name || session.user.email || 'Unknown';
+      userRole = session.user.role || 'pending';
     } else {
       const tempUser = await prisma.user.findFirst({
         where: { email: 'temp@universalawning.com' },
       });
       userId = tempUser?.id || 'temp-user-1';
       userName = tempUser?.name || 'Temporary User';
+      userRole = 'ADMIN'; // Fallback for development
+    }
+
+    // VIEWER role cannot delete
+    if (userRole === 'VIEWER') {
+      return NextResponse.json(
+        { error: 'Viewers do not have permission to delete cost sheets' },
+        { status: 403 }
+      );
+    }
+
+    // pending role cannot delete
+    if (userRole === 'pending') {
+      return NextResponse.json(
+        { error: 'Pending users do not have permission to delete cost sheets' },
+        { status: 403 }
+      );
     }
 
     if (permanent) {
+      // Only SUPER_ADMIN can permanently delete
+      if (userRole !== 'SUPER_ADMIN') {
+        return NextResponse.json(
+          { error: 'Only Super Admins can permanently delete cost sheets' },
+          { status: 403 }
+        );
+      }
+
       // Permanent delete - actually remove from database
       await prisma.costSheet.delete({
         where: { id },
@@ -252,7 +282,7 @@ export async function DELETE(
 
       return NextResponse.json({ success: true, permanent: true });
     } else {
-      // Soft delete - move to trash
+      // Soft delete - move to trash (available to ADMIN, SALES_REP, ESTIMATOR, SUPER_ADMIN)
       const costSheet = await prisma.costSheet.update({
         where: { id },
         data: {

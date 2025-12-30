@@ -46,13 +46,29 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// User roles enum for role-based access control
+// SUPER_ADMIN: Full access, can manage all users including admins, permanent delete
+// ADMIN: Can manage users (except super admins), soft delete only
+// SALES_REP: Can create and edit cost sheets
+// ESTIMATOR: Can create and edit cost sheets with full access
+// VIEWER: Read-only access
+// pending: New users awaiting approval
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  SALES_REP
+  ESTIMATOR
+  VIEWER
+  pending
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("pending") // admin, estimator, sales_rep, viewer, pending
+  role          UserRole  @default(pending)
   isActive      Boolean   @default(false) // New users default to inactive until approved
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

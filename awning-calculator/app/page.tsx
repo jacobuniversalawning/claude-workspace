@@ -43,9 +43,21 @@ interface Analytics {
   totalSheets: number;
 }
 
+// Helper to check user roles
+const isViewer = (role: string | undefined) => role === 'VIEWER';
+const canDelete = (role: string | undefined) => {
+  // VIEWER and pending users cannot delete
+  return role && role !== 'VIEWER' && role !== 'pending';
+};
+const canCreate = (role: string | undefined) => {
+  // Only SALES_REP, ESTIMATOR, ADMIN, SUPER_ADMIN can create
+  return role && ['SALES_REP', 'ESTIMATOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+};
+
 export default function Home() {
   const router = useRouter();
   const { data: session } = useSession();
+  const userRole = session?.user?.role;
   const [costSheets, setCostSheets] = useState<CostSheet[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -253,7 +265,13 @@ export default function Home() {
     if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION') {
       return;
     }
-    router.push(`/costsheet/new?edit=${id}`);
+    // VIEWER and pending users go to view page (read-only)
+    // Other roles go to edit page
+    if (isViewer(userRole) || userRole === 'pending') {
+      router.push(`/costsheet/view?id=${id}`);
+    } else {
+      router.push(`/costsheet/new?edit=${id}`);
+    }
   };
 
   if (loading) {
@@ -333,15 +351,18 @@ export default function Home() {
                 </svg>
                 Admin
               </Link>
-              <Link
-                href="/costsheet/new"
-                className="flex items-center gap-2 px-5 py-2 bg-white text-black rounded text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                New Cost Sheet
-              </Link>
+              {/* New Cost Sheet button - only visible to users who can create */}
+              {canCreate(userRole) && (
+                <Link
+                  href="/costsheet/new"
+                  className="flex items-center gap-2 px-5 py-2 bg-white text-black rounded text-sm font-medium hover:bg-[#E5E5E5] transition-all duration-150"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  New Cost Sheet
+                </Link>
+              )}
 
               {/* User Menu */}
               {session?.user && (
@@ -626,18 +647,21 @@ export default function Home() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 9h1M9 13h6M9 17h6" />
                               </svg>
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteModalId(sheet.id);
-                              }}
-                              className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-150 opacity-0 group-hover:opacity-100"
-                              title="Delete"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                            {/* Delete button - only visible to users with delete permission */}
+                            {canDelete(userRole) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteModalId(sheet.id);
+                                }}
+                                className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-150 opacity-0 group-hover:opacity-100"
+                                title="Delete"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

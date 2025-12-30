@@ -64,10 +64,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // On initial sign in, user object is available from the provider
       if (user) {
         token.id = user.id;
+        token.email = user.email;
         // If user has role/isActive (from Credentials), copy it to token
         // This avoids DB lookup for the admin backdoor
         if ('role' in user) token.role = user.role;
         if ('isActive' in user) token.isActive = user.isActive;
+      }
+
+      // SUPER_ADMIN override: jacob@universalawning.com is always SUPER_ADMIN
+      const email = (token.email as string)?.toLowerCase();
+      if (email === 'jacob@universalawning.com') {
+        token.role = 'SUPER_ADMIN';
+        token.isActive = true;
+        return token;
       }
 
       // If we have a user id but no role yet, try to fetch from database
@@ -118,6 +127,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (session.user) {
           session.user.id = userId;
+
+          // SUPER_ADMIN override: jacob@universalawning.com is always SUPER_ADMIN
+          const email = session.user.email?.toLowerCase();
+          if (email === 'jacob@universalawning.com') {
+            session.user.role = 'SUPER_ADMIN';
+            session.user.isActive = true;
+            return session;
+          }
 
           // Try to get role from token first (already fetched in jwt callback)
           if (token?.role) {

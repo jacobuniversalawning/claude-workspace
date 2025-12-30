@@ -9,11 +9,21 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // Only ADMIN and SUPER_ADMIN can view user list
+    const userRole = session.user?.role;
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
         email: true,
+        image: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
       },
       orderBy: {
         name: 'asc',
