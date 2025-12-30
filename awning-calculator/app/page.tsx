@@ -251,11 +251,27 @@ export default function Home() {
     }
   };
 
-  const confirmDelete = (id: string) => {
+  const confirmDelete = async (id: string) => {
     if (storageType === 'local') {
       const updatedSheets = costSheets.filter((s) => s.id !== id);
       setCostSheets(updatedSheets);
       localStorage.setItem('costSheets', JSON.stringify(updatedSheets));
+    } else {
+      // Call API for soft delete (moves to trash)
+      try {
+        const response = await fetch(`/api/costsheets/${id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          // Optimistically remove from the list
+          setCostSheets(costSheets.filter((s) => s.id !== id));
+        } else {
+          const error = await response.json();
+          console.error('Failed to delete cost sheet:', error.error);
+        }
+      } catch (error) {
+        console.error('Error deleting cost sheet:', error);
+      }
     }
     setDeleteModalId(null);
   };
@@ -293,7 +309,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
           <div className="bg-[#0A0A0A] rounded-xl p-6 max-w-sm mx-4 border border-[#333333] animate-scale-in">
             <h3 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-3">Delete Cost Sheet?</h3>
-            <p className="text-[#A1A1A1] text-sm mb-6">This action cannot be undone.</p>
+            <p className="text-[#A1A1A1] text-sm mb-6">This cost sheet will be moved to the recycle bin.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteModalId(null)}
