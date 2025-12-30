@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import {
   AdminConfig,
   getAdminConfig,
@@ -16,6 +17,13 @@ import {
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
 type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
+
+// Helper to check if a user is a Super Admin
+const isSuperAdmin = (role: string | undefined) => role === 'SUPER_ADMIN';
+// Helper to check if a user is an Admin (includes Super Admin)
+const isAdmin = (role: string | undefined) => role === 'ADMIN' || role === 'SUPER_ADMIN';
+// Helper to check if a user is a Viewer (read-only)
+const isViewer = (role: string | undefined) => role === 'VIEWER';
 
 interface User {
   id: string;
@@ -54,6 +62,10 @@ type ModalType =
   | { type: 'alert'; title: string; message: string };
 
 export default function AdminPage() {
+  const { data: session } = useSession();
+  const currentUserRole = session?.user?.role;
+  const currentUserId = session?.user?.id;
+
   const [config, setConfig] = useState<AdminConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<TabType>('categories');
   const [hasChanges, setHasChanges] = useState(false);
@@ -71,6 +83,30 @@ export default function AdminPage() {
   const [trashLoading, setTrashLoading] = useState(false);
   const configFileInputRef = useRef<HTMLInputElement>(null);
   const dataFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if current user can modify a target user
+  const canModifyUser = (targetUser: User) => {
+    // Super Admins can modify anyone
+    if (isSuperAdmin(currentUserRole)) return true;
+    // Admins cannot modify Super Admins
+    if (targetUser.role === 'SUPER_ADMIN') return false;
+    // Admins can modify other users
+    if (isAdmin(currentUserRole)) return true;
+    return false;
+  };
+
+  // Check if current user can delete a target user
+  const canDeleteUser = (targetUser: User) => {
+    // Cannot delete yourself
+    if (targetUser.id === currentUserId) return false;
+    // Super Admins can delete anyone
+    if (isSuperAdmin(currentUserRole)) return true;
+    // Admins cannot delete Super Admins
+    if (targetUser.role === 'SUPER_ADMIN') return false;
+    // Admins can delete other users
+    if (isAdmin(currentUserRole)) return true;
+    return false;
+  };
 
   useEffect(() => {
     setConfig(getAdminConfig());
@@ -1422,38 +1458,57 @@ export default function AdminPage() {
                             <select
                               value={user.role}
                               onChange={(e) => updateUserRole(user.id, e.target.value)}
-                              className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-[#EDEDED] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={!canModifyUser(user) || isViewer(currentUserRole)}
+                              className={`text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-brand-surface-grey-dark text-[#EDEDED] focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                !canModifyUser(user) || isViewer(currentUserRole) ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                             >
                               <option value="pending">Pending Approval</option>
-                              <option value="viewer">Viewer</option>
-                              <option value="sales_rep">Sales Rep</option>
-                              <option value="estimator">Estimator</option>
-                              <option value="admin">Admin</option>
+                              <option value="VIEWER">Viewer</option>
+                              <option value="SALES_REP">Sales Rep</option>
+                              <option value="ESTIMATOR">Estimator</option>
+                              <option value="ADMIN">Admin</option>
+                              {/* Only Super Admins can see and assign the Super Admin role */}
+                              {isSuperAdmin(currentUserRole) && (
+                                <option value="SUPER_ADMIN">Super Admin</option>
+                              )}
                             </select>
                           </div>
 
                           {/* Action Buttons */}
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => toggleUserActive(user.id, user.isActive)}
-                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                                user.isActive
-                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-                                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
-                              }`}
-                              title={user.isActive ? 'Deactivate user' : 'Activate user'}
-                            >
-                              {user.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button
-                              onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
-                              className={`${iconButtonClass} hover:bg-red-500/10`}
-                              title="Delete user"
-                            >
-                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                            {canModifyUser(user) && !isViewer(currentUserRole) && (
+                              <button
+                                onClick={() => toggleUserActive(user.id, user.isActive)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                                  user.isActive
+                                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                }`}
+                                title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                              >
+                                {user.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            )}
+                            {canDeleteUser(user) && !isViewer(currentUserRole) && (
+                              <button
+                                onClick={() => deleteUser(user.id, user.name || user.email || 'this user')}
+                                className={`${iconButtonClass} hover:bg-red-500/10`}
+                                title="Delete user"
+                              >
+                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                            {/* Show lock icon for protected Super Admin accounts (visible to regular admins) */}
+                            {user.role === 'SUPER_ADMIN' && !isSuperAdmin(currentUserRole) && (
+                              <span className="px-2 py-1 text-xs text-gray-500" title="Super Admin - Protected">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1466,8 +1521,13 @@ export default function AdminPage() {
                       New users default to <strong>Inactive</strong> status with <strong>Pending Approval</strong> role and must be activated by an admin.
                     </p>
                     <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
-                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (full access)
+                      <strong>Roles:</strong> Pending Approval (no access) → Viewer (read-only) → Sales Rep (create quotes) → Estimator (full cost sheets) → Admin (manage users) → Super Admin (full control)
                     </p>
+                    {!isSuperAdmin(currentUserRole) && (
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+                        <strong>Note:</strong> Super Admin accounts are protected and cannot be modified by regular Admins.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1804,14 +1864,15 @@ export default function AdminPage() {
                     <div>
                       <h2 className="text-lg font-semibold text-[#EDEDED]">Deleted Cost Sheets</h2>
                       <p className="text-sm text-[#666666] mt-1">
-                        Cost sheets in trash can be restored or permanently deleted.
+                        Cost sheets in trash can be restored{isSuperAdmin(currentUserRole) ? ' or permanently deleted' : ''}.
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={fetchDeletedCostSheets} className={secondaryButtonClass} disabled={trashLoading}>
                         {trashLoading ? 'Loading...' : 'Refresh'}
                       </button>
-                      {deletedCostSheets.length > 0 && (
+                      {/* Only Super Admins can empty trash (permanent delete) */}
+                      {deletedCostSheets.length > 0 && isSuperAdmin(currentUserRole) && (
                         <button onClick={emptyTrash} className={dangerButtonClass}>
                           Empty Trash
                         </button>
@@ -1865,21 +1926,27 @@ export default function AdminPage() {
 
                             {/* Actions */}
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => restoreCostSheet(cs.id, displayName)}
-                                className="px-3 py-1.5 text-xs font-medium rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                              >
-                                Restore
-                              </button>
-                              <button
-                                onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
-                                className={`${iconButtonClass} hover:bg-red-500/10`}
-                                title="Delete permanently"
-                              >
-                                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
+                              {/* Restore is available to ADMIN and SUPER_ADMIN, not VIEWER */}
+                              {!isViewer(currentUserRole) && (
+                                <button
+                                  onClick={() => restoreCostSheet(cs.id, displayName)}
+                                  className="px-3 py-1.5 text-xs font-medium rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                                >
+                                  Restore
+                                </button>
+                              )}
+                              {/* Only Super Admins can permanently delete */}
+                              {isSuperAdmin(currentUserRole) && (
+                                <button
+                                  onClick={() => permanentlyDeleteCostSheet(cs.id, displayName)}
+                                  className={`${iconButtonClass} hover:bg-red-500/10`}
+                                  title="Delete permanently"
+                                >
+                                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           </div>
                         );
@@ -1890,7 +1957,9 @@ export default function AdminPage() {
                   <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
                       <strong>Note:</strong> Items in trash are kept indefinitely until manually deleted.
-                      Permanently deleted items cannot be recovered.
+                      {isSuperAdmin(currentUserRole)
+                        ? ' Permanently deleted items cannot be recovered.'
+                        : ' Only Super Admins can permanently delete items.'}
                     </p>
                   </div>
                 </div>
