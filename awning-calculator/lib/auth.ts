@@ -1,19 +1,5 @@
 import NextAuth from "next-auth";
 
-// Helper function to get the base URL dynamically
-function getBaseUrl() {
-  // For production, use the NEXTAUTH_URL if set
-  if (process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL;
-  }
-  // For Vercel deployments (preview and production)
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  // For local development
-  return 'http://localhost:3000';
-}
-
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
@@ -65,7 +51,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
