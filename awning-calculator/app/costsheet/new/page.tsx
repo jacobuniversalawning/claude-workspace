@@ -385,8 +385,13 @@ function CostSheetForm() {
             }
           }
 
-          // Load markup
-          if (sheet.markup !== undefined) setMarkup(sheet.markup);
+          // Load markup (migrate from old margin format to divisor format)
+          if (sheet.markup !== undefined) {
+            // If markup is less than 0.5, it's in old format (0.2 = 20% margin)
+            // Convert to divisor format: 1 - 0.2 = 0.8
+            const migratedMarkup = sheet.markup < 0.5 ? 1 - sheet.markup : sheet.markup;
+            setMarkup(migratedMarkup);
+          }
 
           // Load other requirements
           if (sheet.permitCost !== undefined) setPermitCost(sheet.permitCost);
@@ -1365,7 +1370,7 @@ function CostSheetForm() {
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Fabric:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalFabric)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Labor:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalLabor)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Profit ({((1 - markup) * 100).toFixed(0)}% margin):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Profit ({markup.toFixed(2)} → {((1 - markup) * 100).toFixed(0)}% margin):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
                     <div className={`flex justify-between p-2 rounded-input -mx-2 border ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice).replace('border-2', 'border')}`}><span className="font-semibold text-gray-900 dark:text-white">Pre-Delivery:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalWithMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Other Reqs:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalOtherRequirements)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="font-semibold text-gray-900 dark:text-white">Grand Total:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(grandTotal)}</span></div>
