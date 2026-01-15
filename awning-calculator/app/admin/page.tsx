@@ -1124,7 +1124,7 @@ export default function AdminPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
-                        Markup Rate (%)
+                        Profit Margin (%)
                       </label>
                       <div className="flex items-center gap-2">
                         <input
@@ -1136,7 +1136,9 @@ export default function AdminPage() {
                         />
                         <span className="text-[#666666]">%</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Applied to materials + fabric + labor</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Profit as % of final selling price (e.g., 20% means cost is 80% of price)
+                      </p>
                     </div>
 
                     <div>
