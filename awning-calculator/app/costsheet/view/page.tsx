@@ -479,7 +479,7 @@ function CostSheetViewContent() {
                       <td className={printTdRight + " font-semibold"}>{formatCurrency(costSheet.subtotalBeforeMarkup)}</td>
                     </tr>
                     <tr>
-                      <td className={printTd}>Profit ({(costSheet.markup * 100).toFixed(0)}% margin)</td>
+                      <td className={printTd}>Profit ({((1 - costSheet.markup) * 100).toFixed(0)}% margin)</td>
                       <td className={printTdRight}>{formatCurrency(costSheet.totalWithMarkup - costSheet.subtotalBeforeMarkup)}</td>
                     </tr>
                     <tr className="bg-blue-100 font-semibold">
@@ -812,7 +812,7 @@ function CostSheetViewContent() {
                 <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.subtotalBeforeMarkup)}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-gray-600 dark:text-gray-400">Profit ({(costSheet.markup * 100).toFixed(0)}% margin):</span>
+                <span className="text-gray-600 dark:text-gray-400">Profit ({((1 - costSheet.markup) * 100).toFixed(0)}% margin):</span>
                 <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalWithMarkup - costSheet.subtotalBeforeMarkup)}</span>
               </div>
               <div className="flex justify-between py-2 bg-blue-100 dark:bg-blue-900/50 -mx-2 px-2 rounded">

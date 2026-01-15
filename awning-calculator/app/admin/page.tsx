@@ -1124,7 +1124,7 @@ export default function AdminPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
-                        Profit Margin (%)
+                        Profit Margin - Cost Divisor (%)
                       </label>
                       <div className="flex items-center gap-2">
                         <input
@@ -1137,7 +1137,7 @@ export default function AdminPage() {
                         <span className="text-[#666666]">%</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">
-                        Profit as % of final selling price (e.g., 20% means cost is 80% of price)
+                        Cost as % of price. Enter 80 for 20% profit (cost ÷ 0.8 = price)
                       </p>
                     </div>
 

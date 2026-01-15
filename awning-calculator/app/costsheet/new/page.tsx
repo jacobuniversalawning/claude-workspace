@@ -611,11 +611,11 @@ function CostSheetForm() {
 
   const subtotalBeforeMarkup = totalMaterials + totalFabric + totalLabor;
 
-  // Markup is now stored as profit margin percentage (e.g., 0.2 for 20% margin)
-  // Formula: Selling Price = Cost / (1 - Margin%)
-  // This ensures the profit is exactly the specified percentage of the final selling price
-  const totalWithMarkup = markup > 0 && markup < 1
-    ? subtotalBeforeMarkup / (1 - markup)
+  // Markup is stored as cost divisor (e.g., 0.8 means cost is 80% of price = 20% profit)
+  // Formula: Selling Price = Cost / Divisor
+  // Example: $100 cost ÷ 0.8 = $125 selling price ($25 profit = 20% of $125)
+  const totalWithMarkup = markup > 0 && markup <= 1
+    ? subtotalBeforeMarkup / markup
     : subtotalBeforeMarkup; // Fallback if markup is invalid
   const markupAmount = totalWithMarkup - subtotalBeforeMarkup;
 
@@ -1218,12 +1218,12 @@ function CostSheetForm() {
                     <div className="text-xs text-gray-500 dark:text-[#666666] mt-1">Materials + Fabric + Labor</div>
                   </div>
                   <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F]">
-                    <label className={labelClass}>Profit Margin %</label>
+                    <label className={labelClass}>Cost Divisor (for profit margin)</label>
                     <div className="flex items-center gap-2">
                       <input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)} className={inputClass + " w-24"} />
                       <span className="text-gray-600 dark:text-[#666666] text-sm">= {(markup * 100).toFixed(0)}%</span>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-[#666666] mt-1">% of final selling price</div>
+                    <div className="text-xs text-gray-500 dark:text-[#666666] mt-1">Enter 0.8 for 20% profit (cost ÷ 0.8)</div>
                   </div>
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded border border-yellow-300 dark:border-yellow-800">
                     <label className="text-sm text-yellow-700 dark:text-yellow-400">Profit Amount</label>
@@ -1368,7 +1368,7 @@ function CostSheetForm() {
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Fabric:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalFabric)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Labor:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalLabor)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Profit ({(markup * 100).toFixed(0)}% margin):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Profit ({((1 - markup) * 100).toFixed(0)}% margin):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
                     <div className={`flex justify-between p-2 rounded-input -mx-2 border ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice).replace('border-2', 'border')}`}><span className="font-semibold text-gray-900 dark:text-white">Pre-Delivery:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalWithMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Other Reqs:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalOtherRequirements)}</span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="font-semibold text-gray-900 dark:text-white">Grand Total:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(grandTotal)}</span></div>
