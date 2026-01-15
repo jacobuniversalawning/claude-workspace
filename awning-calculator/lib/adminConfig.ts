@@ -136,7 +136,7 @@ export const DEFAULT_CONFIG: AdminConfig = {
   ],
   defaults: {
     salesTax: 0.0975,
-    markup: 0.2, // Profit margin: 0.2 = 20% of final selling price
+    markup: 0.8, // Cost multiplier/divisor: 0.8 means cost is 80% of selling price (20% profit)
     laborRate: 95,
     driveTimeRate: 75,
     mileageRate: 0.75,
@@ -197,10 +197,10 @@ export function getAdminConfig(): AdminConfig {
     if (stored) {
       const parsed = JSON.parse(stored);
 
-      // Migrate old markup format (divisor like 0.8) to new format (margin like 0.2)
-      if (parsed.defaults?.markup && parsed.defaults.markup > 0.5) {
-        // Old format: stored as divisor (0.8 = 20% margin)
-        // Convert to new format: margin percentage (0.2 = 20% margin)
+      // Migrate from margin format (0.2) back to divisor format (0.8) if needed
+      if (parsed.defaults?.markup && parsed.defaults.markup < 0.5) {
+        // Stored as margin (0.2 = 20% margin)
+        // Convert to divisor: 1 - 0.2 = 0.8
         parsed.defaults.markup = 1 - parsed.defaults.markup;
       }
 
