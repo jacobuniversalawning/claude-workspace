@@ -1544,7 +1544,7 @@ export default function AdminPage() {
                                   disabled={isViewer(currentUserRole)}
                                 />
                                 <p className="text-xs text-[#666666] mt-1">
-                                  This rate will be applied to all labor rows when the template is selected
+                                  This rate will be applied to fabrication labor rows only (not installation or drive time)
                                 </p>
                               </div>
                             )}
