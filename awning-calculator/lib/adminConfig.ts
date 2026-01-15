@@ -136,7 +136,7 @@ export const DEFAULT_CONFIG: AdminConfig = {
   ],
   defaults: {
     salesTax: 0.0975,
-    markup: 0.8,
+    markup: 0.2, // Profit margin: 0.2 = 20% of final selling price
     laborRate: 95,
     driveTimeRate: 75,
     mileageRate: 0.75,
@@ -196,6 +196,14 @@ export function getAdminConfig(): AdminConfig {
     const stored = localStorage.getItem(ADMIN_CONFIG_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
+
+      // Migrate old markup format (divisor like 0.8) to new format (margin like 0.2)
+      if (parsed.defaults?.markup && parsed.defaults.markup > 0.5) {
+        // Old format: stored as divisor (0.8 = 20% margin)
+        // Convert to new format: margin percentage (0.2 = 20% margin)
+        parsed.defaults.markup = 1 - parsed.defaults.markup;
+      }
+
       // Merge with defaults to ensure all fields exist
       const config: AdminConfig = {
         ...DEFAULT_CONFIG,
