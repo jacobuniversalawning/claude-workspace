@@ -720,14 +720,11 @@ function CostSheetForm() {
     // Apply cost divisor
     setMarkup(template.costDivisor);
 
-    // Apply labor rates if enabled
+    // Apply labor rates to fabrication labor only (not installation or drive time)
     if (template.applyLaborRates && template.laborRate) {
       const newRate = template.laborRate;
-      // Update all labor lines (both fabrication and installation)
+      // Update only fabrication labor lines
       setLaborLines(prev => prev.map(line => ({ ...line, rate: newRate })));
-      setInstallLines(prev => prev.map(line => ({ ...line, rate: newRate })));
-      // Update drive time lines
-      setDriveTimeLines(prev => prev.map(line => ({ ...line, rate: newRate })));
     }
 
     setSelectedTemplateId(templateId);
