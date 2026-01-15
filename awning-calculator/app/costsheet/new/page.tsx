@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useReactToPrint } from 'react-to-print';
 import { LABOR_RATES, DEFAULTS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/calculations';
-import { getAdminConfig, AdminConfig, DEFAULT_CONFIG } from '@/lib/adminConfig';
+import { getAdminConfig, AdminConfig, DEFAULT_CONFIG, PricingTemplate, getAllPricingTemplates } from '@/lib/adminConfig';
 
 // Interfaces
 interface ProductLine {
@@ -130,6 +130,7 @@ function CostSheetForm() {
   useEffect(() => {
     const config = getAdminConfig();
     setAdminConfig(config);
+    setPricingTemplates(getAllPricingTemplates());
 
     // Apply admin config defaults for new cost sheets only (not when editing)
     if (!editId) {
@@ -221,6 +222,10 @@ function CostSheetForm() {
 
   // Markup
   const [markup, setMarkup] = useState<number>(DEFAULTS.MARKUP);
+
+  // Pricing Templates
+  const [pricingTemplates, setPricingTemplates] = useState<PricingTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Other Requirements
   const [permitCost, setPermitCost] = useState(0);
@@ -700,6 +705,32 @@ function CostSheetForm() {
     if (diff > 15) return `${diff.toFixed(0)}% HIGH`;
     if (diff < -15) return `${Math.abs(diff).toFixed(0)}% LOW`;
     return 'GOOD';
+  };
+
+  // === PRICING TEMPLATE ===
+  const applyPricingTemplate = (templateId: string | null) => {
+    if (!templateId) {
+      setSelectedTemplateId(null);
+      return;
+    }
+
+    const template = pricingTemplates.find(t => t.id === templateId);
+    if (!template) return;
+
+    // Apply cost divisor
+    setMarkup(template.costDivisor);
+
+    // Apply labor rates if enabled
+    if (template.applyLaborRates && template.laborRate) {
+      const newRate = template.laborRate;
+      // Update all labor lines (both fabrication and installation)
+      setLaborLines(prev => prev.map(line => ({ ...line, rate: newRate })));
+      setInstallLines(prev => prev.map(line => ({ ...line, rate: newRate })));
+      // Update drive time lines
+      setDriveTimeLines(prev => prev.map(line => ({ ...line, rate: newRate })));
+    }
+
+    setSelectedTemplateId(templateId);
   };
 
   // === SUBMIT ===
@@ -1215,7 +1246,29 @@ function CostSheetForm() {
 
               {/* Markup */}
               <div className={cardClass}>
-                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-[#EDEDED]">Subtotal & Markup</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Subtotal & Markup</h2>
+
+                  {/* Pricing Template Selector */}
+                  {pricingTemplates.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600 dark:text-[#A1A1A1]">Apply Template:</label>
+                      <select
+                        value={selectedTemplateId || ''}
+                        onChange={(e) => applyPricingTemplate(e.target.value || null)}
+                        className="px-3 py-1.5 text-sm bg-white dark:bg-[#1A1A1A] border border-gray-300 dark:border-[#333333] rounded-lg text-gray-900 dark:text-[#EDEDED] hover:border-blue-500 dark:hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      >
+                        <option value="">-- None --</option>
+                        {pricingTemplates.map(template => (
+                          <option key={template.id} value={template.id}>
+                            {template.name}
+                            {template.description ? ` (${template.description})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div className="bg-gray-100 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F]">
                     <label className="text-sm text-gray-600 dark:text-[#A1A1A1]">Subtotal</label>

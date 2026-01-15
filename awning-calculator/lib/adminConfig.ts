@@ -14,6 +14,18 @@ export interface CategorySettings {
   includeProjectionInLinearFootage: boolean;
 }
 
+// Pricing Template configuration
+export interface PricingTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  costDivisor: number; // Cost divisor for profit margin (e.g., 0.8 = 20% profit)
+  applyLaborRates: boolean; // Whether to apply custom labor rates
+  laborRate?: number; // Labor rate to apply if enabled
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminConfig {
   // Product categories
   categories: string[];
@@ -58,6 +70,9 @@ export interface AdminConfig {
 
   // Default AI provider to use
   defaultAIProvider: 'claude' | 'openai' | 'gemini' | 'none';
+
+  // Pricing templates for quick apply
+  pricingTemplates: PricingTemplate[];
 }
 
 // Default configuration - matches the existing constants
@@ -181,7 +196,39 @@ export const DEFAULT_CONFIG: AdminConfig = {
       maxTokens: 4096
     }
   },
-  defaultAIProvider: 'none'
+  defaultAIProvider: 'none',
+  pricingTemplates: [
+    {
+      id: 'default-regular',
+      name: 'Regular',
+      description: 'Standard pricing with regular rates',
+      costDivisor: 0.8,
+      applyLaborRates: true,
+      laborRate: 95,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'default-aggressive',
+      name: 'Aggressive',
+      description: 'Competitive pricing for aggressive bids',
+      costDivisor: 0.85,
+      applyLaborRates: true,
+      laborRate: 85,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'default-commercial',
+      name: 'Commercial',
+      description: 'Premium pricing for commercial projects',
+      costDivisor: 0.75,
+      applyLaborRates: true,
+      laborRate: 160,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ]
 };
 
 const ADMIN_CONFIG_KEY = 'adminConfig';
@@ -216,6 +263,7 @@ export function getAdminConfig(): AdminConfig {
         },
         defaultAIProvider: parsed.defaultAIProvider || DEFAULT_CONFIG.defaultAIProvider,
         categorySettings: { ...DEFAULT_CONFIG.categorySettings, ...parsed.categorySettings },
+        pricingTemplates: parsed.pricingTemplates || DEFAULT_CONFIG.pricingTemplates,
       };
 
       // Ensure all categories have settings
@@ -318,4 +366,58 @@ export function importCostSheets(jsonString: string): boolean {
     console.error('Error importing cost sheets:', error);
     return false;
   }
+}
+
+// Pricing Template Management Functions
+
+// Add a new pricing template
+export function addPricingTemplate(template: Omit<PricingTemplate, 'id' | 'createdAt' | 'updatedAt'>): PricingTemplate {
+  const config = getAdminConfig();
+  const newTemplate: PricingTemplate = {
+    ...template,
+    id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  config.pricingTemplates.push(newTemplate);
+  saveAdminConfig(config);
+  return newTemplate;
+}
+
+// Update an existing pricing template
+export function updatePricingTemplate(id: string, updates: Partial<Omit<PricingTemplate, 'id' | 'createdAt'>>): PricingTemplate | null {
+  const config = getAdminConfig();
+  const index = config.pricingTemplates.findIndex(t => t.id === id);
+  if (index === -1) return null;
+
+  config.pricingTemplates[index] = {
+    ...config.pricingTemplates[index],
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+  saveAdminConfig(config);
+  return config.pricingTemplates[index];
+}
+
+// Delete a pricing template
+export function deletePricingTemplate(id: string): boolean {
+  const config = getAdminConfig();
+  const index = config.pricingTemplates.findIndex(t => t.id === id);
+  if (index === -1) return false;
+
+  config.pricingTemplates.splice(index, 1);
+  saveAdminConfig(config);
+  return true;
+}
+
+// Get a pricing template by ID
+export function getPricingTemplate(id: string): PricingTemplate | null {
+  const config = getAdminConfig();
+  return config.pricingTemplates.find(t => t.id === id) || null;
+}
+
+// Get all pricing templates
+export function getAllPricingTemplates(): PricingTemplate[] {
+  const config = getAdminConfig();
+  return config.pricingTemplates;
 }
