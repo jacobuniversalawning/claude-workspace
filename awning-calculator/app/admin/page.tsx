@@ -1134,7 +1134,9 @@ export default function AdminPage() {
                         className={inputClass}
                       />
                       <p className="text-xs text-gray-400 mt-1">
-                        Enter 0.8 for 20% profit (cost ÷ 0.8 = price)
+                        {config.defaults.markup > 0 && config.defaults.markup <= 1
+                          ? `${config.defaults.markup.toFixed(2)} = ${((1 - config.defaults.markup) * 100).toFixed(0)}% profit (cost ÷ ${config.defaults.markup.toFixed(2)} = price)`
+                          : 'Enter 0.8 for 20% profit (cost ÷ 0.8 = price)'}
                       </p>
                     </div>
 
