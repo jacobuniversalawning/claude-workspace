@@ -9,9 +9,17 @@ export interface AIProviderConfig {
   maxTokens: number;
 }
 
+// Category-specific settings
+export interface CategorySettings {
+  includeProjectionInLinearFootage: boolean;
+}
+
 export interface AdminConfig {
   // Product categories
   categories: string[];
+
+  // Category-specific settings
+  categorySettings: { [category: string]: CategorySettings };
 
   // Labor types for the cost sheet
   laborTypes: string[];
@@ -82,6 +90,34 @@ export const DEFAULT_CONFIG: AdminConfig = {
     'Cabanas',
     'Other'
   ],
+  categorySettings: {
+    'Steel Awning': { includeProjectionInLinearFootage: true },
+    'Cantilevered Canopy': { includeProjectionInLinearFootage: true },
+    'Hip Roof Canopy': { includeProjectionInLinearFootage: true },
+    'Aluminum Canopy': { includeProjectionInLinearFootage: true },
+    'Steel Trellis': { includeProjectionInLinearFootage: true },
+    'Aluminum Trellis': { includeProjectionInLinearFootage: true },
+    'Fabric Panel': { includeProjectionInLinearFootage: true },
+    'Curtains': { includeProjectionInLinearFootage: true },
+    'Patio Awning': { includeProjectionInLinearFootage: true },
+    'Umbrellas': { includeProjectionInLinearFootage: true },
+    'Sail Shades': { includeProjectionInLinearFootage: true },
+    'Motorized Retractable': { includeProjectionInLinearFootage: true },
+    'Manual Retractable': { includeProjectionInLinearFootage: true },
+    'Bahama Style': { includeProjectionInLinearFootage: true },
+    'Carport': { includeProjectionInLinearFootage: true },
+    'Recover': { includeProjectionInLinearFootage: true },
+    'Slidewire Manual': { includeProjectionInLinearFootage: true },
+    'Slidewire Motorized': { includeProjectionInLinearFootage: true },
+    'Motorized Screen': { includeProjectionInLinearFootage: true },
+    '4K Trellis': { includeProjectionInLinearFootage: true },
+    'Green Screen': { includeProjectionInLinearFootage: true },
+    'Standing Seam Awning': { includeProjectionInLinearFootage: true },
+    'Aluminum Louvered Awning': { includeProjectionInLinearFootage: true },
+    '4K Wall Canopy': { includeProjectionInLinearFootage: true },
+    'Cabanas': { includeProjectionInLinearFootage: true },
+    'Other': { includeProjectionInLinearFootage: true }
+  },
   laborTypes: [
     'Survey',
     'Shop Drawings',
@@ -161,7 +197,7 @@ export function getAdminConfig(): AdminConfig {
     if (stored) {
       const parsed = JSON.parse(stored);
       // Merge with defaults to ensure all fields exist
-      return {
+      const config: AdminConfig = {
         ...DEFAULT_CONFIG,
         ...parsed,
         defaults: { ...DEFAULT_CONFIG.defaults, ...parsed.defaults },
@@ -171,7 +207,17 @@ export function getAdminConfig(): AdminConfig {
           gemini: { ...DEFAULT_CONFIG.aiProviders.gemini, ...parsed.aiProviders?.gemini },
         },
         defaultAIProvider: parsed.defaultAIProvider || DEFAULT_CONFIG.defaultAIProvider,
+        categorySettings: { ...DEFAULT_CONFIG.categorySettings, ...parsed.categorySettings },
       };
+
+      // Ensure all categories have settings
+      config.categories.forEach(category => {
+        if (!config.categorySettings[category]) {
+          config.categorySettings[category] = { includeProjectionInLinearFootage: true };
+        }
+      });
+
+      return config;
     }
   } catch (error) {
     console.error('Error loading admin config:', error);
