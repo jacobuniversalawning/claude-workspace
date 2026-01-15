@@ -382,16 +382,33 @@ export default function AdminPage() {
       onSubmit: (name) => {
         updateConfig({
           ...config,
-          categories: [...config.categories, name]
+          categories: [...config.categories, name],
+          categorySettings: {
+            ...config.categorySettings,
+            [name]: { includeProjectionInLinearFootage: true }
+          }
         });
       }
     });
   };
 
   const updateCategory = (index: number, newName: string) => {
+    const oldName = config.categories[index];
     const updated = [...config.categories];
     updated[index] = newName;
-    updateConfig({ ...config, categories: updated });
+
+    // Transfer settings from old name to new name
+    const updatedSettings = { ...config.categorySettings };
+    if (oldName !== newName && updatedSettings[oldName]) {
+      updatedSettings[newName] = updatedSettings[oldName];
+      delete updatedSettings[oldName];
+    }
+
+    updateConfig({
+      ...config,
+      categories: updated,
+      categorySettings: updatedSettings
+    });
     setEditingCategory(null);
   };
 
@@ -416,6 +433,17 @@ export default function AdminPage() {
     const updated = [...config.categories];
     [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
     updateConfig({ ...config, categories: updated });
+  };
+
+  const toggleCategoryProjectionSetting = (category: string) => {
+    const currentSetting = config.categorySettings[category]?.includeProjectionInLinearFootage ?? true;
+    updateConfig({
+      ...config,
+      categorySettings: {
+        ...config.categorySettings,
+        [category]: { includeProjectionInLinearFootage: !currentSetting }
+      }
+    });
   };
 
   // Labor type management
@@ -901,6 +929,20 @@ export default function AdminPage() {
                             {category}
                           </span>
                         )}
+                        <div className="flex items-center gap-2 mr-2">
+                          <label
+                            className="flex items-center gap-2 cursor-pointer text-sm text-[#A1A1A1] hover:text-[#EDEDED]"
+                            title="When checked, linear footage includes projection (width + projection × 2). When unchecked, linear footage is width only."
+                          >
+                            <input
+                              type="checkbox"
+                              checked={config.categorySettings[category]?.includeProjectionInLinearFootage ?? true}
+                              onChange={() => toggleCategoryProjectionSetting(category)}
+                              className="w-4 h-4 rounded border-[#333333] bg-[#0A0A0A] text-[#0070F3] focus:ring-[#0070F3] focus:ring-offset-0"
+                            />
+                            <span className="whitespace-nowrap">Include Projection</span>
+                          </label>
+                        </div>
                         <button
                           onClick={() => setEditingCategory(index)}
                           className={iconButtonClass}

@@ -483,12 +483,21 @@ function CostSheetForm() {
   // Update all product names when category changes
   useEffect(() => {
     setProducts(prevProducts =>
-      prevProducts.map((product, index) => ({
-        ...product,
-        name: `${formData.category} ${index + 1}`
-      }))
+      prevProducts.map((product, index) => {
+        // Check category setting for linear footage calculation
+        const includeProjection = adminConfig.categorySettings[formData.category]?.includeProjectionInLinearFootage ?? true;
+        const linFt = includeProjection
+          ? Number((product.width + product.projection * 2).toFixed(2))
+          : Number(product.width.toFixed(2));
+
+        return {
+          ...product,
+          name: `${formData.category} ${index + 1}`,
+          linFt
+        };
+      })
     );
-  }, [formData.category]);
+  }, [formData.category, adminConfig.categorySettings]);
 
   const removeProduct = (id: string) => {
     if (products.length > 1) setProducts(products.filter((p) => p.id !== id));
@@ -502,7 +511,16 @@ function CostSheetForm() {
         if (field === 'width' || field === 'projection' || field === 'height') {
           // Sq Ft = (width × projection) + (width × height) for canopy + drop
           updated.sqFt = Number(((updated.width * updated.projection) + (updated.width * updated.height)).toFixed(2));
-          updated.linFt = Number((updated.width + updated.projection * 2).toFixed(2));
+
+          // Check category setting for linear footage calculation
+          const includeProjection = adminConfig.categorySettings[formData.category]?.includeProjectionInLinearFootage ?? true;
+          if (includeProjection) {
+            // Include projection: linFt = width + (projection × 2)
+            updated.linFt = Number((updated.width + updated.projection * 2).toFixed(2));
+          } else {
+            // Length only: linFt = width
+            updated.linFt = Number(updated.width.toFixed(2));
+          }
         }
         return updated;
       }
