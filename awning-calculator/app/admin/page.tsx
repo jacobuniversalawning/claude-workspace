@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import {
   AdminConfig,
+  PricingTemplate,
   getAdminConfig,
   saveAdminConfig,
   resetAdminConfig,
@@ -12,11 +13,15 @@ import {
   importConfig,
   exportCostSheets,
   importCostSheets,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
+  addPricingTemplate,
+  updatePricingTemplate,
+  deletePricingTemplate,
+  getAllPricingTemplates
 } from '@/lib/adminConfig';
 import { Modal, ConfirmModal, InputModal, DualInputModal } from '@/components/Modal';
 
-type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
+type TabType = 'categories' | 'labor' | 'defaults' | 'materials' | 'pricing' | 'salesreps' | 'users' | 'ai' | 'data' | 'trash';
 
 // Helper to check if a user is a Super Admin
 const isSuperAdmin = (role: string | undefined) => role === 'SUPER_ADMIN';
@@ -76,6 +81,7 @@ export default function AdminPage() {
   const [editingMaterial, setEditingMaterial] = useState<number | null>(null);
   const [editingFabric, setEditingFabric] = useState<number | null>(null);
   const [editingSalesRep, setEditingSalesRep] = useState<number | null>(null);
+  const [editingPricingTemplate, setEditingPricingTemplate] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalType>({ type: 'none' });
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -667,6 +673,50 @@ export default function AdminPage() {
     });
   };
 
+  // Pricing Template Management
+  const addPricingTemplateHandler = () => {
+    setModal({
+      type: 'dual',
+      title: 'Add Pricing Template',
+      label1: 'Template Name',
+      label2: 'Cost Divisor',
+      placeholder1: 'e.g., Commercial, Aggressive, Economy',
+      placeholder2: '0.80',
+      inputType2: 'number',
+      onSubmit: (name, costDivisor) => {
+        const newTemplate = addPricingTemplate({
+          name,
+          description: '',
+          costDivisor: parseFloat(costDivisor) || 0.8,
+          applyLaborRates: false,
+          laborRate: 95
+        });
+        setConfig(getAdminConfig());
+        showMessage('Pricing template added successfully');
+      }
+    });
+  };
+
+  const updatePricingTemplateField = (id: string, field: keyof PricingTemplate, value: any) => {
+    updatePricingTemplate(id, { [field]: value });
+    setConfig(getAdminConfig());
+    setHasChanges(false); // Already saved to localStorage
+  };
+
+  const deletePricingTemplateHandler = (id: string, name: string) => {
+    setModal({
+      type: 'confirm',
+      title: 'Delete Pricing Template',
+      message: `Are you sure you want to delete the "${name}" template? This action cannot be undone.`,
+      variant: 'danger',
+      onConfirm: () => {
+        deletePricingTemplate(id);
+        setConfig(getAdminConfig());
+        showMessage('Pricing template deleted successfully');
+      }
+    });
+  };
+
   // Default value updates
   const updateDefault = (field: keyof AdminConfig['defaults'], value: number) => {
     updateConfig({
@@ -726,6 +776,7 @@ export default function AdminPage() {
     { id: 'labor', label: 'Labor', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'defaults', label: 'Defaults', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' },
     { id: 'materials', label: 'Materials & Fabric', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+    { id: 'pricing', label: 'Pricing Templates', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     { id: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     { id: 'ai', label: 'AI Assistants', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
@@ -1361,6 +1412,147 @@ export default function AdminPage() {
                       ))}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Pricing Templates Tab */}
+              {activeTab === 'pricing' && (
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-lg font-semibold text-[#EDEDED]">Pricing Templates</h2>
+                      <p className="text-sm text-[#666666] mt-1">Create preset pricing templates that can be quickly applied to estimates.</p>
+                    </div>
+                    <button onClick={addPricingTemplateHandler} className={primaryButtonClass} disabled={isViewer(currentUserRole)}>
+                      + Add Template
+                    </button>
+                  </div>
+
+                  {config.pricingTemplates.length === 0 ? (
+                    <div className="text-center py-12 bg-[#111111] rounded-lg border border-[#1F1F1F]">
+                      <p className="text-[#666666] mb-4">No pricing templates yet</p>
+                      <button onClick={addPricingTemplateHandler} className={primaryButtonClass} disabled={isViewer(currentUserRole)}>
+                        + Create Your First Template
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {config.pricingTemplates.map((template) => (
+                        <div
+                          key={template.id}
+                          className="p-5 bg-[#111111] rounded-lg border border-[#1F1F1F] hover:border-[#333333] transition-colors"
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              {editingPricingTemplate === template.id ? (
+                                <input
+                                  type="text"
+                                  value={template.name}
+                                  onChange={(e) => updatePricingTemplateField(template.id, 'name', e.target.value)}
+                                  onBlur={() => setEditingPricingTemplate(null)}
+                                  className={inputClass}
+                                  autoFocus
+                                  disabled={isViewer(currentUserRole)}
+                                />
+                              ) : (
+                                <h3
+                                  className="text-lg font-semibold text-[#EDEDED] cursor-pointer hover:text-white"
+                                  onClick={() => !isViewer(currentUserRole) && setEditingPricingTemplate(template.id)}
+                                >
+                                  {template.name}
+                                </h3>
+                              )}
+                              <p className="text-xs text-[#666666] mt-1">
+                                Created {new Date(template.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => deletePricingTemplateHandler(template.id, template.name)}
+                              className={`${dangerButtonClass} text-sm px-3 py-1`}
+                              disabled={isViewer(currentUserRole)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="block text-sm text-[#A1A1A1] mb-2">Description (optional)</label>
+                              <input
+                                type="text"
+                                value={template.description || ''}
+                                onChange={(e) => updatePricingTemplateField(template.id, 'description', e.target.value)}
+                                className={inputClass}
+                                placeholder="e.g., For commercial projects"
+                                disabled={isViewer(currentUserRole)}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm text-[#A1A1A1] mb-2">
+                                Cost Divisor (Profit Margin)
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  value={template.costDivisor}
+                                  onChange={(e) => updatePricingTemplateField(template.id, 'costDivisor', parseFloat(e.target.value) || 0.8)}
+                                  step="0.01"
+                                  min="0.1"
+                                  max="1"
+                                  className={inputClass}
+                                  disabled={isViewer(currentUserRole)}
+                                />
+                                <span className="text-sm text-[#666666] whitespace-nowrap">
+                                  {template.costDivisor > 0 && template.costDivisor <= 1
+                                    ? `= ${Math.round((1 - template.costDivisor) * 100 / template.costDivisor)}% profit`
+                                    : ''}
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#666666] mt-1">
+                                0.8 = 20% profit (cost ÷ 0.8)
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-[#1F1F1F] pt-4 mt-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <input
+                                type="checkbox"
+                                id={`apply-labor-${template.id}`}
+                                checked={template.applyLaborRates}
+                                onChange={(e) => updatePricingTemplateField(template.id, 'applyLaborRates', e.target.checked)}
+                                className="w-4 h-4 rounded bg-[#1A1A1A] border-[#333333] text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                                disabled={isViewer(currentUserRole)}
+                              />
+                              <label htmlFor={`apply-labor-${template.id}`} className="text-sm text-[#EDEDED]">
+                                Apply custom labor rate
+                              </label>
+                            </div>
+
+                            {template.applyLaborRates && (
+                              <div className="ml-7">
+                                <label className="block text-sm text-[#A1A1A1] mb-2">Labor Rate ($/hour)</label>
+                                <input
+                                  type="number"
+                                  value={template.laborRate || 95}
+                                  onChange={(e) => updatePricingTemplateField(template.id, 'laborRate', parseFloat(e.target.value) || 95)}
+                                  step="1"
+                                  min="0"
+                                  className={inputClass}
+                                  placeholder="95"
+                                  disabled={isViewer(currentUserRole)}
+                                />
+                                <p className="text-xs text-[#666666] mt-1">
+                                  This rate will be applied to all labor rows when the template is selected
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
