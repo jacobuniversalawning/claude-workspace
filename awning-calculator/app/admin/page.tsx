@@ -1124,20 +1124,17 @@ export default function AdminPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-[#A1A1A1] mb-1">
-                        Profit Margin - Cost Divisor (%)
+                        Profit Margin - Cost Divisor
                       </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          step="1"
-                          value={(config.defaults.markup * 100).toFixed(0)}
-                          onChange={(e) => updateDefault('markup', parseFloat(e.target.value) / 100 || 0)}
-                          className={inputClass}
-                        />
-                        <span className="text-[#666666]">%</span>
-                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={config.defaults.markup}
+                        onChange={(e) => updateDefault('markup', parseFloat(e.target.value) || 0)}
+                        className={inputClass}
+                      />
                       <p className="text-xs text-gray-400 mt-1">
-                        Cost as % of price. Enter 80 for 20% profit (cost ÷ 0.8 = price)
+                        Enter 0.8 for 20% profit (cost ÷ 0.8 = price)
                       </p>
                     </div>
 
