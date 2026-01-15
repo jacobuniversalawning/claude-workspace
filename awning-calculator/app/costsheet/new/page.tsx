@@ -1219,10 +1219,7 @@ function CostSheetForm() {
                   </div>
                   <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded border border-gray-200 dark:border-[#1F1F1F]">
                     <label className={labelClass}>Cost Divisor (for profit margin)</label>
-                    <div className="flex items-center gap-2">
-                      <input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)} className={inputClass + " w-24"} />
-                      <span className="text-gray-600 dark:text-[#666666] text-sm">= {(markup * 100).toFixed(0)}%</span>
-                    </div>
+                    <input type="number" step="0.01" value={markup} onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)} className={inputClass + " w-24"} />
                     <div className="text-xs text-gray-500 dark:text-[#666666] mt-1">Enter 0.8 for 20% profit (cost ÷ 0.8)</div>
                   </div>
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded border border-yellow-300 dark:border-yellow-800">
