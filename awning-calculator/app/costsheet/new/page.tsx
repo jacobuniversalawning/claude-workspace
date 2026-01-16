@@ -251,6 +251,13 @@ function CostSheetForm() {
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
 
+  // === AUTO-SAVE STATE ===
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedDataRef = useRef<string>('');
+
   // Prevent scroll wheel from changing number inputs - only when focused
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -598,6 +605,120 @@ function CostSheetForm() {
     setHotelLines(hotelLines.map((h) => (h.id === id ? { ...h, [field]: value } : h)));
   };
 
+  // === AUTO-SAVE FUNCTION ===
+  const autoSave = async (calculated: { [key: string]: any }) => {
+    try {
+      setAutoSaveStatus('saving');
+
+      const payload = {
+        id: draftId, // Will be undefined for first save
+        ...formData,
+        width: products[0]?.width || 0,
+        projection: products[0]?.projection || 0,
+        height: products[0]?.height || 0,
+        valance: products[0]?.valance || 0,
+        canopySqFt: calculated.totalSqFt,
+        awningLinFt: calculated.totalLinFt,
+        laborRate,
+        totalMaterials: calculated.totalMaterials,
+        totalFabric: calculated.totalFabric,
+        totalFabricationLabor: calculated.totalFabricationLabor,
+        totalInstallationLabor: calculated.totalInstallationLabor,
+        totalLabor: calculated.totalLabor,
+        subtotalBeforeMarkup: calculated.subtotalBeforeMarkup,
+        markup,
+        totalWithMarkup: calculated.totalWithMarkup,
+        permitCost,
+        engineeringCost,
+        equipmentCost,
+        driveTimeTrips: driveTimeLines[0]?.trips || 0,
+        driveTimeHours: driveTimeLines[0]?.hoursPerTrip || 0,
+        driveTimePeople: driveTimeLines[0]?.people || 0,
+        driveTimeRate: driveTimeLines[0]?.rate || DEFAULTS.DRIVE_TIME_RATE,
+        driveTimeTotal: calculated.totalDriveTime,
+        roundtripMiles: mileageLines[0]?.roundtripMiles || 0,
+        roundtripTrips: mileageLines[0]?.trips || 0,
+        mileageRate: mileageLines[0]?.rate || DEFAULTS.MILEAGE_RATE,
+        mileageTotal: calculated.totalMileage,
+        hotelNights: hotelLines[0]?.nights || 0,
+        hotelPeople: hotelLines[0]?.people || 0,
+        hotelRate: hotelLines[0]?.rate || 150,
+        hotelTotal: calculated.totalHotel,
+        foodCost,
+        totalOtherRequirements: calculated.totalOtherRequirements,
+        totalWithOtherReqs: calculated.grandTotal,
+        grandTotal: calculated.grandTotal,
+        discountIncrease: finalPriceOverride ? finalPriceOverride - calculated.grandTotal : 0,
+        totalPriceToClient: calculated.totalPriceToClient,
+        pricePerSqFt: calculated.pricePerSqFtFinal,
+        pricePerLinFt: calculated.pricePerLinFtFinal,
+        pricePerSqFtPreDelivery: calculated.pricePerSqFtPreDelivery,
+        pricePerLinFtPreDelivery: calculated.pricePerLinFtPreDelivery,
+        outcome: 'Unknown',
+        materials: materials.filter((m) => m.qty > 0 || m.description).map((m) => ({
+          description: m.description,
+          length: m.length,
+          qty: m.qty,
+          unitPrice: m.unitPrice,
+          salesTax: materialsTaxRate,
+          freight: m.freight,
+          total: calculated.calcMaterialTotal(m),
+        })),
+        fabricLines: fabricLines.filter((f) => f.yards > 0 || f.name).map((f) => ({
+          name: f.name,
+          yards: f.yards,
+          pricePerYard: f.pricePerYard,
+          salesTax: fabricTaxRate,
+          freight: f.freight,
+          total: calculated.calcFabricTotal(f),
+        })),
+        laborLines: [...laborLines, ...installLines].filter((l) => l.hours > 0).map((l) => ({
+          type: l.type,
+          hours: l.hours,
+          people: l.people,
+          rate: l.rate,
+          total: calculated.calcLaborTotal(l),
+          isFabrication: l.isFabrication,
+        })),
+        recapLines: products.map((p) => ({
+          name: p.name,
+          width: p.width,
+          length: p.projection,
+          fabricYard: fabricLines.reduce((sum, f) => sum + f.yards, 0),
+          linearFt: p.linFt,
+          sqFt: p.sqFt,
+        })),
+      };
+
+      const response = await fetch('/api/costsheets/autosave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Auto-save failed');
+      }
+
+      const savedData = await response.json();
+
+      // Store the draft ID for future updates
+      if (savedData.id && !draftId) {
+        setDraftId(savedData.id);
+      }
+
+      setAutoSaveStatus('saved');
+      setHasUnsavedChanges(false);
+
+      // Reset to idle after 2 seconds
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      setAutoSaveStatus('error');
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    }
+  };
+
   // === CALCULATIONS ===
   const totalSqFt = products.reduce((sum, p) => sum + p.sqFt, 0);
   const totalLinFt = products.reduce((sum, p) => sum + p.linFt, 0);
@@ -706,6 +827,115 @@ function CostSheetForm() {
     if (diff < -15) return `${Math.abs(diff).toFixed(0)}% LOW`;
     return 'GOOD';
   };
+
+  // === AUTO-SAVE TRIGGER ===
+  useEffect(() => {
+    // Don't auto-save if we're in edit mode for an existing finalized cost sheet
+    if (isEditing && !draftId) return;
+
+    // Create a snapshot of the current form data
+    const formSnapshot = JSON.stringify({
+      formData,
+      products,
+      materials,
+      fabricLines,
+      laborLines,
+      installLines,
+      markup,
+      permitCost,
+      engineeringCost,
+      equipmentCost,
+      foodCost,
+      driveTimeLines,
+      mileageLines,
+      hotelLines,
+      finalPriceOverride,
+    });
+
+    // Check if data has changed since last save
+    if (formSnapshot === lastSavedDataRef.current) {
+      return; // No changes, skip auto-save
+    }
+
+    // Mark as having unsaved changes
+    setHasUnsavedChanges(true);
+
+    // Clear any existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Debounce auto-save by 3 seconds
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      // Skip auto-save if no meaningful data has been entered
+      const hasData = formData.customer || formData.project ||
+                      products.some(p => p.width > 0 || p.projection > 0) ||
+                      materials.some(m => m.qty > 0 || m.description) ||
+                      fabricLines.some(f => f.yards > 0) ||
+                      laborLines.some(l => l.hours > 0) ||
+                      installLines.some(l => l.hours > 0);
+
+      if (!hasData) return;
+
+      // Calculate all values for auto-save
+      const calculated = {
+        totalSqFt,
+        totalLinFt,
+        calcMaterialTotal,
+        totalMaterials,
+        calcFabricTotal,
+        totalFabric,
+        calcLaborTotal,
+        totalFabricationLabor,
+        totalInstallationLabor,
+        totalLabor,
+        subtotalBeforeMarkup,
+        totalWithMarkup,
+        totalDriveTime,
+        totalMileage,
+        totalHotel,
+        totalOtherRequirements,
+        grandTotal,
+        totalPriceToClient,
+        pricePerSqFtFinal,
+        pricePerLinFtFinal,
+        pricePerSqFtPreDelivery,
+        pricePerLinFtPreDelivery,
+      };
+
+      autoSave(calculated);
+      lastSavedDataRef.current = formSnapshot;
+    }, 3000);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [
+    formData, products, materials, fabricLines, laborLines, installLines,
+    markup, permitCost, engineeringCost, equipmentCost, foodCost,
+    driveTimeLines, mileageLines, hotelLines, finalPriceOverride,
+    draftId, isEditing
+  ]);
+
+  // === BEFORE UNLOAD WARNING ===
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        // Modern browsers will show their own message
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   // === PRICING TEMPLATE ===
   const applyPricingTemplate = (templateId: string | null) => {
@@ -873,7 +1103,35 @@ function CostSheetForm() {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h1 className="text-h1 text-gray-900 dark:text-[#EDEDED]">Universal Awning & Canopy</h1>
-                    <p className="text-h2 text-gray-600 dark:text-[#A1A1A1]">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-h2 text-gray-600 dark:text-[#A1A1A1]">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
+                      {/* Auto-save status indicator */}
+                      {autoSaveStatus === 'saving' && (
+                        <span className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Saving...
+                        </span>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          Saved
+                        </span>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <span className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                          Save failed
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg">
                     Go back to Dashboard

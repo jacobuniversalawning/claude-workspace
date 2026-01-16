@@ -11,6 +11,8 @@ export async function GET(request: Request) {
     const outcome = searchParams.get('outcome');
     const search = searchParams.get('search');
     const includeDeleted = searchParams.get('includeDeleted') === 'true';
+    const includeDrafts = searchParams.get('includeDrafts') === 'true';
+    const draftsOnly = searchParams.get('draftsOnly') === 'true';
 
     const where: Record<string, unknown> = {};
 
@@ -21,6 +23,16 @@ export async function GET(request: Request) {
       // Only show deleted items (for trash view)
       where.deletedAt = { not: null };
     }
+
+    // Handle draft filtering
+    if (draftsOnly) {
+      // Only show drafts
+      where.status = 'DRAFT';
+    } else if (!includeDrafts) {
+      // Exclude drafts by default (only show finalized cost sheets)
+      where.status = 'FINAL';
+    }
+    // If includeDrafts is true, show both drafts and final
 
     if (category) {
       where.category = category;
@@ -110,6 +122,7 @@ export async function POST(request: Request) {
     const costSheet = await prisma.costSheet.create({
       data: {
         userId,
+        status: 'FINAL', // Mark as final when explicitly submitted
         estimator: estimatorName,
         inquiryDate: new Date(body.inquiryDate),
         dueDate: new Date(body.dueDate),
