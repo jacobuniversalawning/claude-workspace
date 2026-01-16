@@ -1,6 +1,6 @@
 import { prisma } from './prisma';
 
-export type ActivityAction = 'created' | 'updated' | 'deleted' | 'restored';
+export type ActivityAction = 'created' | 'updated' | 'deleted' | 'restored' | 'imported';
 
 interface LogActivityParams {
   action: ActivityAction;
@@ -48,6 +48,8 @@ export function generateChangeDescription(
       return `${userName} moved this cost sheet to trash`;
     case 'restored':
       return `${userName} restored this cost sheet from trash`;
+    case 'imported':
+      return `${userName} imported this cost sheet from Excel`;
     default:
       return `${userName} performed an action`;
   }
