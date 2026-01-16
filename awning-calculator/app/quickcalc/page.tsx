@@ -21,11 +21,24 @@ interface Analytics {
 interface DimensionRow {
   id: string;
   width: number;
-  length: number;
   projection: number;
+  height: number;
+  valance: number;
+  sqFt: number;
+  linFt: number;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
+
+const createEmptyRow = (): DimensionRow => ({
+  id: generateId(),
+  width: 0,
+  projection: 0,
+  height: 0,
+  valance: 0,
+  sqFt: 0,
+  linFt: 0
+});
 
 export default function QuickCalcPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -33,10 +46,7 @@ export default function QuickCalcPage() {
 
   // Calculator state
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [dimensionRows, setDimensionRows] = useState<DimensionRow[]>([
-    { id: generateId(), width: 0, length: 0, projection: 0 }
-  ]);
-  const [linearFeet, setLinearFeet] = useState<number>(0);
+  const [dimensionRows, setDimensionRows] = useState<DimensionRow[]>([createEmptyRow()]);
   const [calcMode, setCalcMode] = useState<'sqft' | 'linft'>('sqft');
 
   useEffect(() => {
@@ -60,7 +70,7 @@ export default function QuickCalcPage() {
 
   // Row management functions
   const addRow = () => {
-    setDimensionRows([...dimensionRows, { id: generateId(), width: 0, length: 0, projection: 0 }]);
+    setDimensionRows([...dimensionRows, createEmptyRow()]);
   };
 
   const removeRow = (id: string) => {
@@ -70,21 +80,33 @@ export default function QuickCalcPage() {
   };
 
   const updateRow = (id: string, field: keyof DimensionRow, value: number) => {
-    setDimensionRows(dimensionRows.map(row =>
-      row.id === id ? { ...row, [field]: value } : row
-    ));
+    setDimensionRows(dimensionRows.map(row => {
+      if (row.id !== id) return row;
+
+      const updated = { ...row, [field]: value };
+
+      // Recalculate sqFt and linFt when dimensions change (matching cost sheet logic)
+      if (field === 'width' || field === 'projection' || field === 'height') {
+        // Sq Ft = (width × projection) + (width × height) for canopy + drop
+        updated.sqFt = Number(((updated.width * updated.projection) + (updated.width * updated.height)).toFixed(2));
+        // Lin Ft = width + (projection × 2)
+        updated.linFt = Number((updated.width + updated.projection * 2).toFixed(2));
+      }
+
+      return updated;
+    }));
   };
 
   // Calculate totals from all rows
-  const totalSquareFeet = dimensionRows.reduce((sum, row) => sum + (row.width * row.projection), 0);
-  const totalLinearFeet = dimensionRows.reduce((sum, row) => sum + row.length, 0);
+  const totalSquareFeet = dimensionRows.reduce((sum, row) => sum + row.sqFt, 0);
+  const totalLinearFeet = dimensionRows.reduce((sum, row) => sum + row.linFt, 0);
 
   const selectedCategoryData = analytics?.byCategory.find(c => c.category === selectedCategory);
   const avgSqFtPrice = selectedCategoryData?.wonAvgPricePerSqFt || 0;
   const avgLinFtPrice = selectedCategoryData?.wonAvgPricePerLinFt || 0;
 
   const estimatedPriceSqFt = totalSquareFeet * avgSqFtPrice;
-  const estimatedPriceLinFt = linearFeet * avgLinFtPrice;
+  const estimatedPriceLinFt = totalLinearFeet * avgLinFtPrice;
   const estimatedPrice = calcMode === 'sqft' ? estimatedPriceSqFt : estimatedPriceLinFt;
 
   // Price ranges (+-15%)
@@ -180,95 +202,113 @@ export default function QuickCalcPage() {
                 </div>
 
                 {/* Dimensions Input */}
-                {calcMode === 'sqft' ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-sm font-medium text-[#A1A1A1]">Dimensions (ft)</label>
-                      <button
-                        onClick={addRow}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[#0070F3] text-white rounded hover:bg-[#0070F3]/90 transition-all duration-150"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Item
-                      </button>
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-[#A1A1A1]">Products</label>
+                    <button
+                      onClick={addRow}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[#0070F3] text-white rounded hover:bg-[#0070F3]/90 transition-all duration-150"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Item
+                    </button>
+                  </div>
 
-                    {/* Column Headers */}
-                    <div className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 text-xs text-[#666666] px-1">
-                      <span>Width</span>
-                      <span>Length</span>
-                      <span>Projection</span>
-                      <span></span>
-                    </div>
-
-                    {/* Dimension Rows */}
-                    {dimensionRows.map((row, index) => (
-                      <div key={row.id} className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 items-center">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={row.width || ''}
-                          onChange={(e) => updateRow(row.id, 'width', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          className="w-full bg-[#111111] border border-[#333333] rounded px-3 py-2.5 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
-                        />
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={row.length || ''}
-                          onChange={(e) => updateRow(row.id, 'length', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          className="w-full bg-[#111111] border border-[#333333] rounded px-3 py-2.5 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
-                        />
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={row.projection || ''}
-                          onChange={(e) => updateRow(row.id, 'projection', parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          className="w-full bg-[#111111] border border-[#333333] rounded px-3 py-2.5 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
-                        />
+                  {/* Dimension Rows */}
+                  {dimensionRows.map((row, index) => (
+                    <div key={row.id} className="border border-[#1F1F1F] rounded-lg p-3 bg-[#0A0A0A]">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-[#666666]">Item {index + 1}</span>
                         <button
                           onClick={() => removeRow(row.id)}
                           disabled={dimensionRows.length === 1}
-                          className={`w-8 h-8 flex items-center justify-center rounded transition-all duration-150 ${
+                          className={`w-6 h-6 flex items-center justify-center rounded transition-all duration-150 ${
                             dimensionRows.length === 1
                               ? 'text-[#333333] cursor-not-allowed'
                               : 'text-[#666666] hover:text-red-400 hover:bg-red-400/10'
                           }`}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
                       </div>
-                    ))}
 
-                    {/* Totals Row */}
-                    {dimensionRows.length > 1 && (
-                      <div className="pt-2 mt-2 border-t border-[#1F1F1F]">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#666666]">{dimensionRows.length} items</span>
-                          <span className="text-[#EDEDED]">Total: <span className="font-semibold text-[#0070F3]">{totalSquareFeet.toFixed(1)} sq ft</span></span>
+                      {/* Input Fields */}
+                      <div className="grid grid-cols-4 gap-2 mb-2">
+                        <div>
+                          <label className="block text-xs text-[#666666] mb-1">Width</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={row.width || ''}
+                            onChange={(e) => updateRow(row.id, 'width', parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="w-full bg-[#111111] border border-[#333333] rounded px-2 py-2 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#666666] mb-1">Projection</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={row.projection || ''}
+                            onChange={(e) => updateRow(row.id, 'projection', parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="w-full bg-[#111111] border border-[#333333] rounded px-2 py-2 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#666666] mb-1">Height</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={row.height || ''}
+                            onChange={(e) => updateRow(row.id, 'height', parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="w-full bg-[#111111] border border-[#333333] rounded px-2 py-2 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[#666666] mb-1">Valance</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={row.valance || ''}
+                            onChange={(e) => updateRow(row.id, 'valance', parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                            className="w-full bg-[#111111] border border-[#333333] rounded px-2 py-2 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                          />
                         </div>
                       </div>
-                    )}
+
+                      {/* Calculated Values */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-amber-900/30 border border-amber-700/50 rounded px-2 py-1.5">
+                          <span className="text-xs text-amber-200/70">Sq Ft: </span>
+                          <span className="text-sm font-medium text-amber-100">{row.sqFt.toFixed(2)}</span>
+                        </div>
+                        <div className="bg-amber-900/30 border border-amber-700/50 rounded px-2 py-1.5">
+                          <span className="text-xs text-amber-200/70">Lin Ft: </span>
+                          <span className="text-sm font-medium text-amber-100">{row.linFt.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Totals Row */}
+                  <div className="pt-2 mt-2 border-t border-[#1F1F1F]">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#666666]">{dimensionRows.length} item{dimensionRows.length > 1 ? 's' : ''}</span>
+                      <div className="flex gap-4">
+                        <span className="text-[#EDEDED]">Total Sq Ft: <span className="font-semibold text-[#0070F3]">{totalSquareFeet.toFixed(2)}</span></span>
+                        <span className="text-[#EDEDED]">Total Lin Ft: <span className="font-semibold text-[#0070F3]">{totalLinearFeet.toFixed(2)}</span></span>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-[#A1A1A1] mb-2">Linear Feet</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={linearFeet || ''}
-                      onChange={(e) => setLinearFeet(parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-full bg-[#111111] border border-[#333333] rounded px-4 py-3 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
-                    />
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* Result Section */}
@@ -295,15 +335,13 @@ export default function QuickCalcPage() {
                 <div className="mb-6">
                   <div className="text-sm text-[#666666] mb-1">Size</div>
                   <div className="text-lg text-[#EDEDED]">
-                    {calcMode === 'sqft' ? (
-                      <div>
-                        <span className="font-semibold">{totalSquareFeet.toFixed(1)} sq ft</span>
-                        {dimensionRows.length > 1 && (
-                          <span className="text-sm text-[#666666] ml-2">({dimensionRows.length} items)</span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="font-semibold">{linearFeet} linear ft</span>
+                    <div className="flex items-baseline gap-3">
+                      <span className={`font-semibold ${calcMode === 'sqft' ? 'text-[#0070F3]' : ''}`}>{totalSquareFeet.toFixed(2)} sq ft</span>
+                      <span className="text-[#333333]">|</span>
+                      <span className={`font-semibold ${calcMode === 'linft' ? 'text-[#0070F3]' : ''}`}>{totalLinearFeet.toFixed(2)} lin ft</span>
+                    </div>
+                    {dimensionRows.length > 1 && (
+                      <span className="text-xs text-[#666666]">({dimensionRows.length} items)</span>
                     )}
                   </div>
                 </div>
