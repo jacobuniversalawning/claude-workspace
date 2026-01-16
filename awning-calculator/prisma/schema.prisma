@@ -62,6 +62,14 @@ enum UserRole {
   pending
 }
 
+// Cost sheet status enum for draft vs. finalized cost sheets
+// DRAFT: Auto-saved work in progress, can be incomplete
+// FINAL: User has explicitly saved/submitted the cost sheet
+enum CostSheetStatus {
+  DRAFT
+  FINAL
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -84,6 +92,9 @@ model CostSheet {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Status tracking for auto-save functionality
+  status    CostSheetStatus @default(DRAFT)
 
   // Soft delete (trash bin)
   deletedAt   DateTime?

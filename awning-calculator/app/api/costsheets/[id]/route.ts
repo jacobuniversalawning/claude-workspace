@@ -117,6 +117,7 @@ export async function PUT(
     const costSheet = await prisma.costSheet.update({
       where: { id },
       data: {
+        status: 'FINAL', // Mark as final when explicitly updated
         inquiryDate: body.inquiryDate ? new Date(body.inquiryDate) : undefined,
         dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
         category: body.category,
