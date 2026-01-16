@@ -18,14 +18,24 @@ interface Analytics {
   totalSheets: number;
 }
 
+interface DimensionRow {
+  id: string;
+  width: number;
+  length: number;
+  projection: number;
+}
+
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
 export default function QuickCalcPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Calculator state
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [width, setWidth] = useState<number>(0);
-  const [projection, setProjection] = useState<number>(0);
+  const [dimensionRows, setDimensionRows] = useState<DimensionRow[]>([
+    { id: generateId(), width: 0, length: 0, projection: 0 }
+  ]);
   const [linearFeet, setLinearFeet] = useState<number>(0);
   const [calcMode, setCalcMode] = useState<'sqft' | 'linft'>('sqft');
 
@@ -48,13 +58,32 @@ export default function QuickCalcPage() {
     }
   };
 
-  // Calculate estimated price
-  const squareFeet = width * projection;
+  // Row management functions
+  const addRow = () => {
+    setDimensionRows([...dimensionRows, { id: generateId(), width: 0, length: 0, projection: 0 }]);
+  };
+
+  const removeRow = (id: string) => {
+    if (dimensionRows.length > 1) {
+      setDimensionRows(dimensionRows.filter(row => row.id !== id));
+    }
+  };
+
+  const updateRow = (id: string, field: keyof DimensionRow, value: number) => {
+    setDimensionRows(dimensionRows.map(row =>
+      row.id === id ? { ...row, [field]: value } : row
+    ));
+  };
+
+  // Calculate totals from all rows
+  const totalSquareFeet = dimensionRows.reduce((sum, row) => sum + (row.width * row.projection), 0);
+  const totalLinearFeet = dimensionRows.reduce((sum, row) => sum + row.length, 0);
+
   const selectedCategoryData = analytics?.byCategory.find(c => c.category === selectedCategory);
   const avgSqFtPrice = selectedCategoryData?.wonAvgPricePerSqFt || 0;
   const avgLinFtPrice = selectedCategoryData?.wonAvgPricePerLinFt || 0;
 
-  const estimatedPriceSqFt = squareFeet * avgSqFtPrice;
+  const estimatedPriceSqFt = totalSquareFeet * avgSqFtPrice;
   const estimatedPriceLinFt = linearFeet * avgLinFtPrice;
   const estimatedPrice = calcMode === 'sqft' ? estimatedPriceSqFt : estimatedPriceLinFt;
 
@@ -152,29 +181,80 @@ export default function QuickCalcPage() {
 
                 {/* Dimensions Input */}
                 {calcMode === 'sqft' ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[#A1A1A1] mb-2">Width (ft)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={width || ''}
-                        onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                        className="w-full bg-[#111111] border border-[#333333] rounded px-4 py-3 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
-                      />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium text-[#A1A1A1]">Dimensions (ft)</label>
+                      <button
+                        onClick={addRow}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[#0070F3] text-white rounded hover:bg-[#0070F3]/90 transition-all duration-150"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Item
+                      </button>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#A1A1A1] mb-2">Projection (ft)</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={projection || ''}
-                        onChange={(e) => setProjection(parseFloat(e.target.value) || 0)}
-                        placeholder="0"
-                        className="w-full bg-[#111111] border border-[#333333] rounded px-4 py-3 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
-                      />
+
+                    {/* Column Headers */}
+                    <div className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 text-xs text-[#666666] px-1">
+                      <span>Width</span>
+                      <span>Length</span>
+                      <span>Projection</span>
+                      <span></span>
                     </div>
+
+                    {/* Dimension Rows */}
+                    {dimensionRows.map((row, index) => (
+                      <div key={row.id} className="grid grid-cols-[1fr_1fr_1fr_32px] gap-2 items-center">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={row.width || ''}
+                          onChange={(e) => updateRow(row.id, 'width', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-full bg-[#111111] border border-[#333333] rounded px-3 py-2.5 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                        />
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={row.length || ''}
+                          onChange={(e) => updateRow(row.id, 'length', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-full bg-[#111111] border border-[#333333] rounded px-3 py-2.5 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                        />
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={row.projection || ''}
+                          onChange={(e) => updateRow(row.id, 'projection', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-full bg-[#111111] border border-[#333333] rounded px-3 py-2.5 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150 text-sm"
+                        />
+                        <button
+                          onClick={() => removeRow(row.id)}
+                          disabled={dimensionRows.length === 1}
+                          className={`w-8 h-8 flex items-center justify-center rounded transition-all duration-150 ${
+                            dimensionRows.length === 1
+                              ? 'text-[#333333] cursor-not-allowed'
+                              : 'text-[#666666] hover:text-red-400 hover:bg-red-400/10'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Totals Row */}
+                    {dimensionRows.length > 1 && (
+                      <div className="pt-2 mt-2 border-t border-[#1F1F1F]">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#666666]">{dimensionRows.length} items</span>
+                          <span className="text-[#EDEDED]">Total: <span className="font-semibold text-[#0070F3]">{totalSquareFeet.toFixed(1)} sq ft</span></span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -187,31 +267,6 @@ export default function QuickCalcPage() {
                       placeholder="0"
                       className="w-full bg-[#111111] border border-[#333333] rounded px-4 py-3 text-[#EDEDED] placeholder-[#666666] focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3]/20 transition-all duration-150"
                     />
-                  </div>
-                )}
-
-                {/* Quick Size Buttons */}
-                {calcMode === 'sqft' && (
-                  <div>
-                    <label className="block text-sm font-medium text-[#A1A1A1] mb-2">Quick Sizes</label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { w: 10, p: 10, label: '10×10' },
-                        { w: 12, p: 12, label: '12×12' },
-                        { w: 15, p: 12, label: '15×12' },
-                        { w: 20, p: 10, label: '20×10' },
-                        { w: 20, p: 15, label: '20×15' },
-                        { w: 30, p: 15, label: '30×15' },
-                      ].map((size) => (
-                        <button
-                          key={size.label}
-                          onClick={() => { setWidth(size.w); setProjection(size.p); }}
-                          className="px-3 py-1.5 text-xs font-medium bg-[#111111] text-[#A1A1A1] border border-[#333333] rounded hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
-                        >
-                          {size.label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 )}
               </div>
@@ -241,9 +296,12 @@ export default function QuickCalcPage() {
                   <div className="text-sm text-[#666666] mb-1">Size</div>
                   <div className="text-lg text-[#EDEDED]">
                     {calcMode === 'sqft' ? (
-                      <>
-                        {width} × {projection} ft = <span className="font-semibold">{squareFeet.toFixed(1)} sq ft</span>
-                      </>
+                      <div>
+                        <span className="font-semibold">{totalSquareFeet.toFixed(1)} sq ft</span>
+                        {dimensionRows.length > 1 && (
+                          <span className="text-sm text-[#666666] ml-2">({dimensionRows.length} items)</span>
+                        )}
+                      </div>
                     ) : (
                       <span className="font-semibold">{linearFeet} linear ft</span>
                     )}
