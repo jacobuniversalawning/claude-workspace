@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-// POST /api/costsheets/autosave - Auto-save a draft cost sheet (create or update)
+// POST /api/costsheets/autosave - Silently auto-save a cost sheet (create or update)
 export async function POST(request: Request) {
   try {
     const session = await auth();
@@ -37,21 +37,20 @@ export async function POST(request: Request) {
 
     const estimatorName = body.estimator || userName;
 
-    // If an ID is provided, update the existing draft
+    // If an ID is provided, update the existing cost sheet
     if (body.id) {
       // Check if the cost sheet exists and belongs to the user
       const existingCostSheet = await prisma.costSheet.findFirst({
         where: {
           id: body.id,
           userId,
-          status: 'DRAFT', // Only update drafts via autosave
           deletedAt: null,
         },
       });
 
       if (!existingCostSheet) {
         return NextResponse.json(
-          { error: 'Draft not found or already finalized' },
+          { error: 'Cost sheet not found' },
           { status: 404 }
         );
       }
@@ -194,11 +193,11 @@ export async function POST(request: Request) {
       return NextResponse.json(updatedCostSheet);
     }
 
-    // Create a new draft
+    // Create a new cost sheet (saved silently in background)
     const costSheet = await prisma.costSheet.create({
       data: {
         userId,
-        status: 'DRAFT',
+        status: 'FINAL', // Save as regular cost sheet, not draft
         estimator: estimatorName,
         inquiryDate: body.inquiryDate ? new Date(body.inquiryDate) : new Date(),
         dueDate: body.dueDate ? new Date(body.dueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days from now

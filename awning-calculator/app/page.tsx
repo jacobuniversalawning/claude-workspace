@@ -19,7 +19,6 @@ interface CostSheet {
   outcome: string;
   createdAt: string;
   estimator?: string;
-  status?: 'DRAFT' | 'FINAL';
 }
 
 // Helper function to get price guardrail color
@@ -60,7 +59,6 @@ export default function Home() {
   const { data: session } = useSession();
   const userRole = session?.user?.role;
   const [costSheets, setCostSheets] = useState<CostSheet[]>([]);
-  const [drafts, setDrafts] = useState<CostSheet[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -74,7 +72,6 @@ export default function Home() {
 
   useEffect(() => {
     fetchCostSheets();
-    fetchDrafts();
     fetchAnalytics();
   }, []);
 
@@ -110,19 +107,6 @@ export default function Home() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchDrafts = async () => {
-    try {
-      const response = await fetch('/api/costsheets?draftsOnly=true');
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setDrafts(data);
-      }
-    } catch (error) {
-      console.error('Error fetching drafts:', error);
-      setDrafts([]);
     }
   };
 
@@ -279,9 +263,8 @@ export default function Home() {
           method: 'DELETE',
         });
         if (response.ok) {
-          // Optimistically remove from both lists
+          // Optimistically remove from the list
           setCostSheets(costSheets.filter((s) => s.id !== id));
-          setDrafts(drafts.filter((s) => s.id !== id));
         } else {
           const error = await response.json();
           console.error('Failed to delete cost sheet:', error.error);
@@ -441,62 +424,6 @@ export default function Home() {
               <span className="font-medium">Local Storage Mode:</span> Data is stored locally in your browser. Configure PostgreSQL for cloud storage.
             </div>
           </div>
-        )}
-
-        {/* Draft Cost Sheets */}
-        {drafts.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#EDEDED] tracking-tight">Draft Cost Sheets</h2>
-              <span className="text-sm text-[#666666]">{drafts.length} draft{drafts.length !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-xl overflow-hidden">
-              <div className="divide-y divide-[#1F1F1F]">
-                {drafts.map((draft) => (
-                  <div
-                    key={draft.id}
-                    className="p-4 hover:bg-[#111111] transition-colors duration-150 cursor-pointer flex items-center justify-between"
-                    onClick={() => router.push(`/costsheet/new?edit=${draft.id}`)}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded text-xs font-medium border border-amber-500/20">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Draft
-                        </span>
-                        <span className="text-sm font-medium text-[#EDEDED]">
-                          {draft.customer || draft.project || 'Untitled Draft'}
-                        </span>
-                        {draft.category && (
-                          <span className="text-xs text-[#666666] px-2 py-0.5 bg-[#111111] rounded">
-                            {draft.category}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-[#666666]">
-                        <span>Last saved: {new Date(draft.createdAt).toLocaleDateString()}</span>
-                        {draft.estimator && <span>By: {draft.estimator}</span>}
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteModalId(draft.id);
-                      }}
-                      className="ml-4 text-red-400 hover:text-red-300 transition-colors duration-150"
-                      title="Delete draft"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
         )}
 
         {/* Cost Sheet History */}
