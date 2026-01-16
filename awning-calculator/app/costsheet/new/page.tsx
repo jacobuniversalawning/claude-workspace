@@ -251,10 +251,8 @@ function CostSheetForm() {
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
   const [mileageManuallyEdited, setMileageManuallyEdited] = useState(false);
 
-  // === AUTO-SAVE STATE ===
-  const [draftId, setDraftId] = useState<string | null>(null);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // === SILENT AUTO-SAVE STATE ===
+  const [autoSaveId, setAutoSaveId] = useState<string | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>('');
 
@@ -605,13 +603,11 @@ function CostSheetForm() {
     setHotelLines(hotelLines.map((h) => (h.id === id ? { ...h, [field]: value } : h)));
   };
 
-  // === AUTO-SAVE FUNCTION ===
+  // === SILENT AUTO-SAVE FUNCTION ===
   const autoSave = async (calculated: { [key: string]: any }) => {
     try {
-      setAutoSaveStatus('saving');
-
       const payload = {
-        id: draftId, // Will be undefined for first save
+        id: autoSaveId, // Will be undefined for first save
         ...formData,
         width: products[0]?.width || 0,
         projection: products[0]?.projection || 0,
@@ -702,20 +698,13 @@ function CostSheetForm() {
 
       const savedData = await response.json();
 
-      // Store the draft ID for future updates
-      if (savedData.id && !draftId) {
-        setDraftId(savedData.id);
+      // Store the ID for future updates
+      if (savedData.id && !autoSaveId) {
+        setAutoSaveId(savedData.id);
       }
-
-      setAutoSaveStatus('saved');
-      setHasUnsavedChanges(false);
-
-      // Reset to idle after 2 seconds
-      setTimeout(() => setAutoSaveStatus('idle'), 2000);
     } catch (error) {
+      // Silent fail - don't disturb the user
       console.error('Auto-save error:', error);
-      setAutoSaveStatus('error');
-      setTimeout(() => setAutoSaveStatus('idle'), 3000);
     }
   };
 
@@ -828,10 +817,10 @@ function CostSheetForm() {
     return 'GOOD';
   };
 
-  // === AUTO-SAVE TRIGGER ===
+  // === SILENT AUTO-SAVE TRIGGER ===
   useEffect(() => {
-    // Don't auto-save if we're in edit mode for an existing finalized cost sheet
-    if (isEditing && !draftId) return;
+    // Don't auto-save if we're in edit mode for an existing cost sheet (use regular save instead)
+    if (isEditing && !autoSaveId) return;
 
     // Create a snapshot of the current form data
     const formSnapshot = JSON.stringify({
@@ -857,15 +846,12 @@ function CostSheetForm() {
       return; // No changes, skip auto-save
     }
 
-    // Mark as having unsaved changes
-    setHasUnsavedChanges(true);
-
     // Clear any existing timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Debounce auto-save by 3 seconds
+    // Debounce auto-save by 3 seconds (silent, in background)
     autoSaveTimeoutRef.current = setTimeout(() => {
       // Skip auto-save if no meaningful data has been entered
       const hasData = formData.customer || formData.project ||
@@ -917,25 +903,8 @@ function CostSheetForm() {
     formData, products, materials, fabricLines, laborLines, installLines,
     markup, permitCost, engineeringCost, equipmentCost, foodCost,
     driveTimeLines, mileageLines, hotelLines, finalPriceOverride,
-    draftId, isEditing
+    autoSaveId, isEditing
   ]);
-
-  // === BEFORE UNLOAD WARNING ===
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        // Modern browsers will show their own message
-        return '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges]);
 
   // === PRICING TEMPLATE ===
   const applyPricingTemplate = (templateId: string | null) => {
@@ -1103,35 +1072,7 @@ function CostSheetForm() {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h1 className="text-h1 text-gray-900 dark:text-[#EDEDED]">Universal Awning & Canopy</h1>
-                    <div className="flex items-center gap-3">
-                      <p className="text-h2 text-gray-600 dark:text-[#A1A1A1]">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
-                      {/* Auto-save status indicator */}
-                      {autoSaveStatus === 'saving' && (
-                        <span className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Saving...
-                        </span>
-                      )}
-                      {autoSaveStatus === 'saved' && (
-                        <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                          Saved
-                        </span>
-                      )}
-                      {autoSaveStatus === 'error' && (
-                        <span className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                          </svg>
-                          Save failed
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-h2 text-gray-600 dark:text-[#A1A1A1]">{isEditing ? 'Edit Cost Sheet' : 'New Cost Sheet'}</p>
                   </div>
                   <button type="button" onClick={() => router.push('/')} className="px-6 py-2.5 bg-gray-600 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-button text-sm font-medium transition-all duration-200 hover:shadow-lg">
                     Go back to Dashboard
