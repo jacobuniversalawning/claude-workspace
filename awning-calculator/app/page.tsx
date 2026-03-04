@@ -75,6 +75,8 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [showImportModal, setShowImportModal] = useState(false);
+  const [compPriceModalId, setCompPriceModalId] = useState<string | null>(null);
+  const [compPriceInput, setCompPriceInput] = useState<string>('');
 
   useEffect(() => {
     fetchCostSheets();
@@ -211,9 +213,6 @@ export default function Home() {
         case 'outcome':
           comparison = (a.outcome || 'Unknown').localeCompare(b.outcome || 'Unknown');
           break;
-        case 'competitor':
-          comparison = (a.competitorPrice || 0) - (b.competitorPrice || 0);
-          break;
         default:
           comparison = 0;
       }
@@ -314,7 +313,7 @@ export default function Home() {
 
   const handleRowClick = (id: string, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION' || target.tagName === 'INPUT') {
+    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION') {
       return;
     }
     // VIEWER and pending users go to view page (read-only)
@@ -363,6 +362,79 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Competitor Price Modal */}
+      {compPriceModalId && (() => {
+        const modalSheet = costSheets.find(s => s.id === compPriceModalId);
+        return (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+            <div className="bg-[#0A0A0A] rounded-xl p-6 max-w-sm mx-4 border border-amber-500/30 animate-scale-in">
+              <h3 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-1">Competitor Price</h3>
+              <p className="text-[#A1A1A1] text-sm mb-4">
+                {modalSheet?.customer || modalSheet?.project || 'This job'}
+                {modalSheet?.category ? ` — ${modalSheet.category}` : ''}
+              </p>
+              <div className="mb-4">
+                <label className="text-xs text-[#666666] mb-1 block">Competitor&apos;s Total Price</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={compPriceInput}
+                  onChange={(e) => setCompPriceInput(e.target.value)}
+                  placeholder="Enter price..."
+                  autoFocus
+                  className="w-full bg-[#111111] border border-amber-500/30 rounded-lg px-4 py-2.5 text-sm text-amber-400 placeholder-[#666666] focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/20 transition-all duration-150 tabular-nums"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = parseFloat(compPriceInput) || null;
+                      updateCompetitorPrice(compPriceModalId, val);
+                      setCompPriceModalId(null);
+                    }
+                  }}
+                />
+                {modalSheet?.competitorPrice && (
+                  <p className="text-xs text-amber-400/60 mt-1">
+                    Current: {formatCurrency(modalSheet.competitorPrice)}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-between items-center">
+                {modalSheet?.competitorPrice ? (
+                  <button
+                    onClick={() => {
+                      updateCompetitorPrice(compPriceModalId, null);
+                      setCompPriceModalId(null);
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCompPriceModalId(null)}
+                    className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const val = parseFloat(compPriceInput) || null;
+                      updateCompetitorPrice(compPriceModalId, val);
+                      setCompPriceModalId(null);
+                    }}
+                    className="px-4 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-sm font-medium hover:bg-amber-500/20 transition-all duration-150"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Import Cost Sheet Modal */}
       <ImportCostSheetModal
@@ -637,7 +709,6 @@ export default function Home() {
                       { key: 'sqft', label: '$/sq ft' },
                       { key: 'linft', label: '$/lin ft' },
                       { key: 'outcome', label: 'Outcome' },
-                      { key: 'competitor', label: 'Comp. Price' },
                     ].map((col) => (
                       <th
                         key={col.key}
@@ -710,29 +781,29 @@ export default function Home() {
                             <option value="Lost">Lost</option>
                           </select>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={sheet.competitorPrice || ''}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || null;
-                              setCostSheets(prev => prev.map(s => s.id === sheet.id ? { ...s, competitorPrice: val || undefined } : s));
-                            }}
-                            onBlur={(e) => {
-                              const val = parseFloat(e.target.value) || null;
-                              updateCompetitorPrice(sheet.id, val);
-                            }}
-                            placeholder="-"
-                            className={`w-24 rounded px-2 py-1 text-xs font-medium tabular-nums transition-all duration-150 border focus:outline-none focus:ring-1 ${
-                              sheet.competitorPrice
-                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:border-amber-400 focus:ring-amber-400/20'
-                                : 'bg-[#111111] text-[#666666] border-[#333333] focus:border-amber-400 focus:ring-amber-400/20'
-                            }`}
-                          />
-                        </td>
                         <td className="px-3 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
+                            {/* Competitor Price button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCompPriceInput(sheet.competitorPrice ? String(sheet.competitorPrice) : '');
+                                setCompPriceModalId(sheet.id);
+                              }}
+                              className={`p-1.5 rounded-lg transition-all duration-150 relative ${
+                                sheet.competitorPrice
+                                  ? 'text-amber-400 hover:bg-amber-500/10 opacity-100'
+                                  : 'text-[#666666] hover:text-amber-400 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100'
+                              }`}
+                              title={sheet.competitorPrice ? `Comp. Price: ${formatCurrency(sheet.competitorPrice)}` : 'Add Competitor Price'}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {sheet.competitorPrice && (
+                                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full" />
+                              )}
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
