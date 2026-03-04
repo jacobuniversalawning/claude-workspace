@@ -170,6 +170,7 @@ export async function PUT(
         pricePerSqFtPreDelivery: body.pricePerSqFtPreDelivery,
         pricePerLinFtPreDelivery: body.pricePerLinFtPreDelivery,
         outcome: body.outcome,
+        competitorPrice: body.competitorPrice !== undefined ? body.competitorPrice : undefined,
         estimator: body.estimator,
         materials: {
           create: body.materials || [],

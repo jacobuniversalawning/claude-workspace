@@ -25,9 +25,10 @@ interface CostSheet {
   totalFabric?: number;
   totalLabor?: number;
   markup?: number;
+  competitorPrice?: number;
 }
 
-type TabType = 'overview' | 'categories' | 'trends' | 'winloss' | 'salesreps' | 'charts' | 'search';
+type TabType = 'overview' | 'categories' | 'trends' | 'winloss' | 'salesreps' | 'charts' | 'search' | 'competitors';
 
 // Simple bar chart component
 function BarChart({
@@ -503,7 +504,8 @@ export default function AnalyticsPage() {
     { id: 'winloss', label: 'Win/Loss', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: 'salesreps', label: 'Sales Reps', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
     { id: 'charts', label: 'Charts', icon: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z' },
-    { id: 'search', label: 'Search', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' }
+    { id: 'search', label: 'Search', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' },
+    { id: 'competitors', label: 'Competitors', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' }
   ];
 
   if (loading) {
@@ -1164,6 +1166,217 @@ export default function AnalyticsPage() {
                 )}
               </div>
             )}
+
+            {/* Competitors Tab */}
+            {activeTab === 'competitors' && (() => {
+              // Calculate competitor data by category
+              const sheetsWithCompetitor = filteredSheets.filter(s => s.competitorPrice && s.competitorPrice > 0);
+              const competitorByCategory: Record<string, {
+                category: string;
+                count: number;
+                avgCompPrice: number;
+                avgOurPrice: number;
+                avgCompSqFt: number;
+                avgOurSqFt: number;
+                avgCompLinFt: number;
+                avgOurLinFt: number;
+                entries: { date: string; customer: string; project: string; ourPrice: number; compPrice: number; outcome: string }[];
+              }> = {};
+
+              for (const sheet of sheetsWithCompetitor) {
+                if (!competitorByCategory[sheet.category]) {
+                  competitorByCategory[sheet.category] = {
+                    category: sheet.category,
+                    count: 0,
+                    avgCompPrice: 0,
+                    avgOurPrice: 0,
+                    avgCompSqFt: 0,
+                    avgOurSqFt: 0,
+                    avgCompLinFt: 0,
+                    avgOurLinFt: 0,
+                    entries: [],
+                  };
+                }
+                const cat = competitorByCategory[sheet.category];
+                cat.count++;
+                cat.avgCompPrice += sheet.competitorPrice!;
+                cat.avgOurPrice += sheet.totalPriceToClient;
+
+                if (sheet.canopySqFt && sheet.canopySqFt > 0) {
+                  cat.avgCompSqFt += sheet.competitorPrice! / sheet.canopySqFt;
+                  if (sheet.pricePerSqFtPreDelivery) cat.avgOurSqFt += sheet.pricePerSqFtPreDelivery;
+                }
+                if (sheet.awningLinFt && sheet.awningLinFt > 0) {
+                  cat.avgCompLinFt += sheet.competitorPrice! / sheet.awningLinFt;
+                  if (sheet.pricePerLinFtPreDelivery) cat.avgOurLinFt += sheet.pricePerLinFtPreDelivery;
+                }
+
+                cat.entries.push({
+                  date: sheet.inquiryDate,
+                  customer: sheet.customer || '-',
+                  project: sheet.project || '-',
+                  ourPrice: sheet.totalPriceToClient,
+                  compPrice: sheet.competitorPrice!,
+                  outcome: sheet.outcome,
+                });
+              }
+
+              // Finalize averages
+              Object.values(competitorByCategory).forEach(cat => {
+                if (cat.count > 0) {
+                  cat.avgCompPrice /= cat.count;
+                  cat.avgOurPrice /= cat.count;
+                  cat.avgCompSqFt /= cat.count;
+                  cat.avgOurSqFt /= cat.count;
+                  cat.avgCompLinFt /= cat.count;
+                  cat.avgOurLinFt /= cat.count;
+                }
+              });
+
+              const categories = Object.values(competitorByCategory).sort((a, b) => b.count - a.count);
+
+              return (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                      <div className="text-xs text-[#666666] uppercase tracking-wider">Total Data Points</div>
+                      <div className="text-3xl font-bold text-amber-400 mt-1">{sheetsWithCompetitor.length}</div>
+                      <div className="text-xs text-[#666666] mt-1">jobs with competitor pricing</div>
+                    </div>
+                    <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                      <div className="text-xs text-[#666666] uppercase tracking-wider">Avg Competitor Price</div>
+                      <div className="text-3xl font-bold text-amber-400 mt-1">
+                        {sheetsWithCompetitor.length > 0
+                          ? formatCurrency(sheetsWithCompetitor.reduce((sum, s) => sum + (s.competitorPrice || 0), 0) / sheetsWithCompetitor.length)
+                          : '-'}
+                      </div>
+                      <div className="text-xs text-[#666666] mt-1">across all categories</div>
+                    </div>
+                    <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                      <div className="text-xs text-[#666666] uppercase tracking-wider">Categories Tracked</div>
+                      <div className="text-3xl font-bold text-amber-400 mt-1">{categories.length}</div>
+                      <div className="text-xs text-[#666666] mt-1">with competitor data</div>
+                    </div>
+                  </div>
+
+                  {/* By Category Comparison */}
+                  {categories.length > 0 ? (
+                    <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-5">
+                      <h3 className="text-lg font-semibold text-[#EDEDED] mb-4">Competitor vs. Our Pricing by Category</h3>
+                      <div className="space-y-4">
+                        {categories.map(cat => {
+                          const priceDiff = cat.avgOurPrice > 0
+                            ? ((cat.avgCompPrice - cat.avgOurPrice) / cat.avgOurPrice * 100)
+                            : 0;
+
+                          return (
+                            <div key={cat.category} className="border border-amber-500/20 rounded-lg p-4 bg-amber-500/5">
+                              <div className="flex justify-between items-start mb-3">
+                                <div>
+                                  <h4 className="text-sm font-semibold text-[#EDEDED]">{cat.category}</h4>
+                                  <span className="text-xs text-[#666666]">{cat.count} data point{cat.count !== 1 ? 's' : ''}</span>
+                                </div>
+                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                  priceDiff < 0 ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'
+                                }`}>
+                                  {priceDiff < 0
+                                    ? `Comp. ${Math.abs(priceDiff).toFixed(0)}% lower`
+                                    : `Comp. ${priceDiff.toFixed(0)}% higher`
+                                  }
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <div className="text-xs text-[#666666]">Our Avg Price</div>
+                                  <div className="text-[#EDEDED] font-medium">{formatCurrency(cat.avgOurPrice)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-amber-400/60">Comp. Avg Price</div>
+                                  <div className="text-amber-400 font-medium">{formatCurrency(cat.avgCompPrice)}</div>
+                                </div>
+                                {cat.avgOurSqFt > 0 && (
+                                  <div>
+                                    <div className="text-xs text-[#666666]">Our $/sq ft</div>
+                                    <div className="text-[#EDEDED] font-medium">{formatCurrency(cat.avgOurSqFt)}</div>
+                                  </div>
+                                )}
+                                {cat.avgCompSqFt > 0 && (
+                                  <div>
+                                    <div className="text-xs text-amber-400/60">Comp. $/sq ft</div>
+                                    <div className="text-amber-400 font-medium">{formatCurrency(cat.avgCompSqFt)}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] p-12 text-center">
+                      <svg className="w-16 h-16 mx-auto text-amber-500/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <p className="text-[#666666]">No competitor pricing data yet.</p>
+                      <p className="text-xs text-[#666666] mt-2">Add competitor prices on the dashboard table or in cost sheets to see analysis here.</p>
+                    </div>
+                  )}
+
+                  {/* Detailed Log */}
+                  {sheetsWithCompetitor.length > 0 && (
+                    <div className="bg-[#0A0A0A] rounded-xl border border-[#1F1F1F] overflow-hidden">
+                      <div className="p-4 border-b border-[#1F1F1F]">
+                        <h3 className="text-sm font-semibold text-[#EDEDED]">Competitor Price Log</h3>
+                      </div>
+                      <table className="w-full">
+                        <thead className="bg-[#111111]">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">Customer</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-[#666666] uppercase">Category</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-[#666666] uppercase">Our Price</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-amber-400/60 uppercase">Comp. Price</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-[#666666] uppercase">Diff</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-[#666666] uppercase">Outcome</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#1F1F1F]">
+                          {sheetsWithCompetitor
+                            .sort((a, b) => new Date(b.inquiryDate).getTime() - new Date(a.inquiryDate).getTime())
+                            .map((sheet, idx) => {
+                              const diff = sheet.totalPriceToClient > 0
+                                ? ((sheet.competitorPrice! - sheet.totalPriceToClient) / sheet.totalPriceToClient * 100)
+                                : 0;
+                              return (
+                                <tr key={idx} className="hover:bg-[#111111]">
+                                  <td className="px-4 py-3 text-sm text-[#A1A1A1] tabular-nums">{new Date(sheet.inquiryDate).toLocaleDateString()}</td>
+                                  <td className="px-4 py-3 text-sm text-[#EDEDED]">{sheet.customer || '-'}</td>
+                                  <td className="px-4 py-3 text-sm text-[#A1A1A1]">{sheet.category}</td>
+                                  <td className="px-4 py-3 text-sm text-[#EDEDED] text-right tabular-nums">{formatCurrency(sheet.totalPriceToClient)}</td>
+                                  <td className="px-4 py-3 text-sm text-amber-400 text-right tabular-nums font-medium">{formatCurrency(sheet.competitorPrice!)}</td>
+                                  <td className={`px-4 py-3 text-sm text-right tabular-nums font-medium ${diff < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                    {diff < 0 ? `${diff.toFixed(0)}%` : `+${diff.toFixed(0)}%`}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      sheet.outcome === 'Won' ? 'bg-emerald-500/10 text-emerald-400' :
+                                      sheet.outcome === 'Lost' ? 'bg-red-500/10 text-red-400' :
+                                      'bg-[#1F1F1F] text-[#666666]'
+                                    }`}>
+                                      {sheet.outcome}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

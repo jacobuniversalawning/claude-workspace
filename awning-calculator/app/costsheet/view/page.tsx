@@ -50,6 +50,7 @@ interface CostSheet {
   pricePerSqFtPreDelivery: number | null;
   pricePerLinFtPreDelivery: number | null;
   outcome: string;
+  competitorPrice?: number;
   // Additional fields for "Other Requirements"
   permitCost?: number;
   engineeringCost?: number;
@@ -853,6 +854,34 @@ function CostSheetViewContent() {
                 </div>
               </div>
             </div>
+
+            {/* Competitor Pricing */}
+            {costSheet.competitorPrice && costSheet.competitorPrice > 0 && (
+              <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-700/50">
+                <div className="flex justify-between py-2 bg-amber-50 dark:bg-amber-900/20 -mx-2 px-2 rounded border border-amber-200 dark:border-amber-700/50">
+                  <span className="font-semibold text-amber-700 dark:text-amber-400">Competitor Price:</span>
+                  <span className="font-bold text-lg text-amber-700 dark:text-amber-400">{formatCurrency(costSheet.competitorPrice)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  {costSheet.canopySqFt && costSheet.canopySqFt > 0 && (
+                    <div className="p-2 bg-amber-50 dark:bg-amber-900/10 rounded border border-amber-200/50 dark:border-amber-700/30">
+                      <div className="text-xs text-amber-600 dark:text-amber-400/60">Comp. $/sq ft</div>
+                      <div className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                        {formatCurrency(costSheet.competitorPrice / costSheet.canopySqFt)}
+                      </div>
+                    </div>
+                  )}
+                  {costSheet.awningLinFt && costSheet.awningLinFt > 0 && (
+                    <div className="p-2 bg-amber-50 dark:bg-amber-900/10 rounded border border-amber-200/50 dark:border-amber-700/30">
+                      <div className="text-xs text-amber-600 dark:text-amber-400/60">Comp. $/lin ft</div>
+                      <div className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                        {formatCurrency(costSheet.competitorPrice / costSheet.awningLinFt)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Activity Log - Screen View */}

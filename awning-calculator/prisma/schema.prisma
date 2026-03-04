@@ -180,6 +180,9 @@ model CostSheet {
   // Job outcome for weighted averages
   outcome        String   @default("Unknown") // Won, Lost, Unknown
 
+  // Competitor pricing (total price competitor offered for this job)
+  competitorPrice    Float?
+
   // Estimator name (auto-filled from logged in user)
   estimator      String?
 
