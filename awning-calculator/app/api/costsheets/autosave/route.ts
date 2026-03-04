@@ -112,6 +112,7 @@ export async function POST(request: Request) {
           pricePerSqFtPreDelivery: body.pricePerSqFtPreDelivery,
           pricePerLinFtPreDelivery: body.pricePerLinFtPreDelivery,
           outcome: body.outcome,
+          competitorPrice: body.competitorPrice || null,
         },
         include: {
           materials: true,
@@ -251,6 +252,7 @@ export async function POST(request: Request) {
         pricePerSqFtPreDelivery: body.pricePerSqFtPreDelivery,
         pricePerLinFtPreDelivery: body.pricePerLinFtPreDelivery,
         outcome: body.outcome ?? 'Unknown',
+        competitorPrice: body.competitorPrice || null,
         materials: {
           create: body.materials || [],
         },

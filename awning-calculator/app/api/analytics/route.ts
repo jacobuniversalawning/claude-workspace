@@ -23,6 +23,7 @@ export async function GET(request: Request) {
         pricePerLinFtPreDelivery: true,
         canopySqFt: true,
         awningLinFt: true,
+        competitorPrice: true,
       },
     });
 
@@ -49,6 +50,14 @@ export async function GET(request: Request) {
           linFtCount: 0,
           wonSqFtCount: 0,
           wonLinFtCount: 0,
+          // Competitor pricing tracking
+          competitorPriceCount: 0,
+          competitorTotalSqFtPrice: 0,
+          competitorTotalLinFtPrice: 0,
+          competitorSqFtCount: 0,
+          competitorLinFtCount: 0,
+          avgCompetitorPricePerSqFt: 0,
+          avgCompetitorPricePerLinFt: 0,
         };
       }
 
@@ -91,6 +100,25 @@ export async function GET(request: Request) {
           stats.wonLinFtCount++;
         }
       }
+
+      // Track competitor pricing (separate from our own metrics)
+      if (sheet.competitorPrice && sheet.competitorPrice > 0) {
+        stats.competitorPriceCount++;
+
+        // Calculate competitor $/sqft if we have sqft data
+        if (sheet.canopySqFt && sheet.canopySqFt > 0) {
+          const compSqFtPrice = sheet.competitorPrice / sheet.canopySqFt;
+          stats.competitorTotalSqFtPrice += compSqFtPrice;
+          stats.competitorSqFtCount++;
+        }
+
+        // Calculate competitor $/linft if we have linft data
+        if (sheet.awningLinFt && sheet.awningLinFt > 0) {
+          const compLinFtPrice = sheet.competitorPrice / sheet.awningLinFt;
+          stats.competitorTotalLinFtPrice += compLinFtPrice;
+          stats.competitorLinFtCount++;
+        }
+      }
     }
 
     // Calculate final averages
@@ -108,6 +136,14 @@ export async function GET(request: Request) {
         stats.wonAvgPricePerLinFt = stats.wonTotalLinFtPrice / stats.wonLinFtCount;
       }
 
+      // Competitor averages
+      if (stats.competitorSqFtCount > 0) {
+        stats.avgCompetitorPricePerSqFt = stats.competitorTotalSqFtPrice / stats.competitorSqFtCount;
+      }
+      if (stats.competitorLinFtCount > 0) {
+        stats.avgCompetitorPricePerLinFt = stats.competitorTotalLinFtPrice / stats.competitorLinFtCount;
+      }
+
       // Clean up intermediate values
       delete stats.totalSqFtPrice;
       delete stats.totalLinFtPrice;
@@ -117,6 +153,10 @@ export async function GET(request: Request) {
       delete stats.linFtCount;
       delete stats.wonSqFtCount;
       delete stats.wonLinFtCount;
+      delete stats.competitorTotalSqFtPrice;
+      delete stats.competitorTotalLinFtPrice;
+      delete stats.competitorSqFtCount;
+      delete stats.competitorLinFtCount;
     });
 
     return NextResponse.json({

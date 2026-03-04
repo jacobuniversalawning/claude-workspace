@@ -14,6 +14,9 @@ interface Analytics {
     avgPricePerLinFt: number;
     wonAvgPricePerSqFt: number;
     wonAvgPricePerLinFt: number;
+    competitorPriceCount: number;
+    avgCompetitorPricePerSqFt: number;
+    avgCompetitorPricePerLinFt: number;
   }>;
   totalSheets: number;
 }
@@ -104,6 +107,13 @@ export default function QuickCalcPage() {
   const selectedCategoryData = analytics?.byCategory.find(c => c.category === selectedCategory);
   const avgSqFtPrice = selectedCategoryData?.wonAvgPricePerSqFt || 0;
   const avgLinFtPrice = selectedCategoryData?.wonAvgPricePerLinFt || 0;
+
+  // Competitor average pricing
+  const avgCompSqFtPrice = selectedCategoryData?.avgCompetitorPricePerSqFt || 0;
+  const avgCompLinFtPrice = selectedCategoryData?.avgCompetitorPricePerLinFt || 0;
+  const competitorEstimateSqFt = totalSquareFeet * avgCompSqFtPrice;
+  const competitorEstimateLinFt = totalLinearFeet * avgCompLinFtPrice;
+  const competitorEstimate = calcMode === 'sqft' ? competitorEstimateSqFt : competitorEstimateLinFt;
 
   const estimatedPriceSqFt = totalSquareFeet * avgSqFtPrice;
   const estimatedPriceLinFt = totalLinearFeet * avgLinFtPrice;
@@ -329,6 +339,20 @@ export default function QuickCalcPage() {
                       <span>{selectedCategoryData.wonCount} won jobs</span>
                     )}
                   </div>
+                  {/* Competitor average pricing */}
+                  {(avgCompSqFtPrice > 0 || avgCompLinFtPrice > 0) && (
+                    <div className="flex gap-6 text-xs text-amber-400 mt-1">
+                      {avgCompSqFtPrice > 0 && (
+                        <span>Comp. Avg: {formatCurrency(avgCompSqFtPrice)}/sq ft</span>
+                      )}
+                      {avgCompLinFtPrice > 0 && (
+                        <span>Comp. Avg: {formatCurrency(avgCompLinFtPrice)}/lin ft</span>
+                      )}
+                      {selectedCategoryData && selectedCategoryData.competitorPriceCount > 0 && (
+                        <span>{selectedCategoryData.competitorPriceCount} data points</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Size Display */}
@@ -363,6 +387,27 @@ export default function QuickCalcPage() {
                     <div className="h-2 bg-[#1F1F1F] rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-[#0070F3]/50 via-[#0070F3] to-[#0070F3]/50 w-full" />
                     </div>
+
+                    {/* Competitor Estimate */}
+                    {competitorEstimate > 0 && (
+                      <div className="mt-6 pt-6 border-t border-[#1F1F1F]">
+                        <div className="text-sm text-amber-400 mb-2">Competitor Avg Estimate</div>
+                        <div className="flex items-baseline gap-3">
+                          <span className="text-2xl font-bold text-amber-400">{formatCurrency(competitorEstimate)}</span>
+                        </div>
+                        <div className="text-xs text-amber-400/60 mt-1">
+                          Based on competitor pricing data ({calcMode === 'sqft' ? formatCurrency(avgCompSqFtPrice) + '/sq ft' : formatCurrency(avgCompLinFtPrice) + '/lin ft'})
+                        </div>
+                        {estimatedPrice > 0 && (
+                          <div className="text-xs text-[#666666] mt-1">
+                            {competitorEstimate < estimatedPrice
+                              ? `Competitors are typically ${(((estimatedPrice - competitorEstimate) / estimatedPrice) * 100).toFixed(0)}% lower`
+                              : `Competitors are typically ${(((competitorEstimate - estimatedPrice) / estimatedPrice) * 100).toFixed(0)}% higher`
+                            }
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-8 text-[#666666]">
@@ -421,6 +466,27 @@ export default function QuickCalcPage() {
                           {formatCurrency(cat.wonAvgPricePerLinFt)}
                         </span>
                       </div>
+                    )}
+                    {/* Competitor pricing for this category */}
+                    {(cat.avgCompetitorPricePerSqFt > 0 || cat.avgCompetitorPricePerLinFt > 0) && (
+                      <>
+                        {cat.avgCompetitorPricePerSqFt > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-amber-400/60">Comp $/sq ft</span>
+                            <span className="text-amber-400 font-semibold tabular-nums">
+                              {formatCurrency(cat.avgCompetitorPricePerSqFt)}
+                            </span>
+                          </div>
+                        )}
+                        {cat.avgCompetitorPricePerLinFt > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-amber-400/60">Comp $/lin ft</span>
+                            <span className="text-amber-400 font-semibold tabular-nums">
+                              {formatCurrency(cat.avgCompetitorPricePerLinFt)}
+                            </span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </button>

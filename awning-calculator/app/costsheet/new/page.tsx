@@ -88,6 +88,9 @@ interface Analytics {
     category: string;
     wonAvgPricePerSqFt: number;
     wonAvgPricePerLinFt: number;
+    avgCompetitorPricePerSqFt: number;
+    avgCompetitorPricePerLinFt: number;
+    competitorPriceCount: number;
   }>;
 }
 
@@ -246,6 +249,7 @@ function CostSheetForm() {
   ]);
 
   const [finalPriceOverride, setFinalPriceOverride] = useState<number | null>(null);
+  const [competitorPrice, setCompetitorPrice] = useState<number | null>(null);
 
   // Track if drive time has been manually edited
   const [driveTimeManuallyEdited, setDriveTimeManuallyEdited] = useState(false);
@@ -447,6 +451,11 @@ function CostSheetForm() {
           if (sheet.discountIncrease !== undefined && sheet.discountIncrease !== 0) {
             const overrideTotal = (sheet.grandTotal || 0) + sheet.discountIncrease;
             setFinalPriceOverride(overrideTotal);
+          }
+
+          // Load competitor price
+          if (sheet.competitorPrice !== undefined && sheet.competitorPrice !== null) {
+            setCompetitorPrice(sheet.competitorPrice);
           }
         })
         .catch(error => {
@@ -651,6 +660,7 @@ function CostSheetForm() {
         pricePerSqFtPreDelivery: calculated.pricePerSqFtPreDelivery,
         pricePerLinFtPreDelivery: calculated.pricePerLinFtPreDelivery,
         outcome: 'Unknown',
+        competitorPrice: competitorPrice || null,
         materials: materials.filter((m) => m.qty > 0 || m.description).map((m) => ({
           description: m.description,
           length: m.length,
@@ -800,6 +810,12 @@ function CostSheetForm() {
   // Use analytics if available, otherwise fall back to local averages
   const avgSqFtPrice = categoryAnalytics?.wonAvgPricePerSqFt || localAvgs.avgSqFt;
   const avgLinFtPrice = categoryAnalytics?.wonAvgPricePerLinFt || localAvgs.avgLinFt;
+
+  // Competitor pricing calculations (separate from our own metrics)
+  const competitorPricePerSqFt = competitorPrice && totalSqFt > 0 ? competitorPrice / totalSqFt : null;
+  const competitorPricePerLinFt = competitorPrice && totalLinFt > 0 ? competitorPrice / totalLinFt : null;
+  const avgCompetitorSqFtPrice = categoryAnalytics?.avgCompetitorPricePerSqFt || 0;
+  const avgCompetitorLinFtPrice = categoryAnalytics?.avgCompetitorPricePerLinFt || 0;
 
   const getGuardrailColor = (currentPrice: number | null, avgPrice: number): string => {
     if (!currentPrice || avgPrice === 0) return 'bg-gray-100 dark:bg-[#111111] border-gray-300 dark:border-[#333333]';
@@ -978,6 +994,7 @@ function CostSheetForm() {
       pricePerSqFtPreDelivery,
       pricePerLinFtPreDelivery,
       outcome: 'Unknown',
+      competitorPrice: competitorPrice || null,
       products: products.map((p) => ({
         name: p.name,
         width: p.width,
@@ -1650,6 +1667,72 @@ function CostSheetForm() {
                   </div>
                 </div>
 
+                {/* Competitor Pricing */}
+                <div className={cardClass + " border-amber-500/30 dark:border-amber-500/20"}>
+                  <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3 uppercase">Competitor Pricing</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-600 dark:text-gray-400">Competitor&apos;s Total Price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={competitorPrice || ''}
+                        onChange={(e) => setCompetitorPrice(parseFloat(e.target.value) || null)}
+                        className={inputClass + " mt-1 border-amber-300 dark:border-amber-500/30 focus:border-amber-500 dark:focus:border-amber-400"}
+                        placeholder="Enter competitor's price"
+                      />
+                    </div>
+
+                    {competitorPrice && competitorPrice > 0 && (
+                      <>
+                        <div className="p-3 rounded-input border-2 bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700">
+                          <div className="text-xs text-amber-700 dark:text-amber-300">Competitor $/sq ft</div>
+                          <div className="text-xl font-bold text-amber-800 dark:text-amber-200">{competitorPricePerSqFt ? formatCurrency(competitorPricePerSqFt) : '-'}</div>
+                          {pricePerSqFtFinal && competitorPricePerSqFt && (
+                            <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                              {competitorPricePerSqFt < pricePerSqFtFinal
+                                ? `${(((pricePerSqFtFinal - competitorPricePerSqFt) / pricePerSqFtFinal) * 100).toFixed(0)}% below yours`
+                                : `${(((competitorPricePerSqFt - pricePerSqFtFinal) / pricePerSqFtFinal) * 100).toFixed(0)}% above yours`
+                              }
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 rounded-input border-2 bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700">
+                          <div className="text-xs text-amber-700 dark:text-amber-300">Competitor $/lin ft</div>
+                          <div className="text-xl font-bold text-amber-800 dark:text-amber-200">{competitorPricePerLinFt ? formatCurrency(competitorPricePerLinFt) : '-'}</div>
+                          {pricePerLinFtFinal && competitorPricePerLinFt && (
+                            <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                              {competitorPricePerLinFt < pricePerLinFtFinal
+                                ? `${(((pricePerLinFtFinal - competitorPricePerLinFt) / pricePerLinFtFinal) * 100).toFixed(0)}% below yours`
+                                : `${(((competitorPricePerLinFt - pricePerLinFtFinal) / pricePerLinFtFinal) * 100).toFixed(0)}% above yours`
+                              }
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Show category averages for competitor pricing */}
+                    {(avgCompetitorSqFtPrice > 0 || avgCompetitorLinFtPrice > 0) && (
+                      <div className="pt-3 mt-3 border-t border-amber-200 dark:border-amber-700/50">
+                        <div className="text-xs text-amber-600 dark:text-amber-400 font-medium mb-2">Category Avg (Competitors)</div>
+                        {avgCompetitorSqFtPrice > 0 && (
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-600 dark:text-gray-400">Avg $/sq ft:</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-semibold">{formatCurrency(avgCompetitorSqFtPrice)}</span>
+                          </div>
+                        )}
+                        {avgCompetitorLinFtPrice > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Avg $/lin ft:</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-semibold">{formatCurrency(avgCompetitorLinFtPrice)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Legend */}
                 <div className={cardClass}>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Price Legend</h3>
@@ -1657,6 +1740,7 @@ function CostSheetForm() {
                     <div className="flex items-center gap-2"><div className="w-4 h-4 bg-green-100 dark:bg-green-900/50 border-2 border-green-400"></div><span className="text-gray-600 dark:text-gray-400">Good - within 15%</span></div>
                     <div className="flex items-center gap-2"><div className="w-4 h-4 bg-red-100 dark:bg-red-900/50 border-2 border-red-400"></div><span className="text-gray-600 dark:text-gray-400">High - 15%+ above</span></div>
                     <div className="flex items-center gap-2"><div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-400"></div><span className="text-gray-600 dark:text-gray-400">Low - 15%+ below</span></div>
+                    <div className="flex items-center gap-2"><div className="w-4 h-4 bg-amber-100 dark:bg-amber-900/50 border-2 border-amber-400"></div><span className="text-gray-600 dark:text-gray-400">Competitor pricing</span></div>
                   </div>
                 </div>
               </div>

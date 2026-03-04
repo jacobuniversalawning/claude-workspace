@@ -20,6 +20,7 @@ interface CostSheet {
   outcome: string;
   createdAt: string;
   estimator?: string;
+  competitorPrice?: number;
 }
 
 // Helper function to get price guardrail color
@@ -40,6 +41,9 @@ interface Analytics {
     avgPricePerLinFt: number;
     wonAvgPricePerSqFt: number;
     wonAvgPricePerLinFt: number;
+    competitorPriceCount: number;
+    avgCompetitorPricePerSqFt: number;
+    avgCompetitorPricePerLinFt: number;
   }>;
   totalSheets: number;
 }
@@ -207,6 +211,9 @@ export default function Home() {
         case 'outcome':
           comparison = (a.outcome || 'Unknown').localeCompare(b.outcome || 'Unknown');
           break;
+        case 'competitor':
+          comparison = (a.competitorPrice || 0) - (b.competitorPrice || 0);
+          break;
         default:
           comparison = 0;
       }
@@ -278,9 +285,36 @@ export default function Home() {
     setDeleteModalId(null);
   };
 
+  const updateCompetitorPrice = async (id: string, price: number | null) => {
+    if (storageType === 'local') {
+      const updatedSheets = costSheets.map((s) =>
+        s.id === id ? { ...s, competitorPrice: price || undefined } : s
+      );
+      setCostSheets(updatedSheets);
+      localStorage.setItem('costSheets', JSON.stringify(updatedSheets));
+      return;
+    }
+
+    try {
+      const sheet = costSheets.find((s) => s.id === id);
+      if (!sheet) return;
+
+      await fetch(`/api/costsheets/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...sheet, competitorPrice: price }),
+      });
+
+      fetchCostSheets();
+      fetchAnalytics();
+    } catch (error) {
+      console.error('Error updating competitor price:', error);
+    }
+  };
+
   const handleRowClick = (id: string, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION') {
+    if (target.tagName === 'SELECT' || target.tagName === 'BUTTON' || target.tagName === 'OPTION' || target.tagName === 'INPUT') {
       return;
     }
     // VIEWER and pending users go to view page (read-only)
@@ -603,6 +637,7 @@ export default function Home() {
                       { key: 'sqft', label: '$/sq ft' },
                       { key: 'linft', label: '$/lin ft' },
                       { key: 'outcome', label: 'Outcome' },
+                      { key: 'competitor', label: 'Comp. Price' },
                     ].map((col) => (
                       <th
                         key={col.key}
@@ -674,6 +709,27 @@ export default function Home() {
                             <option value="Won">Won</option>
                             <option value="Lost">Lost</option>
                           </select>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={sheet.competitorPrice || ''}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || null;
+                              setCostSheets(prev => prev.map(s => s.id === sheet.id ? { ...s, competitorPrice: val || undefined } : s));
+                            }}
+                            onBlur={(e) => {
+                              const val = parseFloat(e.target.value) || null;
+                              updateCompetitorPrice(sheet.id, val);
+                            }}
+                            placeholder="-"
+                            className={`w-24 rounded px-2 py-1 text-xs font-medium tabular-nums transition-all duration-150 border focus:outline-none focus:ring-1 ${
+                              sheet.competitorPrice
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:border-amber-400 focus:ring-amber-400/20'
+                                : 'bg-[#111111] text-[#666666] border-[#333333] focus:border-amber-400 focus:ring-amber-400/20'
+                            }`}
+                          />
                         </td>
                         <td className="px-3 py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
