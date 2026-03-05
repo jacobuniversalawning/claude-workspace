@@ -760,7 +760,10 @@ function CostSheetViewContent() {
 
               {costSheet.laborLines.some(l => !l.isFabrication) && (
                 <>
-                  <h3 className="text-md font-semibold text-gray-900 dark:text-white mt-6 mb-2">Installation</h3>
+                  <div className="flex items-center gap-3 mt-6 mb-2">
+                    <h3 className="text-md font-semibold text-gray-900 dark:text-white">Installation</h3>
+                    {costSheet.grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({((costSheet.totalInstallationLabor / costSheet.grandTotal) * 100).toFixed(1)}% of total)</span>}
+                  </div>
                   <table className="w-full text-sm">
                     <thead className="bg-orange-100 dark:bg-orange-900/30">
                       <tr>

@@ -772,6 +772,8 @@ function CostSheetForm() {
   const materialsPct = grandTotal > 0 ? (totalMaterials / grandTotal) * 100 : 0;
   const fabricPct = grandTotal > 0 ? (totalFabric / grandTotal) * 100 : 0;
   const laborPct = grandTotal > 0 ? (totalLabor / grandTotal) * 100 : 0;
+  const fabLaborPct = grandTotal > 0 ? (totalFabricationLabor / grandTotal) * 100 : 0;
+  const installLaborPct = grandTotal > 0 ? (totalInstallationLabor / grandTotal) * 100 : 0;
   const otherReqsPct = grandTotal > 0 ? (totalOtherRequirements / grandTotal) * 100 : 0;
 
   // Calculate local averages from localStorage as fallback
@@ -1332,7 +1334,7 @@ function CostSheetForm() {
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-4">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Fabrication Labor</h2>
-                    {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({laborPct.toFixed(1)}% of total)</span>}
+                    {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({fabLaborPct.toFixed(1)}% of total)</span>}
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Rate:</label>
                       <select
@@ -1412,7 +1414,10 @@ function CostSheetForm() {
               {/* Installation */}
               <div className={cardClass}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Installation Labor</h2>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Installation Labor</h2>
+                    {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({installLaborPct.toFixed(1)}% of total)</span>}
+                  </div>
                   <button type="button" onClick={addInstall} className={addBtn + " print:hidden"}>+ Add Install</button>
                 </div>
                 <table className="w-full text-sm">
