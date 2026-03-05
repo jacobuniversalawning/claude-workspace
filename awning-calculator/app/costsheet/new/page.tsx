@@ -768,6 +768,12 @@ function CostSheetForm() {
   const pricePerSqFtFinal = totalSqFt > 0 ? totalPriceToClient / totalSqFt : null;
   const pricePerLinFtFinal = totalLinFt > 0 ? totalPriceToClient / totalLinFt : null;
 
+  // Cost allocation percentages (% of grand total)
+  const materialsPct = grandTotal > 0 ? (totalMaterials / grandTotal) * 100 : 0;
+  const fabricPct = grandTotal > 0 ? (totalFabric / grandTotal) * 100 : 0;
+  const laborPct = grandTotal > 0 ? (totalLabor / grandTotal) * 100 : 0;
+  const otherReqsPct = grandTotal > 0 ? (totalOtherRequirements / grandTotal) * 100 : 0;
+
   // Calculate local averages from localStorage as fallback
   const getLocalAverages = (category: string) => {
     try {
@@ -1226,6 +1232,7 @@ function CostSheetForm() {
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-4">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Materials</h2>
+                    {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({materialsPct.toFixed(1)}% of total)</span>}
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
                       <input type="number" step="0.25" value={materialsTaxRate * 100} onChange={(e) => setMaterialsTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
@@ -1276,6 +1283,7 @@ function CostSheetForm() {
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-4">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Fabric</h2>
+                    {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({fabricPct.toFixed(1)}% of total)</span>}
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Tax Rate:</label>
                       <input type="number" step="0.25" value={fabricTaxRate * 100} onChange={(e) => setFabricTaxRate((parseFloat(e.target.value) || 0) / 100)} className={inputClass + " w-20 text-right"} />
@@ -1324,6 +1332,7 @@ function CostSheetForm() {
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-4">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Fabrication Labor</h2>
+                    {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({laborPct.toFixed(1)}% of total)</span>}
                     <div className="flex items-center gap-2">
                       <label className="text-sm text-gray-600 dark:text-gray-400">Rate:</label>
                       <select
@@ -1510,7 +1519,10 @@ function CostSheetForm() {
 
               {/* Other Requirements */}
               <div className={cardClass}>
-                <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-[#EDEDED]">Other Requirements</h2>
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-[#EDEDED]">Other Requirements</h2>
+                  {grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({otherReqsPct.toFixed(1)}% of total)</span>}
+                </div>
                 <p className="text-sm text-gray-500 dark:text-[#A1A1A1] mb-4">Site-specific costs (excluded from pre-delivery pricing)</p>
 
                 <div className="grid grid-cols-4 gap-4 mb-4">
@@ -1636,13 +1648,13 @@ function CostSheetForm() {
                 <div className={cardClass}>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Summary</h3>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Materials:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalMaterials)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Fabric:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalFabric)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Labor:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalLabor)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Materials:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalMaterials)} <span className="text-yellow-600 dark:text-yellow-400 text-xs">({materialsPct.toFixed(1)}%)</span></span></div>
+                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Fabric:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalFabric)} <span className="text-yellow-600 dark:text-yellow-400 text-xs">({fabricPct.toFixed(1)}%)</span></span></div>
+                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Labor:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalLabor)} <span className="text-yellow-600 dark:text-yellow-400 text-xs">({laborPct.toFixed(1)}%)</span></span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="text-gray-600 dark:text-gray-400">Subtotal:</span><span className="text-gray-900 dark:text-white">{formatCurrency(subtotalBeforeMarkup)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Profit ({markup.toFixed(2)} → {((1 - markup) * 100).toFixed(0)}% margin):</span><span className="text-gray-900 dark:text-white">{formatCurrency(markupAmount)}</span></div>
                     <div className={`flex justify-between p-2 rounded-input -mx-2 border ${getGuardrailColor(pricePerSqFtPreDelivery, avgSqFtPrice).replace('border-2', 'border')}`}><span className="font-semibold text-gray-900 dark:text-white">Pre-Delivery:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(totalWithMarkup)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Other Reqs:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalOtherRequirements)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Other Reqs:</span><span className="text-gray-900 dark:text-white">{formatCurrency(totalOtherRequirements)} <span className="text-yellow-600 dark:text-yellow-400 text-xs">({otherReqsPct.toFixed(1)}%)</span></span></div>
                     <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2"><span className="font-semibold text-gray-900 dark:text-white">Grand Total:</span><span className="font-bold text-gray-900 dark:text-white">{formatCurrency(grandTotal)}</span></div>
                   </div>
 

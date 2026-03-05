@@ -649,7 +649,10 @@ function CostSheetViewContent() {
           {/* Materials */}
           {costSheet.materials && costSheet.materials.length > 0 && (
             <div className={cardClass}>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Materials</h2>
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Materials</h2>
+                {costSheet.grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({((costSheet.totalMaterials / costSheet.grandTotal) * 100).toFixed(1)}% of total)</span>}
+              </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 dark:bg-gray-700">
                   <tr>
@@ -684,7 +687,10 @@ function CostSheetViewContent() {
           {/* Fabric */}
           {costSheet.fabricLines && costSheet.fabricLines.length > 0 && (
             <div className={cardClass}>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Fabric</h2>
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric</h2>
+                {costSheet.grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({((costSheet.totalFabric / costSheet.grandTotal) * 100).toFixed(1)}% of total)</span>}
+              </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 dark:bg-gray-700">
                   <tr>
@@ -719,7 +725,10 @@ function CostSheetViewContent() {
           {/* Labor */}
           {costSheet.laborLines && costSheet.laborLines.length > 0 && (
             <div className={cardClass}>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Labor</h2>
+              <div className="flex items-center gap-3 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Labor</h2>
+                {costSheet.grandTotal > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">({((costSheet.totalLabor / costSheet.grandTotal) * 100).toFixed(1)}% of total)</span>}
+              </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 dark:bg-gray-700">
                   <tr>
@@ -798,15 +807,15 @@ function CostSheetViewContent() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between py-1">
                 <span className="text-gray-600 dark:text-gray-400">Materials:</span>
-                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalMaterials)}</span>
+                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalMaterials)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalMaterials / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-600 dark:text-gray-400">Fabric:</span>
-                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalFabric)}</span>
+                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalFabric)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalFabric / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-600 dark:text-gray-400">Labor:</span>
-                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalLabor)}</span>
+                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalLabor)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalLabor / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
               </div>
               <div className="flex justify-between py-1 border-t border-gray-200 dark:border-gray-700">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
@@ -822,7 +831,7 @@ function CostSheetViewContent() {
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-gray-600 dark:text-gray-400">Other Requirements:</span>
-                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalOtherRequirements)}</span>
+                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalOtherRequirements)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalOtherRequirements / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
               </div>
               <div className="flex justify-between py-1 border-t border-gray-200 dark:border-gray-700">
                 <span className="font-semibold text-gray-900 dark:text-white">Grand Total:</span>
