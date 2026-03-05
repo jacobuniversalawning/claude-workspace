@@ -72,6 +72,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [storageType, setStorageType] = useState<'database' | 'local' | null>(null);
   const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+  const [compPriceModalId, setCompPriceModalId] = useState<string | null>(null);
+  const [compPriceInput, setCompPriceInput] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [showImportModal, setShowImportModal] = useState(false);
@@ -364,6 +366,56 @@ export default function Home() {
         </div>
       )}
 
+      {/* Competitor Price Modal */}
+      {compPriceModalId && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-[#0A0A0A] rounded-xl p-6 max-w-sm mx-4 border border-[#333333] animate-scale-in">
+            <h3 className="text-lg font-semibold text-[#EDEDED] tracking-tight mb-3">Competitor Price</h3>
+            <p className="text-[#A1A1A1] text-sm mb-4">Enter the competitor&apos;s total price for this job.</p>
+            <input
+              type="number"
+              step="0.01"
+              value={compPriceInput}
+              onChange={(e) => setCompPriceInput(e.target.value)}
+              placeholder="0.00"
+              autoFocus
+              className="w-full rounded-lg px-3 py-2 text-sm bg-[#111111] text-[#EDEDED] border border-[#333333] focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/20 mb-6"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setCompPriceModalId(null); setCompPriceInput(''); }}
+                className="px-4 py-2 text-[#A1A1A1] bg-[#111111] border border-[#333333] rounded text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150"
+              >
+                Cancel
+              </button>
+              {compPriceInput && (
+                <button
+                  onClick={() => {
+                    updateCompetitorPrice(compPriceModalId, null);
+                    setCompPriceModalId(null);
+                    setCompPriceInput('');
+                  }}
+                  className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded text-sm font-medium hover:bg-red-500/20 transition-all duration-150"
+                >
+                  Clear
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  const val = parseFloat(compPriceInput) || null;
+                  updateCompetitorPrice(compPriceModalId, val);
+                  setCompPriceModalId(null);
+                  setCompPriceInput('');
+                }}
+                className="px-4 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-sm font-medium hover:bg-amber-500/20 transition-all duration-150"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Import Cost Sheet Modal */}
       <ImportCostSheetModal
         isOpen={showImportModal}
@@ -637,7 +689,6 @@ export default function Home() {
                       { key: 'sqft', label: '$/sq ft' },
                       { key: 'linft', label: '$/lin ft' },
                       { key: 'outcome', label: 'Outcome' },
-                      { key: 'competitor', label: 'Comp. Price' },
                     ].map((col) => (
                       <th
                         key={col.key}
@@ -652,7 +703,7 @@ export default function Home() {
                         </div>
                       </th>
                     ))}
-                    <th className="px-3 py-3 w-12 bg-[#111111]"></th>
+                    <th className="px-3 py-3 w-36 bg-[#111111] text-right text-xs font-medium text-[#666666] uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1F1F1F]">
@@ -710,29 +761,23 @@ export default function Home() {
                             <option value="Lost">Lost</option>
                           </select>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={sheet.competitorPrice || ''}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || null;
-                              setCostSheets(prev => prev.map(s => s.id === sheet.id ? { ...s, competitorPrice: val || undefined } : s));
-                            }}
-                            onBlur={(e) => {
-                              const val = parseFloat(e.target.value) || null;
-                              updateCompetitorPrice(sheet.id, val);
-                            }}
-                            placeholder="-"
-                            className={`w-24 rounded px-2 py-1 text-xs font-medium tabular-nums transition-all duration-150 border focus:outline-none focus:ring-1 ${
-                              sheet.competitorPrice
-                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 focus:border-amber-400 focus:ring-amber-400/20'
-                                : 'bg-[#111111] text-[#666666] border-[#333333] focus:border-amber-400 focus:ring-amber-400/20'
-                            }`}
-                          />
-                        </td>
-                        <td className="px-3 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                        <td className="px-3 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCompPriceModalId(sheet.id);
+                                setCompPriceInput(sheet.competitorPrice ? String(sheet.competitorPrice) : '');
+                              }}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-all duration-150 border ${
+                                sheet.competitorPrice
+                                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                                  : 'bg-[#111111] text-[#666666] border-[#333333] hover:text-amber-400 hover:border-amber-500/20'
+                              }`}
+                              title="Set Competitor Price"
+                            >
+                              {sheet.competitorPrice ? formatCurrency(sheet.competitorPrice) : 'Comp Price'}
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -746,7 +791,6 @@ export default function Home() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 9h1M9 13h6M9 17h6" />
                               </svg>
                             </button>
-                            {/* Delete button - only visible to users with delete permission */}
                             {canDelete(userRole) && (
                               <button
                                 onClick={(e) => {

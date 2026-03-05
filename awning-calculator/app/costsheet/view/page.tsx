@@ -817,8 +817,12 @@ function CostSheetViewContent() {
                 <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalFabric)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalFabric / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-gray-600 dark:text-gray-400">Labor:</span>
-                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalLabor)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalLabor / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
+                <span className="text-gray-600 dark:text-gray-400">Fab. Labor:</span>
+                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalFabricationLabor)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalFabricationLabor / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-gray-600 dark:text-gray-400">Install Labor:</span>
+                <span className="text-gray-900 dark:text-white">{formatCurrency(costSheet.totalInstallationLabor)} {costSheet.grandTotal > 0 && <span className="text-yellow-600 dark:text-yellow-400 text-xs">({((costSheet.totalInstallationLabor / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</span>
               </div>
               <div className="flex justify-between py-1 border-t border-gray-200 dark:border-gray-700">
                 <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
