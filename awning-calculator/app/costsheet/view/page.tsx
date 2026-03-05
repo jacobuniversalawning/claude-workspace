@@ -203,359 +203,345 @@ function CostSheetViewContent() {
         <div ref={printContentRef} className="print:p-4">
 
           {/* ========== PRINT-ONLY COMPACT LAYOUT ========== */}
-          <div className="hidden print:block">
-            {/* Print Header */}
-            <div className="border-b-2 border-black pb-2 mb-3">
-              <div className="flex justify-between items-start">
+          <div className="hidden print:block text-[8px] leading-tight">
+            {/* Print Header with Pricing Overview */}
+            <div className="flex justify-between items-start border-b-2 border-gray-800 pb-1.5 mb-2">
+              <div>
+                <h1 className="text-sm font-bold tracking-tight">Universal Awning & Canopy</h1>
+                <div className="text-[7px] text-gray-500 mt-0.5">Cost Sheet — {costSheet.category} — ID: {costSheet.id.slice(0, 8)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold">{formatCurrency(costSheet.totalPriceToClient)}</div>
+                <div className="text-[7px] text-gray-500">Total to Client</div>
+              </div>
+            </div>
+
+            {/* Two-column layout for entire page */}
+            <div className="grid grid-cols-2 gap-2">
+
+              {/* ===== LEFT COLUMN ===== */}
+              <div className="space-y-1.5">
+
+                {/* Project Info */}
                 <div>
-                  <h1 className="text-lg font-bold">Universal Awning & Canopy - Cost Sheet</h1>
-                  <p className="text-[10px] text-gray-600">{costSheet.category} | ID: {costSheet.id}</p>
-                </div>
-                <div className="text-right text-[9px]">
-                  <div>Created: {new Date(costSheet.createdAt).toLocaleDateString()}</div>
-                  <div>Printed: {new Date().toLocaleDateString()}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Print Project Info - Compact Grid */}
-            <div className="grid grid-cols-4 gap-2 mb-3 text-[9px]">
-              <div><span className="font-semibold">Inquiry:</span> {new Date(costSheet.inquiryDate).toLocaleDateString()}</div>
-              <div><span className="font-semibold">Due:</span> {new Date(costSheet.dueDate).toLocaleDateString()}</div>
-              <div><span className="font-semibold">Customer:</span> {costSheet.customer || '-'}</div>
-              <div><span className="font-semibold">Sales Rep:</span> {costSheet.salesRep || '-'}</div>
-              <div className="col-span-2"><span className="font-semibold">Project:</span> {costSheet.project || '-'}</div>
-              <div className="col-span-2"><span className="font-semibold">Job Site:</span> {costSheet.jobSite || '-'}</div>
-              <div><span className="font-semibold">Estimator:</span> {costSheet.estimator || '-'}</div>
-              <div><span className="font-semibold">Created By:</span> {costSheet.user?.name || '-'}</div>
-              <div><span className="font-semibold">Outcome:</span> {costSheet.outcome || 'Unknown'}</div>
-            </div>
-
-            {/* Print Products Table */}
-            <div className="mb-2">
-              <h2 className="text-[10px] font-bold mb-1 bg-gray-200 px-1">PRODUCTS & DIMENSIONS</h2>
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className={printTh}>Product</th>
-                    <th className={printTh + " text-right"}>Width</th>
-                    <th className={printTh + " text-right"}>Projection</th>
-                    <th className={printTh + " text-right"}>Height</th>
-                    <th className={printTh + " text-right"}>Valance</th>
-                    <th className={printTh + " text-right"}>Sq Ft</th>
-                    <th className={printTh + " text-right"}>Lin Ft</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {costSheet.products && costSheet.products.length > 0 ? (
-                    costSheet.products.map((p, i) => (
-                      <tr key={i}>
-                        <td className={printTd}>{p.name}</td>
-                        <td className={printTdRight}>{p.width}</td>
-                        <td className={printTdRight}>{p.projection}</td>
-                        <td className={printTdRight}>{p.height}</td>
-                        <td className={printTdRight}>{p.valance}</td>
-                        <td className={printTdRight}>{p.sqFt?.toFixed(2)}</td>
-                        <td className={printTdRight}>{p.linFt?.toFixed(2)}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan={7} className={printTd + " text-center italic"}>No products</td></tr>
-                  )}
-                  <tr className="bg-gray-100 font-semibold">
-                    <td colSpan={5} className={printTd + " text-right"}>Totals:</td>
-                    <td className={printTdRight}>{costSheet.canopySqFt?.toFixed(2)}</td>
-                    <td className={printTdRight}>{costSheet.awningLinFt?.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Print Materials & Fabric Side by Side */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {/* Materials */}
-              <div>
-                <h2 className="text-[10px] font-bold mb-1 bg-gray-200 px-1">MATERIALS</h2>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className={printTh}>Description</th>
-                      <th className={printTh + " text-right"}>Qty</th>
-                      <th className={printTh + " text-right"}>Unit $</th>
-                      <th className={printTh + " text-right"}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costSheet.materials && costSheet.materials.length > 0 ? (
-                      costSheet.materials.map((m, i) => (
-                        <tr key={i}>
-                          <td className={printTd}>{m.description || '-'}</td>
-                          <td className={printTdRight}>{m.qty}</td>
-                          <td className={printTdRight}>{formatCurrency(m.unitPrice)}</td>
-                          <td className={printTdRight}>{formatCurrency(m.total)}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan={4} className={printTd + " text-center italic"}>No materials</td></tr>
-                    )}
-                    <tr className="bg-blue-50 font-semibold">
-                      <td colSpan={3} className={printTd + " text-right"}>Total Materials:</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalMaterials)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Fabric */}
-              <div>
-                <h2 className="text-[10px] font-bold mb-1 bg-gray-200 px-1">FABRIC</h2>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className={printTh}>Name</th>
-                      <th className={printTh + " text-right"}>Yards</th>
-                      <th className={printTh + " text-right"}>$/Yd</th>
-                      <th className={printTh + " text-right"}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costSheet.fabricLines && costSheet.fabricLines.length > 0 ? (
-                      costSheet.fabricLines.map((f, i) => (
-                        <tr key={i}>
-                          <td className={printTd}>{f.name || '-'}</td>
-                          <td className={printTdRight}>{f.yards}</td>
-                          <td className={printTdRight}>{formatCurrency(f.pricePerYard)}</td>
-                          <td className={printTdRight}>{formatCurrency(f.total)}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan={4} className={printTd + " text-center italic"}>No fabric</td></tr>
-                    )}
-                    <tr className="bg-blue-50 font-semibold">
-                      <td colSpan={3} className={printTd + " text-right"}>Total Fabric:</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalFabric)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Print Labor Tables Side by Side */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {/* Fabrication Labor */}
-              <div>
-                <h2 className="text-[10px] font-bold mb-1 bg-gray-200 px-1">FABRICATION LABOR</h2>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className={printTh}>Type</th>
-                      <th className={printTh + " text-right"}>Hrs</th>
-                      <th className={printTh + " text-right"}>Ppl</th>
-                      <th className={printTh + " text-right"}>Rate</th>
-                      <th className={printTh + " text-right"}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costSheet.laborLines && costSheet.laborLines.filter(l => l.isFabrication).length > 0 ? (
-                      costSheet.laborLines.filter(l => l.isFabrication).map((l, i) => (
-                        <tr key={i}>
-                          <td className={printTd}>{l.type}</td>
-                          <td className={printTdRight}>{l.hours}</td>
-                          <td className={printTdRight}>{l.people}</td>
-                          <td className={printTdRight}>{formatCurrency(l.rate)}</td>
-                          <td className={printTdRight}>{formatCurrency(l.total)}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan={5} className={printTd + " text-center italic"}>No fab labor</td></tr>
-                    )}
-                    <tr className="bg-gray-100 font-semibold">
-                      <td colSpan={4} className={printTd + " text-right"}>Fabrication Total:</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalFabricationLabor)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Installation Labor */}
-              <div>
-                <h2 className="text-[10px] font-bold mb-1 bg-orange-100 px-1">INSTALLATION LABOR</h2>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className={printTh}>Type</th>
-                      <th className={printTh + " text-right"}>Hrs</th>
-                      <th className={printTh + " text-right"}>Ppl</th>
-                      <th className={printTh + " text-right"}>Rate</th>
-                      <th className={printTh + " text-right"}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costSheet.laborLines && costSheet.laborLines.filter(l => !l.isFabrication).length > 0 ? (
-                      costSheet.laborLines.filter(l => !l.isFabrication).map((l, i) => (
-                        <tr key={i}>
-                          <td className={printTd}>{l.type}</td>
-                          <td className={printTdRight}>{l.hours}</td>
-                          <td className={printTdRight}>{l.people}</td>
-                          <td className={printTdRight}>{formatCurrency(l.rate)}</td>
-                          <td className={printTdRight}>{formatCurrency(l.total)}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr><td colSpan={5} className={printTd + " text-center italic"}>No install labor</td></tr>
-                    )}
-                    <tr className="bg-orange-100 font-semibold">
-                      <td colSpan={4} className={printTd + " text-right"}>Installation Total:</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalInstallationLabor)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Print Other Requirements & Summary Side by Side */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {/* Other Requirements */}
-              <div>
-                <h2 className="text-[10px] font-bold mb-1 bg-gray-200 px-1">OTHER REQUIREMENTS</h2>
-                <table className="w-full border-collapse text-[9px]">
-                  <tbody>
-                    <tr>
-                      <td className={printTd}>Permit</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.permitCost || 0)}</td>
-                      <td className={printTd}>Engineering</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.engineeringCost || 0)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Equipment</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.equipmentCost || 0)}</td>
-                      <td className={printTd}>Food</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.foodCost || 0)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Drive Time</td>
-                      <td className={printTdRight}>{costSheet.driveTimeTrips || 0} trips × {costSheet.driveTimeHours || 0}hrs × {costSheet.driveTimePeople || 0}ppl</td>
-                      <td className={printTd}>Drive $</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.driveTimeTotal || 0)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Mileage</td>
-                      <td className={printTdRight}>{costSheet.roundtripMiles || 0}mi × {costSheet.roundtripTrips || 0}trips</td>
-                      <td className={printTd}>Mileage $</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.mileageTotal || 0)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Hotel</td>
-                      <td className={printTdRight}>{costSheet.hotelNights || 0}nights × {costSheet.hotelPeople || 0}ppl</td>
-                      <td className={printTd}>Hotel $</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.hotelTotal || 0)}</td>
-                    </tr>
-                    <tr className="bg-orange-100 font-semibold">
-                      <td colSpan={3} className={printTd + " text-right"}>Total Other Requirements:</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalOtherRequirements)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Summary */}
-              <div>
-                <h2 className="text-[10px] font-bold mb-1 bg-green-100 px-1">PRICING SUMMARY</h2>
-                <table className="w-full border-collapse text-[9px]">
-                  <tbody>
-                    <tr>
-                      <td className={printTd}>Materials</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalMaterials)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Fabric</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalFabric)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Total Labor</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalLabor)}</td>
-                    </tr>
-                    <tr className="border-t-2 border-gray-400">
-                      <td className={printTd + " font-semibold"}>Subtotal</td>
-                      <td className={printTdRight + " font-semibold"}>{formatCurrency(costSheet.subtotalBeforeMarkup)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Profit ({costSheet.markup.toFixed(2)} → {((1 - costSheet.markup) * 100).toFixed(0)}% margin)</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalWithMarkup - costSheet.subtotalBeforeMarkup)}</td>
-                    </tr>
-                    <tr className="bg-blue-100 font-semibold">
-                      <td className={printTd}>Pre-Delivery Total</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalWithMarkup)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>Other Requirements</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalOtherRequirements)}</td>
-                    </tr>
-                    <tr className="font-semibold">
-                      <td className={printTd}>Grand Total</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.grandTotal)}</td>
-                    </tr>
-                    {costSheet.discountIncrease !== 0 && (
+                  <div className="bg-gray-700 text-white px-1.5 py-0.5 font-bold text-[8px] mb-0.5">PROJECT INFORMATION</div>
+                  <table className="w-full border-collapse">
+                    <tbody>
                       <tr>
-                        <td className={printTd}>Discount/Increase</td>
-                        <td className={printTdRight}>{formatCurrency(costSheet.discountIncrease)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50 w-1/4">Customer</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{costSheet.customer || '-'}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50 w-1/4">Sales Rep</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{costSheet.salesRep || '-'}</td>
                       </tr>
-                    )}
-                    <tr className="bg-green-200 font-bold text-[10px]">
-                      <td className={printTd}>TOTAL TO CLIENT</td>
-                      <td className={printTdRight}>{formatCurrency(costSheet.totalPriceToClient)}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>$/Sq Ft (Pre-Del)</td>
-                      <td className={printTdRight}>{costSheet.pricePerSqFtPreDelivery ? formatCurrency(costSheet.pricePerSqFtPreDelivery) : '-'}</td>
-                    </tr>
-                    <tr>
-                      <td className={printTd}>$/Lin Ft (Pre-Del)</td>
-                      <td className={printTdRight}>{costSheet.pricePerLinFtPreDelivery ? formatCurrency(costSheet.pricePerLinFtPreDelivery) : '-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50">Project</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{costSheet.project || '-'}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50">Estimator</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{costSheet.estimator || '-'}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50">Job Site</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{costSheet.jobSite || '-'}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50">Outcome</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{costSheet.outcome || 'Unknown'}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50">Inquiry</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{new Date(costSheet.inquiryDate).toLocaleDateString()}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-gray-50">Due Date</td>
+                        <td className="px-1 py-0.5 border border-gray-300">{new Date(costSheet.dueDate).toLocaleDateString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Products & Dimensions */}
+                <div>
+                  <div className="bg-indigo-100 text-indigo-900 px-1.5 py-0.5 font-bold text-[8px] mb-0.5 border border-indigo-200">PRODUCTS & DIMENSIONS — {costSheet.canopySqFt?.toFixed(1)} sq ft / {costSheet.awningLinFt?.toFixed(1)} lin ft</div>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-indigo-50">
+                        <th className="px-1 py-0.5 text-left border border-gray-300 font-semibold">Product</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">W</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Proj</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">H</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Sq Ft</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Lin Ft</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costSheet.products && costSheet.products.length > 0 ? costSheet.products.map((p, i) => (
+                        <tr key={i}>
+                          <td className="px-1 py-0.5 border border-gray-300">{p.name}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{p.width}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{p.projection}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{p.height}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{p.sqFt?.toFixed(1)}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{p.linFt?.toFixed(1)}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={6} className="px-1 py-0.5 border border-gray-300 text-center italic">No products</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Materials */}
+                <div>
+                  <div className="bg-amber-100 text-amber-900 px-1.5 py-0.5 font-bold text-[8px] mb-0.5 border border-amber-200">MATERIALS — {formatCurrency(costSheet.totalMaterials)} {costSheet.grandTotal > 0 && <span className="font-normal">({((costSheet.totalMaterials / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</div>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-amber-50">
+                        <th className="px-1 py-0.5 text-left border border-gray-300 font-semibold">Description</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Qty</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Unit $</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costSheet.materials && costSheet.materials.length > 0 ? costSheet.materials.map((m, i) => (
+                        <tr key={i}>
+                          <td className="px-1 py-0.5 border border-gray-300">{m.description || '-'}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{m.qty}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(m.unitPrice)}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(m.total)}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={4} className="px-1 py-0.5 border border-gray-300 text-center italic">No materials</td></tr>
+                      )}
+                      <tr className="bg-amber-100 font-semibold">
+                        <td colSpan={3} className="px-1 py-0.5 border border-gray-300 text-right">Total Materials:</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalMaterials)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Fabric */}
+                <div>
+                  <div className="bg-purple-100 text-purple-900 px-1.5 py-0.5 font-bold text-[8px] mb-0.5 border border-purple-200">FABRIC — {formatCurrency(costSheet.totalFabric)} {costSheet.grandTotal > 0 && <span className="font-normal">({((costSheet.totalFabric / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</div>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-purple-50">
+                        <th className="px-1 py-0.5 text-left border border-gray-300 font-semibold">Name</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Yards</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">$/Yd</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costSheet.fabricLines && costSheet.fabricLines.length > 0 ? costSheet.fabricLines.map((f, i) => (
+                        <tr key={i}>
+                          <td className="px-1 py-0.5 border border-gray-300">{f.name || '-'}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{f.yards}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(f.pricePerYard)}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(f.total)}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={4} className="px-1 py-0.5 border border-gray-300 text-center italic">No fabric</td></tr>
+                      )}
+                      <tr className="bg-purple-100 font-semibold">
+                        <td colSpan={3} className="px-1 py-0.5 border border-gray-300 text-right">Total Fabric:</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalFabric)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* ===== RIGHT COLUMN ===== */}
+              <div className="space-y-1.5">
+
+                {/* Pricing Overview Box */}
+                <div>
+                  <div className="bg-emerald-700 text-white px-1.5 py-0.5 font-bold text-[8px] mb-0.5">PRICING SUMMARY</div>
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      <tr className="bg-emerald-50">
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold">Materials</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalMaterials)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right text-gray-500">{costSheet.grandTotal > 0 ? ((costSheet.totalMaterials / costSheet.grandTotal) * 100).toFixed(1) + '%' : '-'}</td>
+                      </tr>
+                      <tr className="bg-emerald-50">
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold">Fabric</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalFabric)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right text-gray-500">{costSheet.grandTotal > 0 ? ((costSheet.totalFabric / costSheet.grandTotal) * 100).toFixed(1) + '%' : '-'}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold">Fabrication Labor</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalFabricationLabor)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right text-gray-500">{costSheet.grandTotal > 0 ? ((costSheet.totalFabricationLabor / costSheet.grandTotal) * 100).toFixed(1) + '%' : '-'}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold">Installation Labor</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalInstallationLabor)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right text-gray-500">{costSheet.grandTotal > 0 ? ((costSheet.totalInstallationLabor / costSheet.grandTotal) * 100).toFixed(1) + '%' : '-'}</td>
+                      </tr>
+                      <tr className="border-t-2 border-gray-500">
+                        <td className="px-1 py-0.5 border border-gray-300 font-bold">Subtotal</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right font-bold">{formatCurrency(costSheet.subtotalBeforeMarkup)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300"></td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300">Profit ({((1 - costSheet.markup) * 100).toFixed(0)}% margin)</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalWithMarkup - costSheet.subtotalBeforeMarkup)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300"></td>
+                      </tr>
+                      <tr className="bg-blue-100 font-bold">
+                        <td className="px-1 py-0.5 border border-gray-300">Pre-Delivery</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalWithMarkup)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300"></td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300">Other Requirements</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalOtherRequirements)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right text-gray-500">{costSheet.grandTotal > 0 ? ((costSheet.totalOtherRequirements / costSheet.grandTotal) * 100).toFixed(1) + '%' : '-'}</td>
+                      </tr>
+                      <tr className="font-bold">
+                        <td className="px-1 py-0.5 border border-gray-300">Grand Total</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.grandTotal)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300"></td>
+                      </tr>
+                      {costSheet.discountIncrease !== 0 && (
+                        <tr>
+                          <td className="px-1 py-0.5 border border-gray-300">Discount/Increase</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.discountIncrease)}</td>
+                          <td className="px-1 py-0.5 border border-gray-300"></td>
+                        </tr>
+                      )}
+                      <tr className="bg-emerald-200 font-bold text-[9px]">
+                        <td className="px-1 py-1 border border-gray-300">TOTAL TO CLIENT</td>
+                        <td className="px-1 py-1 border border-gray-300 text-right">{formatCurrency(costSheet.totalPriceToClient)}</td>
+                        <td className="px-1 py-1 border border-gray-300"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {/* Per-unit pricing */}
+                  <div className="flex gap-3 mt-0.5 text-[7px] text-gray-600 px-1">
+                    <span>$/sq ft (pre-del): <strong>{costSheet.pricePerSqFtPreDelivery ? formatCurrency(costSheet.pricePerSqFtPreDelivery) : '-'}</strong></span>
+                    <span>$/lin ft (pre-del): <strong>{costSheet.pricePerLinFtPreDelivery ? formatCurrency(costSheet.pricePerLinFtPreDelivery) : '-'}</strong></span>
+                    <span>$/sq ft (final): <strong>{costSheet.canopySqFt > 0 ? formatCurrency(costSheet.totalPriceToClient / costSheet.canopySqFt) : '-'}</strong></span>
+                    <span>$/lin ft (final): <strong>{costSheet.awningLinFt > 0 ? formatCurrency(costSheet.totalPriceToClient / costSheet.awningLinFt) : '-'}</strong></span>
+                  </div>
+                </div>
+
+                {/* Fabrication Labor */}
+                <div>
+                  <div className="bg-sky-100 text-sky-900 px-1.5 py-0.5 font-bold text-[8px] mb-0.5 border border-sky-200">FABRICATION LABOR — {formatCurrency(costSheet.totalFabricationLabor)} {costSheet.grandTotal > 0 && <span className="font-normal">({((costSheet.totalFabricationLabor / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</div>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-sky-50">
+                        <th className="px-1 py-0.5 text-left border border-gray-300 font-semibold">Type</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Hrs</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Ppl</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Rate</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costSheet.laborLines && costSheet.laborLines.filter(l => l.isFabrication).length > 0 ? costSheet.laborLines.filter(l => l.isFabrication).map((l, i) => (
+                        <tr key={i}>
+                          <td className="px-1 py-0.5 border border-gray-300">{l.type}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{l.hours}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{l.people}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(l.rate)}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(l.total)}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={5} className="px-1 py-0.5 border border-gray-300 text-center italic">No fabrication labor</td></tr>
+                      )}
+                      <tr className="bg-sky-100 font-semibold">
+                        <td colSpan={4} className="px-1 py-0.5 border border-gray-300 text-right">Fabrication Total:</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalFabricationLabor)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Installation Labor */}
+                <div>
+                  <div className="bg-orange-100 text-orange-900 px-1.5 py-0.5 font-bold text-[8px] mb-0.5 border border-orange-200">INSTALLATION LABOR — {formatCurrency(costSheet.totalInstallationLabor)} {costSheet.grandTotal > 0 && <span className="font-normal">({((costSheet.totalInstallationLabor / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</div>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-orange-50">
+                        <th className="px-1 py-0.5 text-left border border-gray-300 font-semibold">Type</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Hrs</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Ppl</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Rate</th>
+                        <th className="px-1 py-0.5 text-right border border-gray-300 font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costSheet.laborLines && costSheet.laborLines.filter(l => !l.isFabrication).length > 0 ? costSheet.laborLines.filter(l => !l.isFabrication).map((l, i) => (
+                        <tr key={i}>
+                          <td className="px-1 py-0.5 border border-gray-300">{l.type}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{l.hours}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{l.people}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(l.rate)}</td>
+                          <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(l.total)}</td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={5} className="px-1 py-0.5 border border-gray-300 text-center italic">No installation labor</td></tr>
+                      )}
+                      <tr className="bg-orange-100 font-semibold">
+                        <td colSpan={4} className="px-1 py-0.5 border border-gray-300 text-right">Installation Total:</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalInstallationLabor)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Other Requirements */}
+                <div>
+                  <div className="bg-rose-100 text-rose-900 px-1.5 py-0.5 font-bold text-[8px] mb-0.5 border border-rose-200">OTHER REQUIREMENTS — {formatCurrency(costSheet.totalOtherRequirements)} {costSheet.grandTotal > 0 && <span className="font-normal">({((costSheet.totalOtherRequirements / costSheet.grandTotal) * 100).toFixed(1)}%)</span>}</div>
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Permit</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.permitCost || 0)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Engineering</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.engineeringCost || 0)}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Equipment</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.equipmentCost || 0)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Food</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.foodCost || 0)}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Drive Time</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.driveTimeTotal || 0)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Mileage</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.mileageTotal || 0)}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-1 py-0.5 border border-gray-300 font-semibold bg-rose-50">Hotel</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.hotelTotal || 0)}</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right" colSpan={2}></td>
+                      </tr>
+                      <tr className="bg-rose-100 font-semibold">
+                        <td colSpan={3} className="px-1 py-0.5 border border-gray-300 text-right">Total Other Requirements:</td>
+                        <td className="px-1 py-0.5 border border-gray-300 text-right">{formatCurrency(costSheet.totalOtherRequirements)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Competitor Pricing if available */}
+                {costSheet.competitorPrice && costSheet.competitorPrice > 0 && (
+                  <div className="text-[7px] bg-gray-50 border border-gray-300 px-1.5 py-0.5">
+                    <span className="font-bold">Competitor:</span> {formatCurrency(costSheet.competitorPrice)}
+                    {costSheet.canopySqFt > 0 && <span className="ml-2">({formatCurrency(costSheet.competitorPrice / costSheet.canopySqFt)}/sq ft)</span>}
+                    {costSheet.awningLinFt > 0 && <span className="ml-2">({formatCurrency(costSheet.competitorPrice / costSheet.awningLinFt)}/lin ft)</span>}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Print Activity Log */}
-            {costSheet.activityLogs && costSheet.activityLogs.length > 0 && (
-              <div className="mt-2">
-                <h2 className="text-[10px] font-bold mb-1 bg-gray-200 px-1">ACTIVITY LOG</h2>
-                <table className="w-full border-collapse text-[8px]">
-                  <thead>
-                    <tr>
-                      <th className={printTh}>Date</th>
-                      <th className={printTh}>User</th>
-                      <th className={printTh}>Action</th>
-                      <th className={printTh}>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {costSheet.activityLogs.slice(0, 10).map((log, i) => (
-                      <tr key={i}>
-                        <td className={printTd}>{new Date(log.createdAt).toLocaleString()}</td>
-                        <td className={printTd}>{log.user?.name || log.user?.email || '-'}</td>
-                        <td className={printTd}>{log.action}</td>
-                        <td className={printTd}>{log.description || '-'}</td>
-                      </tr>
-                    ))}
-                    {costSheet.activityLogs.length > 10 && (
-                      <tr>
-                        <td colSpan={4} className={printTd + " text-center italic"}>
-                          ...and {costSheet.activityLogs.length - 10} more entries
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Print Footer */}
-            <div className="mt-3 pt-2 border-t border-gray-300 text-[8px] text-gray-500 flex justify-between">
-              <span>Universal Awning & Canopy Cost Sheet System</span>
-              <span>Page 1 of 1</span>
+            {/* Footer */}
+            <div className="mt-1.5 pt-1 border-t border-gray-400 text-[7px] text-gray-400 flex justify-between">
+              <span>Universal Awning & Canopy — {costSheet.customer} — {costSheet.project}</span>
+              <span>Created: {new Date(costSheet.createdAt).toLocaleDateString()} | Printed: {new Date().toLocaleDateString()}</span>
             </div>
           </div>
 

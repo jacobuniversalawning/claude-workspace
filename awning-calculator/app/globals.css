@@ -461,9 +461,9 @@ input[type="number"] {
     font-size: 10px !important;
   }
 
-  /* Neutralize dark mode class for print */
+  /* Neutralize dark mode class for print - except the print layout itself */
   .dark,
-  .dark * {
+  .dark *:not(.print\\:block *) {
     background-color: transparent !important;
     color: #000000 !important;
     border-color: #cccccc !important;
@@ -599,6 +599,7 @@ input[type="number"] {
   /* Ensure full width for print content */
   .max-w-7xl,
   .max-w-5xl,
+  [class*="max-w-"],
   .container {
     max-width: 100% !important;
     width: 100% !important;
