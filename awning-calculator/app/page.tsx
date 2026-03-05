@@ -428,7 +428,7 @@ export default function Home() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-[#1F1F1F]">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-[1600px] mx-auto px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold text-[#EDEDED] tracking-tight">
@@ -515,7 +515,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-[1600px] mx-auto px-8 py-8">
         {storageType === 'local' && (
           <div className="mb-6">
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-yellow-200 text-sm">
@@ -703,7 +703,7 @@ export default function Home() {
                         </div>
                       </th>
                     ))}
-                    <th className="px-3 py-3 w-36 bg-[#111111] text-right text-xs font-medium text-[#666666] uppercase tracking-wider">Actions</th>
+                    <th className="px-3 py-3 w-24 bg-[#111111]"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1F1F1F]">
@@ -761,22 +761,22 @@ export default function Home() {
                             <option value="Lost">Lost</option>
                           </select>
                         </td>
-                        <td className="px-3 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-3 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setCompPriceModalId(sheet.id);
                                 setCompPriceInput(sheet.competitorPrice ? String(sheet.competitorPrice) : '');
                               }}
-                              className={`px-2 py-1 rounded text-xs font-medium transition-all duration-150 border ${
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-150 ${
                                 sheet.competitorPrice
-                                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-                                  : 'bg-[#111111] text-[#666666] border-[#333333] hover:text-amber-400 hover:border-amber-500/20'
+                                  ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30'
+                                  : 'text-[#444444] hover:text-amber-400 hover:bg-amber-500/10 opacity-0 group-hover:opacity-100'
                               }`}
-                              title="Set Competitor Price"
+                              title={sheet.competitorPrice ? `Comp: ${formatCurrency(sheet.competitorPrice)}` : 'Set Competitor Price'}
                             >
-                              {sheet.competitorPrice ? formatCurrency(sheet.competitorPrice) : 'Comp Price'}
+                              $
                             </button>
                             <button
                               onClick={(e) => {
